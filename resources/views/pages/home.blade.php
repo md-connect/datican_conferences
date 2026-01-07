@@ -3,8 +3,32 @@
 @section('title', 'Home')
 
 @section('content')
-    <!-- Hero Section -->
-    <div class="gradient-bg text-white py-20">
+<!-- Image Slider with Continuous Zoom -->
+<div class="relative h-[500px] md:h-[700px] overflow-hidden">
+    <!-- Slide 1 -->
+    <div class="absolute inset-0 slide active">
+        <img src="{{ asset('images/general/datican-people-1.JPG') }}" 
+             alt="Medical AI Research" 
+             class="w-full h-full object-cover zoom-image">
+    </div>
+    
+    <!-- Slide 2 -->
+    <div class="absolute inset-0 slide">
+        <img src="{{ asset('images/general/datican-people-3.JPG') }}" 
+             alt="Medical Imaging Technology" 
+             class="w-full h-full object-cover zoom-image">
+    </div>
+    
+    <!-- Slide 3 -->
+    <div class="absolute inset-0 slide">
+        <img src="{{ asset('images/general/datican-people-2.JPG') }}" 
+             alt="Healthcare Innovation" 
+             class="w-full h-full object-cover zoom-image">
+    </div>
+</div>
+
+     <!-- Hero Section -->
+    <div class="gradient-bg text-white py-20 mt-8">
         <div class="container mx-auto px-4">
             <div class="max-w-4xl mx-auto text-center">
                 <div class="mb-6">
@@ -20,74 +44,86 @@
         </div>
     </div>
 
-    <!-- Conference Details -->
-    <div class="py-16 bg-white">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center">
-                    <div class="bg-primary bg-opacity-10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-calendar-alt text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Conference Dates</h3>
-                    <p class="text-gray-600">13th - 14th May, 2026</p>
-                </div>
-                
-                <div class="text-center">
-                    <div class="bg-primary bg-opacity-10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-globe text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Virtual Conference</h3>
-                    <p class="text-gray-600">Zoom & YouTube Live</p>
-                </div>
-                
-                <div class="text-center">
-                    <div class="bg-primary bg-opacity-10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-paper-plane text-primary text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Abstract Deadline</h3>
-                    <p class="text-gray-600">1st March, 2026</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- About Conference -->
-    <div class="py-16 bg-gray-50">
-        <div class="container mx-auto px-4">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-3xl font-bold text-center mb-12 text-primary">About DATICAN Conference</h2>
-                <div class="bg-white rounded-xl shadow-lg p-8 hover-lift">
-                    <p class="text-gray-700 mb-6">
-                        Aligned with its mission to advance healthcare delivery in Nigeria through data science and medical image analysis training, the Data Science and Medical Image Analysis for Improved Healthcare Delivery in Nigeria (DATICAN) project is proud to announce its first international conference.
-                    </p>
-                    <p class="text-gray-700 mb-6">
-                        The conference theme, "Improving Medical Diagnostics in Nigeria Using AI and Data Science" will establish a platform for dialogue and knowledge exchange among key stakeholders. This gathering aims to explore transformative solutions and foster collaborations that directly address healthcare challenges in Nigeria.
-                    </p>
-                    <div class="mt-8">
-                        <h3 class="text-xl font-semibold mb-4 text-primary">Conference Sub-themes Include:</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="flex items-start">
-                                <i class="fas fa-chevron-right text-accent mt-1 mr-2"></i>
-                                <span>AI-Powered Medical Imaging and Radiology</span>
-                            </div>
-                            <div class="flex items-start">
-                                <i class="fas fa-chevron-right text-accent mt-1 mr-2"></i>
-                                <span>Data Science for Early Disease Prediction</span>
-                            </div>
-                            <div class="flex items-start">
-                                <i class="fas fa-chevron-right text-accent mt-1 mr-2"></i>
-                                <span>Big Data and Precision Medicine for Cancer Care</span>
-                            </div>
-                            <div class="flex items-start">
-                                <i class="fas fa-chevron-right text-accent mt-1 mr-2"></i>
-                                <span>AI-Driven Pathology and Laboratory Diagnostics</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<section class="py-20 bg-gray-50">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+
+      <!-- LEFT: TEXT CONTENT -->
+      <div>
+        <!-- Section label -->
+        <div class="flex items-center gap-4 mb-6">
+          <span class="h-px w-12 bg-accent"></span>
+          <span class="text-sm font-semibold uppercase tracking-wide text-accent">
+            About DATICAN Conference
+          </span>
         </div>
+
+        <!-- Main heading -->
+        <h4 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+          Improving Medical Diagnostics in Nigeria Using AI and Data Science
+        </h4>
+
+        <!-- Description -->
+        <p class="text-gray-700 mb-6 leading-relaxed">
+          Aligned with its mission to advance healthcare delivery in Nigeria through data science
+          and medical image analysis training, the Data Science and Medical Image Analysis for
+          Improved Healthcare Delivery in Nigeria (DATICAN) project is proud to announce its
+          first international conference.
+        </p>
+
+        <p class="text-gray-700 mb-8 leading-relaxed">
+          This conference will establish a platform for dialogue and knowledge exchange among
+          key stakeholders, exploring transformative AI-driven solutions and fostering
+          collaborations that directly address Nigeria’s healthcare challenges.
+        </p>
+
+        <!-- Sub-themes -->
+        <div class="mb-10">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            Conference Sub-themes Include:
+          </h3>
+
+          <ul class="space-y-3">
+            <li class="flex items-start gap-3">
+              <span class="text-accent font-semibold">01.</span>
+              <span>AI-Powered Medical Imaging and Radiology</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-accent font-semibold">02.</span>
+              <span>Data Science for Early Disease Prediction</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-accent font-semibold">03.</span>
+              <span>Big Data and Precision Medicine for Cancer Care</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-accent font-semibold">04.</span>
+              <span>AI-Driven Pathology and Laboratory Diagnostics</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- CTA -->
+        <a href="#call-for-papers"
+           class="inline-block bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition">
+          Call for Papers
+        </a>
+      </div>
+
+      <!-- RIGHT: IMAGE -->
+      <div class="relative">
+        <img
+          src="{{ asset('images/general/prof-aribisala.JPG') }}"
+          alt="DATICAN Conference"
+          class="rounded-xl shadow-xl w-full object-cover"
+        />
+      </div>
+
     </div>
+  </div>
+</section>
+
 
     <!-- Important Dates -->
     <div class="py-16 bg-white">

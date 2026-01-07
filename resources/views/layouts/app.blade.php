@@ -53,6 +53,59 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
+        
+/* Image Slider with 100% Zoom & Perfect Switch */
+.slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.slide.active {
+    opacity: 1;
+    z-index: 2;
+}
+
+.zoom-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1);
+    transition: transform 8s linear; /* Slower zoom (8 seconds) */
+}
+
+.slide.active .zoom-image {
+    transform: scale(1.2); /* Zoom to 120% (or adjust as needed) */
+}
+
+/* Optional: Very subtle continuous breathing effect */
+@keyframes subtleBreathing {
+    0%, 100% {
+        transform: scale(1.2);
+    }
+    50% {
+        transform: scale(1.21); /* Very subtle pulse */
+    }
+}
+
+.slide.active .zoom-image {
+    animation: subtleBreathing 4s ease-in-out infinite;
+    animation-delay: 8s; /* Start after zoom completes */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .relative.h-\[500px\].md\:h-\[700px\] {
+        height: 400px !important;
+    }
+    
+    .slide.active .zoom-image {
+        transform: scale(1.15); /* Less zoom on mobile */
+    }
+}
+
     </style>
 </head>
 <body class="bg-gray-50">
@@ -145,6 +198,64 @@
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
         });
+
+// Image Slider with 100% Zoom & Perfect Switch
+document.addEventListener('DOMContentLoaded', () => {
+    const slides = document.querySelectorAll('.slide');
+    const images = document.querySelectorAll('.zoom-image');
+    let current = 0;
+    const zoomDuration = 8000; // 8 seconds to match CSS
+    
+    function showSlide(index) {
+        // Reset all slides
+        slides.forEach((slide, i) => {
+            slide.classList.remove('active');
+            slide.style.opacity = '0';
+            slide.style.zIndex = '1';
+            
+            // Reset zoom for all images
+            images[i].style.transform = 'scale(1)';
+            images[i].style.transition = 'none';
+        });
+        
+        // Get current slide and image
+        const currentSlide = slides[index];
+        const currentImage = images[index];
+        
+        // Activate current slide
+        currentSlide.classList.add('active');
+        currentSlide.style.opacity = '1';
+        currentSlide.style.zIndex = '2';
+        
+        // Force reflow to reset animation
+        void currentImage.offsetWidth;
+        
+        // Start zoom animation
+        currentImage.style.transition = `transform ${zoomDuration}ms linear`;
+        currentImage.style.transform = 'scale(1.2)';
+        
+        // Schedule next slide at exact moment zoom reaches 100%
+        setTimeout(() => {
+            // Switch to next slide
+            current = (current + 1) % slides.length;
+            showSlide(current);
+        }, zoomDuration); // Switch EXACTLY when zoom completes
+    }
+    
+    // Start the slider
+    showSlide(current);
+    
+    // Optional: Add keyboard navigation (space/arrows for manual control)
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'ArrowRight') {
+            current = (current + 1) % slides.length;
+            showSlide(current);
+        } else if (e.code === 'ArrowLeft') {
+            current = (current - 1 + slides.length) % slides.length;
+            showSlide(current);
+        }
+    });
+});
     </script>
 </body>
 </html>
