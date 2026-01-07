@@ -76,7 +76,9 @@
                         
                         <!-- Organising Committee - Right Column -->
                         <div class="bg-white rounded-xl shadow-sm p-8">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">IT & PLATFORM TEAM</h2>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3"> 
+                                <i class="fas fa-laptop-code text-accent text-2xl"></i>
+                                IT & PLATFORM TEAM</h2>
 
                             <div class="space-y-4">
                                 @php
