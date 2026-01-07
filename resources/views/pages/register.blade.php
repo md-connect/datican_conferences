@@ -28,11 +28,10 @@
                                         <i class="fas fa-clipboard-list"></i>
                                     </div>
                                     <div>
-                                        <h3 class="text-lg font-semibold mb-2 text-gray-800">Complete Google Registration Form</h3>
+                                        <h3 class="text-lg font-semibold mb-2 text-gray-800">Complete Registration Form</h3>
                                         <p class="text-gray-700 mb-3">All participants must complete the official registration form:</p>
-                                        <a href="https://forms.gle/zuM3qs1qtAAB4SdD8" target="_blank" class="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-red-600 transition duration-300 hover-lift">
-                                            <i class="fab fa-google mr-2"></i>
-                                            <span>Access Registration Form</span>
+                                        <a href="" target="_blank" class="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-red-600 transition duration-300 hover-lift">
+                                            <span>Register Here</span>
                                         </a>
                                     </div>
                                 </div>
@@ -143,8 +142,8 @@
                         <div class="bg-white rounded-xl shadow-lg p-6 sticky top-24 border border-gray-200">
                             <h3 class="text-xl font-bold text-primary mb-6">Quick Links</h3>
                             <div class="space-y-4">
-                                <a href="https://forms.gle/zuM3qs1qtAAB4SdD8" target="_blank" class="flex items-center p-4 bg-primary bg-opacity-5 rounded-lg hover:bg-primary hover:bg-opacity-10 transition duration-300 border border-primary border-opacity-20">
-                                    <i class="fab fa-google text-primary text-xl mr-3"></i>
+                                <a href="" target="_blank" class="flex items-center p-4 bg-primary bg-opacity-5 rounded-lg hover:bg-primary hover:bg-opacity-10 transition duration-300 border border-primary border-opacity-20">
+                                    <i class="fas fa-user-plus text-primary text-xl mr-3"></i>
                                     <div>
                                         <h4 class="font-semibold text-gray-800">Registration Form</h4>
                                         <p class="text-sm text-gray-600">Complete your registration</p>

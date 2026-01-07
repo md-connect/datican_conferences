@@ -4,7 +4,7 @@
 
 @section('content')
 <!-- Image Slider with Continuous Zoom -->
-<div class="relative h-[500px] md:h-[700px] overflow-hidden">
+<div class="relative h-[400px] md:h-[600px] overflow-hidden">
     <!-- Slide 1 -->
     <div class="absolute inset-0 slide active">
         <img src="{{ asset('images/general/datican-people-1.JPG') }}" 
@@ -174,49 +174,74 @@
             </div>
         </div>
     </div>
-    <!-- Keynote Speakers -->
+
+<!-- Special Guests -->
 <div class="py-16 bg-gray-50">
     <div class="container mx-auto px-4">
-        <h2 class="text-3xl font-bold text-center mb-12 text-primary">Special Guests</h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <!-- Speaker 1 -->
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover-lift">
-                <div class="w-32 h-32 mx-auto mb-4  overflow-hidden  border-primary">
-                    <img src="{{ asset('images/speakers/aribisala.jpg') }}" alt="Speaker 1" class="w-full h-full object-cover">
+        <h2 class="text-3xl font-bold text-center mb-8 text-primary">Special Guests</h2>
+        
+        <!-- Single card container -->
+        <div class="bg-white rounded-xl p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Guest 1 -->
+                <div class="text-center">
+                    <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
+                        <img src="{{ asset('images/speakers/fred.jpg') }}" alt="Prof. Fred Howard" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm font-bold text-gray-800 mb-1">Keynote Speaker</p>
+                    <h3 class="text-lg font-bold mb-1 text-primary relative">
+                        Prof. Frederick Howard, MD
+                        <div class="w-12 h-0.5 bg-primary mx-auto mt-1"></div>
+                    </h3>
+                    <p class="text-gray-700 text-sm mt-2">Assistant Professor of Medicine<br>
+                       University of Chicago, USA</p>
                 </div>
-                <h3 class="text-xl font-bold mb-2 text-primary">Dr. John Akintayo</h3>
-                <p class="text-gray-600 mb-3">Scientific Committee Chair</p>
-                <p class="text-gray-700 text-sm">Expert in AI and Medical Imaging</p>
-            </div>
-            
-            <!-- Speaker 2 -->
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover-lift">
-                <div class="w-32 h-32 mx-auto mb-4 overflow-hidden border-primary">
-                    <img src="{{ asset('images/speakers/olopade.jpg') }}" alt="Speaker 2" class="w-full h-full object-cover">
+                
+                <!-- Guest 2 -->
+                <div class="text-center">
+                    <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
+                        <img src="{{ asset('images/speakers/olopade.jpg') }}" alt="Prof. Funmi Olopade" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm font-bold text-gray-800 mb-1">Chairman, Steering Committee</p>
+                    <h3 class="text-lg font-bold mb-1 text-primary relative">
+                        Prof. Olufunmilayo I. Olopade MD, FACP
+                        <div class="w-12 h-0.5 bg-primary mx-auto mt-1"></div>
+                    </h3>
+                    <p class="text-gray-700 text-sm mt-2">Professor of Medicine, Professor of Human Genetics
+                        <br>
+                        Director, Center for Clinical Cancer Genetics and Global Health
+                        <br>University of Chicago, USA</p>
                 </div>
-                <h3 class="text-xl font-bold mb-2 text-primary">Prof. Fred Howard</h3>
-                <p class="text-gray-600 mb-3">DATICA Director</p>
-                <p class="text-gray-700 text-sm">Leading Data Science Researcher</p>
-            </div>
-            
-            <!-- Speaker 3 -->
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover-lift">
-                <div class="w-32 h-32 mx-auto mb-4 overflow-hidden border-primary">
-                    <img src="{{ asset('images/speakers/sammet.jpg') }}" alt="Speaker 3" class="w-full h-full object-cover">
+                
+                <!-- Guest 3 -->
+                <div class="text-center">
+                    <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
+                        <img src="{{ asset('images/speakers/aribisala.jpg') }}" alt="Prof. Benjamin Aribisala" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm font-bold text-gray-800 mb-1">Chief Host/Program Director</p>
+                    <h3 class="text-lg font-bold mb-1 text-primary relative">
+                        Prof. Benjamin Aribisala PhD, MBCS, MCPN, FIDPM
+                        <div class="w-12 h-0.5 bg-primary mx-auto mt-1"></div>
+                    </h3>
+                    <p class="text-gray-700 text-sm mt-2">Professor of Computer Science<br>
+                      Department of Computer Science<br>  
+                      Lagos State University, Ojo, Lagos, Nigeria</p>
                 </div>
-                <h3 class="text-xl font-bold mb-2 text-primary">Dr. Birali Runesha</h3>
-                <p class="text-gray-600 mb-3">DATICA Director</p>
-                <p class="text-gray-700 text-sm">Healthcare Technology Innovator</p>
-            </div>
 
-            <!-- Speaker 4 -->
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover-lift">
-                <div class="w-32 h-32 mx-auto mb-4 overflow-hidden border-primary">
-                    <img src="{{ asset('images/speakers/pearson.jpg') }}" alt="Speaker 4" class="w-full h-full object-cover">
+                <!-- Guest 4 -->
+                <div class="text-center">
+                    <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
+                        <img src="{{ asset('images/speakers/prof-ogunde.jpg') }}" alt="Bayo Mohammed Onimode" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm font-bold text-gray-800 mb-1">LOC Chairman</p>
+                    <h3 class="text-lg font-bold mb-1 text-primary relative">
+                        Prof. Adewale Opeoluwa Ogunde
+                        <div class="w-12 h-0.5 bg-primary mx-auto mt-1"></div>
+                    </h3>
+                    <p class="text-gray-700 text-sm mt-2">Professor of Computer Science <br> 
+                      Department of Computer Science<br>  
+                      Redeemer's University, Ede, Osun State, Nigeria</p>
                 </div>
-                <h3 class="text-xl font-bold mb-2 text-primary">Dr. Birali Runesha</h3>
-                <p class="text-gray-600 mb-3">DATICA Director</p>
-                <p class="text-gray-700 text-sm">Healthcare Technology Innovator</p>
             </div>
         </div>
     </div>
