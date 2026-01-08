@@ -134,7 +134,7 @@
                     <div class="flex items-center justify-between border-b pb-4">
                         <div class="flex items-center">
                             <div class="bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-lg mr-4">
-                                <span class="font-bold">Jan 1</span>
+                                <span class="font-bold">Jan 7</span>
                             </div>
                             <span class="font-medium text-gray-800">Conference Announcement</span>
                         </div>
@@ -160,6 +160,15 @@
                         </div>
                         <span class="text-gray-600">2026</span>
                     </div>
+                    <div class="flex items-center justify-between border-b pb-4">
+                        <div class="flex items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-lg mr-4">
+                                <span class="font-bold">May 1</span>
+                            </div>
+                            <span class="font-medium text-gray-800">Reviewer's Feedback Returned</span>
+                        </div>
+                        <span class="text-gray-600">2026</span>
+                    </div>
                     
                     <div class="flex items-center justify-between border-b pb-4">
                         <div class="flex items-center">
@@ -167,6 +176,16 @@
                                 <span class="font-bold">May 13-14</span>
                             </div>
                             <span class="font-medium text-gray-800">Conference Dates</span>
+                        </div>
+                        <span class="text-gray-600">2026</span>
+                    </div>
+
+                    <div class="flex items-center justify-between border-b pb-4">
+                        <div class="flex items-center">
+                            <div class="bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-lg mr-4">
+                                <span class="font-bold">May 21</span>
+                            </div>
+                            <span class="font-medium text-gray-800">Camera-Ready Paper Submission</span>
                         </div>
                         <span class="text-gray-600">2026</span>
                     </div>
