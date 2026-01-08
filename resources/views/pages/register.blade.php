@@ -30,7 +30,7 @@
                                     <div>
                                         <h3 class="text-lg font-semibold mb-2 text-gray-800">Complete Registration Form</h3>
                                         <p class="text-gray-700 mb-3">All participants must complete the official registration form:</p>
-                                        <a href="{{ route('conference.registration') }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-red-600 transition duration-300 hover-lift">
+                                        <a href="#" target="_blank" class="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-red-600 transition duration-300 hover-lift">
                                             <i class="fas fa-user-plus text-white text-xl mr-3"></i>
                                             <span>Register Here</span>
                                         </a>

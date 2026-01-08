@@ -202,9 +202,9 @@
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <p class="text-blue-800 font-medium mb-2">For paper presenters:</p>
                             <p class="text-blue-700 mb-2">Please, submit your abstract to the link below:</p>
-                            <a href="https://easychair.com/first_datican_conference" target="_blank"
+                            <a href="https://cmt3.research.microsoft.com/" target="_blank"
                                 class="inline-flex items-center text-primary hover:text-secondary font-semibold">
-                                <span>easychair.com/first_datican_conference</span>
+                                <span>cmt3.research.microsoft.com</span>
                                 <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                 </svg>
