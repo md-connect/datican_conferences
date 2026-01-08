@@ -9,15 +9,18 @@ Route::get('/committees', [PageController::class, 'committees'])->name('committe
 Route::get('/register', [PageController::class, 'register'])->name('register');
 Route::get('/acknowledgement', [PageController::class, 'acknowledgement'])->name('acknowledgement');
 
-Route::get('register/2026-conference-registration', [ConferenceRegistrationController::class, 'showRegistrationForm'])
-    ->name('conference.registration');
+// Conference Registration Routes (separate from PageController register)
+Route::prefix('conference')->group(function () {
+    Route::get('2026-registration', [\App\Http\Controllers\ConferenceRegistrationController::class, 'showRegistrationForm'])
+        ->name('conference.registration');
+    
+    Route::post('2026-registration', [\App\Http\Controllers\ConferenceRegistrationController::class, 'register'])
+        ->name('conference.register');
+    
+    Route::get('success', [\App\Http\Controllers\ConferenceRegistrationController::class, 'success'])
+        ->name('conference.registration.success');
 
-Route::post('register/2026-conference-registration', [ConferenceRegistrationController::class, 'register'])
-    ->name('conference.register');
-
-Route::get('register/2026-conference-registration/success', [ConferenceRegistrationController::class, 'success'])
-    ->name('conference.registration.success');
-
-Route::get('register/2026-conference-registration/stats', [ConferenceRegistrationController::class, 'stats'])
-    ->name('conference.registration.stats')
-    ->middleware('auth'); // Protect stats page with auth if needed
+    Route::get('stats', [\App\Http\Controllers\ConferenceRegistrationController::class, 'stats'])
+        ->name('conference.registration.stats')
+        ->middleware('auth');
+});

@@ -10,7 +10,7 @@ class ConferenceRegistrationController extends Controller
 {
     public function showRegistrationForm()
     {
-        return view('conference-registration');
+        return view('pages.conference-registration');
     }
 
     public function register(Request $request)
@@ -51,7 +51,7 @@ class ConferenceRegistrationController extends Controller
             return redirect()->route('conference.registration');
         }
 
-        return view('registration-success');
+        return view('pages.registration-success');
     }
 
     public function stats()
@@ -74,7 +74,7 @@ class ConferenceRegistrationController extends Controller
             ];
         });
 
-        return view('registration-stats', compact('stats'));
+        return view('pages.registration-stats', compact('stats'));
     }
 
     private function updateRegistrationStats()

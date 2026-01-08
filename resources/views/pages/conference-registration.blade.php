@@ -103,6 +103,19 @@
                         @enderror
                     </div>
 
+                    <!-- Institution -->
+                    <div class="mb-6">
+                        <label for="institution" class="block text-gray-700 font-medium mb-2">
+                            Institution/Organization *
+                        </label>
+                        <input type="text" name="institution" id="institution" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            placeholder="Enter your institution or organization">
+                        @error('institution')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Gender -->
                     <div class="mb-6">
                         <label class="block text-gray-700 font-medium mb-2">
@@ -148,7 +161,7 @@
                     </div>
 
                     <!-- DATICAN Status (Conditional) -->
-                    <div class="mb-6 hidden" id="datican_status_container">
+                    <div class="mb-6 hidden" id="datican_status_section">
                         <label for="datican_status" class="block text-gray-700 font-medium mb-2">
                             DATICAN Status *
                             <span class="text-sm text-gray-500">PI, Faculty, Trainer, PhD Student, MSc. Student</span>
@@ -221,31 +234,44 @@
     </div>
 </div>
 
-@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Get DOM elements
         const daticanMemberYes = document.getElementById('datican_member_yes');
         const daticanMemberNo = document.getElementById('datican_member_no');
-        const daticanStatusContainer = document.getElementById('datican_status_container');
+        const daticanStatusSection = document.getElementById('datican_status_section');
         const daticanStatusSelect = document.getElementById('datican_status');
-
+        
+        // Function to toggle DATICAN Status section
         function toggleDaticanStatus() {
             if (daticanMemberYes.checked) {
-                daticanStatusContainer.classList.remove('hidden');
+                // Show the DATICAN Status section
+                daticanStatusSection.classList.remove('hidden');
                 daticanStatusSelect.required = true;
             } else {
-                daticanStatusContainer.classList.add('hidden');
+                // Hide the DATICAN Status section
+                daticanStatusSection.classList.add('hidden');
                 daticanStatusSelect.required = false;
                 daticanStatusSelect.value = '';
             }
         }
-
+        
+        // Add event listeners to both radio buttons
         daticanMemberYes.addEventListener('change', toggleDaticanStatus);
         daticanMemberNo.addEventListener('change', toggleDaticanStatus);
-
+        
         // Initialize on page load
         toggleDaticanStatus();
+        
+        // Optional: Add form validation before submission
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            // If DATICAN Member is Yes but status is not selected
+            if (daticanMemberYes.checked && !daticanStatusSelect.value) {
+                e.preventDefault();
+                alert('Please select your DATICAN Status');
+                daticanStatusSelect.focus();
+            }
+        });
     });
 </script>
-@endpush
 @endsection

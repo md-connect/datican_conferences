@@ -133,8 +133,8 @@
                 <div class="hidden md:flex space-x-8">
                     <a href="{{ route('home') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('home') ? 'text-primary border-b-2 border-primary' : '' }}">Home</a>
                     <a href="{{ route('call-for-papers') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('call-for-papers') ? 'text-primary border-b-2 border-primary' : '' }}">Call for Papers</a>
-                    <a href="{{ route('acknowledgement') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('acknowledgement') ? 'text-primary border-b-2 border-primary' : '' }}">Acknowledgement</a>
                     <a href="{{ route('committees') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('committees') ? 'text-primary border-b-2 border-primary' : '' }}">Committee</a>
+                    <a href="{{ route('acknowledgement') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('acknowledgement') ? 'text-primary border-b-2 border-primary' : '' }}">Acknowledgement</a>
                     <a href="{{ route('register') }}" class="bg-accent text-white px-6 py-2 rounded-lg hover:bg-red-600 font-medium">Register</a>
                 </div>
             </div>
@@ -144,8 +144,8 @@
                 <div class="flex flex-col space-y-4">
                     <a href="{{ route('home') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('home') ? 'text-primary' : '' }}">Home</a>
                     <a href="{{ route('call-for-papers') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('call-for-papers') ? 'text-primary' : '' }}">Call for Papers</a>
-                    <a href="{{ route('acknowledgement') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('acknowledgement') ? 'text-primary' : '' }}">Acknowledgement</a>
                     <a href="{{ route('committees') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('committees') ? 'text-primary' : '' }}">Committee</a>
+                    <a href="{{ route('acknowledgement') }}" class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('acknowledgement') ? 'text-primary' : '' }}">Acknowledgement</a>
                     <a href="{{ route('register') }}" class="bg-accent text-white px-6 py-2 rounded-lg hover:bg-red-600 font-medium text-center">Register</a>
                 </div>
             </div>
