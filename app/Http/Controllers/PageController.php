@@ -25,4 +25,8 @@ class PageController extends Controller
     {
         return view('pages.register');
     }
+    public function acknowledgement()
+    {
+        return view('pages.acknowledgement');
+    }
 }
