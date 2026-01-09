@@ -183,7 +183,7 @@
                 
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Contact Us</h4>
-                    <p class="text-gray-300 mb-2"><i class="fas fa-envelope mr-2"></i> info@datican.org</p>
+                    <p class="text-gray-300 mb-2"><i class="fas fa-envelope mr-2"></i> manager.datican@gmail.com</p>
                     <p class="text-gray-300"><i class="fas fa-calendar-alt mr-2"></i> 13th - 14th May, 2026</p>
                 </div>
             </div>

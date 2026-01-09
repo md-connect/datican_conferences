@@ -157,8 +157,14 @@
                                 <span class="font-bold">1</span>
                             </div>
                             <div>
-                                <h3 class="text-lg font-semibold mb-2 text-gray-800">Complete Google Form</h3>
-                                <p class="text-gray-700">Presenters, Authors and Participants are to complete a Google form to register their interest.</p>
+                                <h3 class="text-lg font-semibold mb-2 text-gray-800">Complete Registration Form</h3>
+                                <p class="text-gray-700">Presenters, Authors and Participants are to complete a Registration form to register their interest.</p>
+                                <div class="mt-3">
+                                    <a href="" target="_blank" class="inline-flex items-center text-accent hover:text-secondary">
+                                        <i class="fas fa-external-link-alt mr-2"></i>
+                                        <span>Registration Form</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         
@@ -167,12 +173,13 @@
                                 <span class="font-bold">2</span>
                             </div>
                             <div>
-                                <h3 class="text-lg font-semibold mb-2 text-gray-800">Submit Abstract via EasyChair</h3>
-                                <p class="text-gray-700">From the Google form, authors will receive a link to redirect to EasyChair to submit their abstracts.</p>
+                                <h3 class="text-lg font-semibold mb-2 text-gray-800">Submit Abstract via Microsoft CMT service</h3>
+                                <p class="text-gray-700">Use the link provided above to Submit abstracts on Microsoft CMT Portal.</p>
+                                <p class="text-gray-700">Conference Name: DATICAN Conference 2026</p>
                                 <div class="mt-3">
-                                    <a href="https://easychair.org" target="_blank" class="inline-flex items-center text-primary hover:text-secondary">
+                                    <a href="https://cmt3.research.microsoft.com/" target="_blank" class="inline-flex items-center text-accent hover:text-secondary">
                                         <i class="fas fa-external-link-alt mr-2"></i>
-                                        <span>EasyChair Submission Portal (Link will be activated)</span>
+                                        <span>Microsoft CMT Submission Portal </span>
                                     </a>
                                 </div>
                             </div>
