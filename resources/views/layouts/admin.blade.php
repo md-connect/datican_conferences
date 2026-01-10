@@ -23,8 +23,8 @@
         [x-cloak] { display: none !important; }
         .sidebar-link.active {
             background-color: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-            border-right: 4px solid #3b82f6;
+            color: #2C3E50;
+            border-right: 4px solid #2C3E50;
         }
         .sidebar-link:hover {
             background-color: rgba(59, 130, 246, 0.05);
@@ -69,12 +69,8 @@
             
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-                <div class="flex items-center">
-                    <div class="bg-primary p-2 rounded-lg">
-                        <i class="fas fa-cogs text-white text-xl"></i>
-                    </div>
-                    <span class="ml-3 text-lg font-semibold text-gray-800">DATICAN Admin</span>
-                </div>
+                <img src="{{ asset('images/logo/datican_logo.png') }}" alt="DATICAN Logo" class="w-auto h-10">
+
                 <button @click="sidebarOpen = !sidebarOpen; mobileSidebarOpen = false" 
                         class="md:hidden text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times text-xl"></i>
@@ -125,7 +121,7 @@
                         <a href="{{ route('admin.export.registrations') }}" 
                            class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200">
                             <i class="fas fa-file-export text-gray-500 w-6"></i>
-                            <span class="ml-3 font-medium">Export Data</span>
+                            <span class="ml-3 font-medium">Export All</span>
                         </a>
                     </li>
                     
@@ -202,12 +198,7 @@
                             <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
                         </button>
                         
-                        <!-- Quick Export -->
-                        <a href="{{ route('admin.export.registrations') }}" 
-                           class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200">
-                            <i class="fas fa-file-excel mr-2"></i>
-                            Export
-                        </a>
+                        
                         
                         <!-- User dropdown -->
                         <div class="relative" x-data="{ open: false }">

@@ -153,7 +153,7 @@
             <!-- Gender Distribution -->
             <div class="bg-white shadow rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Gender Distribution</h3>
-                <div class="h-64 flex items-center justify-center">
+                <div class="h-64 flex items-center justify-center text">
                     @php
                         $male = $stats['gender_distribution']['Male'] ?? 0;
                         $female = $stats['gender_distribution']['Female'] ?? 0;
@@ -174,7 +174,7 @@
                         </div>
                         <div class="w-64 h-4 bg-gray-200 rounded-full overflow-hidden">
                             <div class="h-full flex">
-                                <div class="bg-blue-600" style="width: {{ $malePercent }}%"></div>
+                                <div class="bg-gray-600" style="width: {{ $malePercent }}%"></div>
                                 <div class="bg-pink-600" style="width: {{ $femalePercent }}%"></div>
                             </div>
                         </div>
