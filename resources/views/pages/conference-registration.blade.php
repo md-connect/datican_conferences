@@ -202,7 +202,7 @@
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <p class="text-blue-800 font-medium mb-2">For paper presenters:</p>
                             <p class="text-blue-700 mb-2">Please, submit your abstract to the link below:</p>
-                            <a href="https://cmt3.research.microsoft.com/" target="_blank"
+                            <a href="https://cmt3.research.microsoft.com/DATICANCONF2026" target="_blank"
                                 class="inline-flex items-center text-primary hover:text-secondary font-semibold">
                                 <span>cmt3.research.microsoft.com</span>
                                 <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">

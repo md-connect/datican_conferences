@@ -48,7 +48,7 @@
                         class="bg-primary hover:bg-secondary text-white font-medium py-3 px-6 rounded-lg transition duration-300">
                         Return to Home
                     </a>
-                    <a href="https://cmt3.research.microsoft.com/" target="_blank"
+                    <a href="https://cmt3.research.microsoft.com/DATICANCONF2026" target="_blank"
                         class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-3 px-6 rounded-lg transition duration-300">
                         Submit Abstract on Microsoft CMT service
                     </a>

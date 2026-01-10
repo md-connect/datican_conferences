@@ -174,10 +174,10 @@
                             </div>
                             <div>
                                 <h3 class="text-lg font-semibold mb-2 text-gray-800">Submit Abstract via Microsoft CMT service</h3>
-                                <p class="text-gray-700">Use the link provided above to Submit abstracts on Microsoft CMT Portal.</p>
+                                <p class="text-gray-700">Use the link provided below to Submit abstracts on Microsoft CMT Portal.</p>
                                 <p class="text-gray-700">Conference Name: DATICAN Conference 2026</p>
                                 <div class="mt-3">
-                                    <a href="https://cmt3.research.microsoft.com/" target="_blank" class="inline-flex items-center text-accent hover:text-secondary">
+                                    <a href="https://cmt3.research.microsoft.com/DATICANCONF2026" target="_blank" class="inline-flex items-center text-accent hover:text-secondary">
                                         <i class="fas fa-external-link-alt mr-2"></i>
                                         <span>Microsoft CMT Submission Portal </span>
                                     </a>
