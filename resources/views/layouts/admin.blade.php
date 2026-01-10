@@ -6,6 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title') - DATICAN Admin</title>
+    <link
+        rel="icon"
+        href="{{ asset('images/logo/datican_logo_io.png') }}"
+        type="image/png"
+    >
 
     <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap">
