@@ -42,10 +42,13 @@ Route::prefix('admin')->group(function () {
         Route::get('registrations', [DashboardController::class, 'registrations'])->name('admin.registrations');
         Route::get('registrations/{id}', [DashboardController::class, 'showRegistration'])->name('admin.registration.show');
         
+        // Stats route (moved inside admin prefix)
+        Route::get('stats', [ConferenceRegistrationController::class, 'stats'])
+            ->name('conference.registration.stats');
+        
         // Export Routes
-        Route::get('export/registrations', [RegistrationExportController::class, 'export'])->name('admin.export.registrations');
+        Route::get('export/registrations', [RegistrationExportController::class, 'export'])
+            ->name('admin.export.registrations');
     });
 });
-// Conference Registration Stats (public)
-Route::get('register/stats', [ConferenceRegistrationController::class, 'stats'])
-    ->name('conference.registration.stats');
+

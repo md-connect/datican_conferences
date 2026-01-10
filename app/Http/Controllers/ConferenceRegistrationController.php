@@ -74,7 +74,7 @@ class ConferenceRegistrationController extends Controller
             ];
         });
 
-        return view('pages.registration-stats', compact('stats'));
+        return view('admin.registration-stats', compact('stats'));
     }
 
     private function updateRegistrationStats()

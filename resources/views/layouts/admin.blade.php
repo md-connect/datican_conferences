@@ -128,11 +128,10 @@
                     <!-- Statistics -->
                     <li>
                         <a href="{{ route('conference.registration.stats') }}" 
-                           class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200" target="_blank">
-                            <i class="fas fa-chart-bar text-gray-500 w-6"></i>
-                            <span class="ml-3 font-medium">Statistics</span>
-                            <i class="ml-auto fas fa-external-link-alt text-xs text-gray-400"></i>
-                        </a>
+                            class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200 {{ request()->routeIs('conference.registration.stats') ? 'active' : '' }}">
+                                <i class="fas fa-chart-bar text-gray-500 w-6"></i>
+                                <span class="ml-3 font-medium">Statistics</span>
+                            </a>
                     </li>
                     
                     <!-- Divider -->
