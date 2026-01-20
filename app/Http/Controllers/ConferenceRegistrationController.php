@@ -5,16 +5,52 @@ namespace App\Http\Controllers;
 use App\Models\ConferenceRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class ConferenceRegistrationController extends Controller
 {
     public function showRegistrationForm()
     {
-        return view('pages.conference-registration');
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('info', 'Please login to register for the conference.');
+        }
+        
+        // Check if user already has a registration
+        $existingRegistration = ConferenceRegistration::where('user_id', auth()->id())
+            ->orWhere('email', auth()->user()->email)
+            ->first();
+        
+        if ($existingRegistration) {
+            // Store registration in session for success page
+            session(['existing_registration' => $existingRegistration]);
+            
+            // Show "Already Registered" view instead of redirecting
+            return view('auth.already-registered', compact('existingRegistration'));
+        }
+        
+        return view('auth.conference-registration');
     }
 
     public function register(Request $request)
     {
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('error', 'Please login to register.');
+        }
+        
+        $user = auth()->user();
+        
+        // Check if user already has a registration
+        $existingRegistration = ConferenceRegistration::where('user_id', $user->id)
+            ->orWhere('email', $user->email)
+            ->first();
+        
+        if ($existingRegistration) {
+            return redirect()->route('dashboard')
+                ->with('info', 'You have already registered for DATICAN Conference 2026.');
+        }
+
         $validated = $request->validate([
             'title' => 'required|in:Prof.,Dr.,Mr.,Mrs.,Miss',
             'firstname' => 'required|string|max:100',
@@ -32,6 +68,9 @@ class ConferenceRegistrationController extends Controller
         // Convert Yes/No to boolean
         $validated['is_datican_member'] = $validated['is_datican_member'] === 'Yes';
         $validated['is_presenting_paper'] = $validated['is_presenting_paper'] === 'Yes';
+        
+        // Add user_id to registration
+        $validated['user_id'] = $user->id;
 
         // Store in database
         $registration = ConferenceRegistration::create($validated);
@@ -39,29 +78,42 @@ class ConferenceRegistrationController extends Controller
         // Cache the registration stats
         $this->updateRegistrationStats();
 
-        // Store in session
-        session()->flash('success', 'Registration successful! Thank you for registering for DATICAN CONFERENCE 2026.');
+        // Store registration in session for success page
+        session(['registration' => $registration]);
 
         return redirect()->route('conference.registration.success');
     }
 
     public function success()
     {
-        if (!session('success')) {
+        // Check for existing registration in session (from showRegistrationForm)
+        $existingRegistration = session('existing_registration');
+        if ($existingRegistration) {
+            return view('auth.registration-success', ['registration' => $existingRegistration]);
+        }
+        
+        // Check for new registration in session (from register method)
+        $registration = session('registration');
+        if (!$registration) {
             return redirect()->route('conference.registration');
         }
 
-        return view('pages.registration-success');
+        return view('auth.registration-success', compact('registration'));
     }
 
     public function stats()
     {
+        // Only admins can view stats
+        if (!auth()->check() || !auth()->user()->is_admin) {
+            abort(403, 'Unauthorized access.');
+        }
+        
         // Cache registration stats for 5 minutes
         $stats = Cache::remember('registration_stats', 300, function () {
             return [
                 'total_registrations' => ConferenceRegistration::count(),
-                'total_presenters' => ConferenceRegistration::presentingPapers()->count(),
-                'total_datican_members' => ConferenceRegistration::daticanMembers()->count(),
+                'total_presenters' => ConferenceRegistration::where('is_presenting_paper', true)->count(),
+                'total_datican_members' => ConferenceRegistration::where('is_datican_member', true)->count(),
                 'gender_distribution' => ConferenceRegistration::selectRaw('gender, COUNT(*) as count')
                     ->groupBy('gender')
                     ->pluck('count', 'gender')

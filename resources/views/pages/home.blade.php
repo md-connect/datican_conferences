@@ -105,7 +105,7 @@
         </div>
 
         <!-- CTA -->
-        <a href="#call-for-papers"
+        <a href="{{ route('call-for-papers') }}"
            class="inline-block bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition">
           Call for Papers
         </a>
@@ -114,7 +114,7 @@
       <!-- RIGHT: IMAGE -->
       <div class="relative">
         <img
-          src="{{ asset('images/general/prof-aribisala.JPG') }}"
+          src="{{ asset('images/general/prof-aribisala.png') }}"
           alt="DATICAN Conference"
           class="rounded-xl shadow-xl w-full object-cover"
         />

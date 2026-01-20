@@ -30,7 +30,7 @@
                                     <div>
                                         <h3 class="text-lg font-semibold mb-2 text-gray-800">Complete Registration Form</h3>
                                         <p class="text-gray-700 mb-3">All participants must complete the official registration form:</p>
-                                        <a href="#" target="_blank" class="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-red-600 transition duration-300 hover-lift">
+                                        <a href="{{ route('conference.registration') }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-red-600 transition duration-300 hover-lift">
                                             <i class="fas fa-user-plus text-white text-xl mr-3"></i>
                                             <span>Register Here</span>
                                         </a>
@@ -89,53 +89,7 @@
                             </div>
                         </div>
                         
-                        <!-- Conference Platform Details -->
-                        <div class="bg-white rounded-xl shadow-lg p-8 hover-lift">
-                            <h2 class="text-2xl font-bold text-primary mb-6">Virtual Conference Platform</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="bg-primary bg-opacity-5 p-6 rounded-lg border border-primary border-opacity-20">
-                                    <div class="flex items-center mb-4">
-                                        <div class="bg-primary p-3 rounded-lg mr-4">
-                                            <i class="fas fa-video text-white text-xl"></i>
-                                        </div>
-                                        <h3 class="text-lg font-semibold text-gray-800">Zoom Conference</h3>
-                                    </div>
-                                    <p class="text-gray-700">Primary platform for main sessions and breakout rooms. Links will be provided after registration.</p>
-                                </div>
-                                
-                                <div class="bg-red-50 p-6 rounded-lg border border-red-100">
-                                    <div class="flex items-center mb-4">
-                                        <div class="bg-red-100 p-3 rounded-lg mr-4">
-                                            <i class="fab fa-youtube text-red-600 text-xl"></i>
-                                        </div>
-                                        <h3 class="text-lg font-semibold text-gray-800">YouTube Live</h3>
-                                    </div>
-                                    <p class="text-gray-700">Live streaming for extended capacity. Public access to main sessions.</p>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-6 p-6 bg-primary bg-opacity-5 rounded-lg border border-primary border-opacity-20">
-                                <h3 class="text-lg font-semibold mb-4 text-primary">What You'll Get:</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-certificate text-primary mr-3"></i>
-                                        <span class="text-gray-700">Digital Certificate of Participation</span>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-video text-primary mr-3"></i>
-                                        <span class="text-gray-700">Access to Session Recordings</span>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-file-pdf text-primary mr-3"></i>
-                                        <span class="text-gray-700">Conference Proceedings</span>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-comments text-primary mr-3"></i>
-                                        <span class="text-gray-700">Networking Opportunities</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        
                     </div>
                     
                     <!-- Sidebar -->

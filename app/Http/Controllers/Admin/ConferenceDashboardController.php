@@ -7,14 +7,14 @@ use App\Models\ConferenceRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
-class DashboardController extends Controller
+class ConferenceDashboardController extends Controller
 {
     public function dashboard()
     {
         $stats = $this->getRegistrationStats();
         $recentRegistrations = ConferenceRegistration::latest()->take(10)->get();
-        
-        return view('admin.dashboard', compact('stats', 'recentRegistrations'));
+
+        return view('dashboard.admin', compact('stats', 'recentRegistrations'));
     }
 
     public function registrations(Request $request)

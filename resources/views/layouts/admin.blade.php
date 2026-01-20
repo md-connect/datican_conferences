@@ -97,7 +97,7 @@
                 <ul class="space-y-1">
                     <!-- Dashboard -->
                     <li>
-                        <a href="{{ route('admin.dashboard') }}" 
+                        <a href="{{ route('admin.conference.dashboard') }}" 
                            class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                             <i class="fas fa-tachometer-alt text-gray-500 w-6"></i>
                             <span class="ml-3 font-medium">Dashboard</span>

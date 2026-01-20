@@ -6,6 +6,7 @@
 <div class="min-h-screen bg-gray-50 py-12">
     <div class="container mx-auto px-4">
         <div class="max-w-4xl mx-auto">
+            
             <!-- Header -->
             <div class="text-center mb-10">
                 <h1 class="text-4xl font-bold text-primary mb-4">DATICAN CONFERENCE 2026</h1>
@@ -13,7 +14,91 @@
                 <p class="text-gray-600">Please fill out all required fields to complete your registration</p>
             </div>
 
-            <!-- Registration Form -->
+            <!-- Check for existing registration -->
+            @php
+                $existingRegistration = null;
+                if (auth()->check()) {
+                    $existingRegistration = \App\Models\ConferenceRegistration::where('user_id', auth()->id())
+                        ->orWhere('email', auth()->user()->email)
+                        ->first();
+                }
+            @endphp
+
+            @if($existingRegistration)
+            <!-- Already Registered Message -->
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <div class="text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">You're Already Registered!</h3>
+                        <p class="text-gray-600 mb-6">You have already registered for DATICAN Conference 2026.</p>
+                    </div>
+                    
+                    <!-- Registration Details -->
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h4 class="font-semibold text-gray-700 mb-4">Your Registration Details:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                            <div>
+                                <p class="text-sm text-gray-500">Name</p>
+                                <p class="font-medium">{{ $existingRegistration->title }} {{ $existingRegistration->firstname }} {{ $existingRegistration->lastname }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Email</p>
+                                <p class="font-medium">{{ $existingRegistration->email }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Institution</p>
+                                <p class="font-medium">{{ $existingRegistration->institution }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Registration Date</p>
+                                <p class="font-medium">{{ $existingRegistration->created_at->format('F d, Y') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">DATICAN Member</p>
+                                <p class="font-medium">{{ $existingRegistration->is_datican_member ? 'Yes' : 'No' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Presenting Paper</p>
+                                <p class="font-medium">{{ $existingRegistration->is_presenting_paper ? 'Yes' : 'No' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="{{ route('dashboard') }}" 
+                           class="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-secondary transition-colors">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Go to Dashboard
+                        </a>
+                        
+                        @if($existingRegistration->is_presenting_paper)
+                        <a href="{{ route('papers.create') }}" 
+                           class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Submit Paper
+                        </a>
+                        @endif
+                        
+                        <a href="{{ route('conference.registration.success') }}" 
+                           class="px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-file-invoice mr-2"></i>View Registration Confirmation
+                        </a>
+                    </div>
+                    
+                    <!-- Contact Information -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <p class="text-gray-600 text-sm">
+                            Need to update your registration? Contact conference organizers at 
+                            <a href="mailto:manager.datican@gmail.com" class="text-primary hover:text-secondary font-medium">
+                                manager.datican@gmail.com
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            @else
+            <!-- Registration Form (only shown if not already registered) -->
             <div class="bg-white rounded-xl shadow-lg p-8">
                 <form id="registrationForm" action="{{ route('conference.register') }}" method="POST">
                     @csrf
@@ -46,7 +131,8 @@
                             </label>
                             <input type="text" name="firstname" id="firstname" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Enter your first name">
+                                placeholder="Enter your first name"
+                                value="{{ old('firstname', auth()->user()->first_name ?? '') }}">
                             @error('firstname')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -58,7 +144,8 @@
                             </label>
                             <input type="text" name="middlename" id="middlename"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Enter your middle name">
+                                placeholder="Enter your middle name"
+                                value="{{ old('middlename') }}">
                             @error('middlename')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -70,7 +157,8 @@
                             </label>
                             <input type="text" name="lastname" id="lastname" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                placeholder="Enter your last name">
+                                placeholder="Enter your last name"
+                                value="{{ old('lastname', auth()->user()->last_name ?? '') }}">
                             @error('lastname')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -84,7 +172,8 @@
                         </label>
                         <input type="email" name="email" id="email" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                            placeholder="example@domain.com">
+                            placeholder="example@domain.com"
+                            value="{{ old('email', auth()->user()->email ?? '') }}">
                         @error('email')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -97,7 +186,8 @@
                         </label>
                         <input type="tel" name="phone_number" id="phone_number" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                            placeholder="+1234567890">
+                            placeholder="+1234567890"
+                            value="{{ old('phone_number') }}">
                         @error('phone_number')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -110,7 +200,8 @@
                         </label>
                         <input type="text" name="institution" id="institution" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                            placeholder="Enter your institution or organization">
+                            placeholder="Enter your institution or organization"
+                            value="{{ old('institution') }}">
                         @error('institution')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -124,12 +215,14 @@
                         <div class="flex space-x-6">
                             <label class="inline-flex items-center">
                                 <input type="radio" name="gender" value="Male" required
-                                    class="text-primary focus:ring-primary">
+                                    class="text-primary focus:ring-primary"
+                                    {{ old('gender') == 'Male' ? 'checked' : '' }}>
                                 <span class="ml-2">Male</span>
                             </label>
                             <label class="inline-flex items-center">
                                 <input type="radio" name="gender" value="Female" required
-                                    class="text-primary focus:ring-primary">
+                                    class="text-primary focus:ring-primary"
+                                    {{ old('gender') == 'Female' ? 'checked' : '' }}>
                                 <span class="ml-2">Female</span>
                             </label>
                         </div>
@@ -145,13 +238,15 @@
                         </label>
                         <div class="flex space-x-6">
                             <label class="inline-flex items-center">
-                                <input type="radio" name="is_datican_member" value="Yes" required
-                                    class="text-primary focus:ring-primary" id="datican_member_yes">
+                                <input type="radio" name="is_datican_member" value="1" required
+                                    class="text-primary focus:ring-primary" id="datican_member_yes"
+                                    {{ old('is_datican_member') == '1' ? 'checked' : '' }}>
                                 <span class="ml-2">Yes</span>
                             </label>
                             <label class="inline-flex items-center">
-                                <input type="radio" name="is_datican_member" value="No" required
-                                    class="text-primary focus:ring-primary" id="datican_member_no">
+                                <input type="radio" name="is_datican_member" value="0" required
+                                    class="text-primary focus:ring-primary" id="datican_member_no"
+                                    {{ old('is_datican_member') == '0' ? 'checked' : '' }}>
                                 <span class="ml-2">No</span>
                             </label>
                         </div>
@@ -161,7 +256,7 @@
                     </div>
 
                     <!-- DATICAN Status (Conditional) -->
-                    <div class="mb-6 hidden" id="datican_status_section">
+                    <div class="mb-6 {{ old('is_datican_member') != '1' ? 'hidden' : '' }}" id="datican_status_section">
                         <label for="datican_status" class="block text-gray-700 font-medium mb-2">
                             DATICAN Status *
                             <span class="text-sm text-gray-500">PI, Faculty, Trainer, PhD Student, MSc. Student</span>
@@ -169,11 +264,11 @@
                         <select name="datican_status" id="datican_status"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                             <option value="">Select Status</option>
-                            <option value="PI">PI</option>
-                            <option value="Faculty">Faculty</option>
-                            <option value="Trainer">Trainer</option>
-                            <option value="PhD Student">PhD Student</option>
-                            <option value="MSc. Student">MSc. Student</option>
+                            <option value="PI" {{ old('datican_status') == 'PI' ? 'selected' : '' }}>PI</option>
+                            <option value="Faculty" {{ old('datican_status') == 'Faculty' ? 'selected' : '' }}>Faculty</option>
+                            <option value="Trainer" {{ old('datican_status') == 'Trainer' ? 'selected' : '' }}>Trainer</option>
+                            <option value="PhD Student" {{ old('datican_status') == 'PhD Student' ? 'selected' : '' }}>PhD Student</option>
+                            <option value="MSc. Student" {{ old('datican_status') == 'MSc. Student' ? 'selected' : '' }}>MSc. Student</option>
                         </select>
                         @error('datican_status')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -187,13 +282,15 @@
                         </label>
                         <div class="flex space-x-6 mb-4">
                             <label class="inline-flex items-center">
-                                <input type="radio" name="is_presenting_paper" value="Yes" required
-                                    class="text-primary focus:ring-primary">
+                                <input type="radio" name="is_presenting_paper" value="1" required
+                                    class="text-primary focus:ring-primary"
+                                    {{ old('is_presenting_paper') == '1' ? 'checked' : '' }}>
                                 <span class="ml-2">Yes</span>
                             </label>
                             <label class="inline-flex items-center">
-                                <input type="radio" name="is_presenting_paper" value="No" required
-                                    class="text-primary focus:ring-primary">
+                                <input type="radio" name="is_presenting_paper" value="0" required
+                                    class="text-primary focus:ring-primary"
+                                    {{ old('is_presenting_paper') == '0' ? 'checked' : '' }}>
                                 <span class="ml-2">No</span>
                             </label>
                         </div>
@@ -230,48 +327,53 @@
                 <p>All fields marked with * are required.</p>
                 <p class="mt-2">Need help? Contact conference organizers at info@datican2026.org</p>
             </div>
+            
+            @endif {{-- End of registration check --}}
         </div>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Get DOM elements
-        const daticanMemberYes = document.getElementById('datican_member_yes');
-        const daticanMemberNo = document.getElementById('datican_member_no');
-        const daticanStatusSection = document.getElementById('datican_status_section');
-        const daticanStatusSelect = document.getElementById('datican_status');
-        
-        // Function to toggle DATICAN Status section
-        function toggleDaticanStatus() {
-            if (daticanMemberYes.checked) {
-                // Show the DATICAN Status section
-                daticanStatusSection.classList.remove('hidden');
-                daticanStatusSelect.required = true;
-            } else {
-                // Hide the DATICAN Status section
-                daticanStatusSection.classList.add('hidden');
-                daticanStatusSelect.required = false;
-                daticanStatusSelect.value = '';
+        // Only run this script if registration form exists (user is not already registered)
+        if (document.getElementById('datican_member_yes')) {
+            // Get DOM elements
+            const daticanMemberYes = document.getElementById('datican_member_yes');
+            const daticanMemberNo = document.getElementById('datican_member_no');
+            const daticanStatusSection = document.getElementById('datican_status_section');
+            const daticanStatusSelect = document.getElementById('datican_status');
+            
+            // Function to toggle DATICAN Status section
+            function toggleDaticanStatus() {
+                if (daticanMemberYes.checked) {
+                    // Show the DATICAN Status section
+                    daticanStatusSection.classList.remove('hidden');
+                    daticanStatusSelect.required = true;
+                } else {
+                    // Hide the DATICAN Status section
+                    daticanStatusSection.classList.add('hidden');
+                    daticanStatusSelect.required = false;
+                    daticanStatusSelect.value = '';
+                }
             }
+            
+            // Add event listeners to both radio buttons
+            daticanMemberYes.addEventListener('change', toggleDaticanStatus);
+            daticanMemberNo.addEventListener('change', toggleDaticanStatus);
+            
+            // Initialize on page load
+            toggleDaticanStatus();
+            
+            // Optional: Add form validation before submission
+            document.getElementById('registrationForm').addEventListener('submit', function(e) {
+                // If DATICAN Member is Yes but status is not selected
+                if (daticanMemberYes.checked && !daticanStatusSelect.value) {
+                    e.preventDefault();
+                    alert('Please select your DATICAN Status');
+                    daticanStatusSelect.focus();
+                }
+            });
         }
-        
-        // Add event listeners to both radio buttons
-        daticanMemberYes.addEventListener('change', toggleDaticanStatus);
-        daticanMemberNo.addEventListener('change', toggleDaticanStatus);
-        
-        // Initialize on page load
-        toggleDaticanStatus();
-        
-        // Optional: Add form validation before submission
-        document.getElementById('registrationForm').addEventListener('submit', function(e) {
-            // If DATICAN Member is Yes but status is not selected
-            if (daticanMemberYes.checked && !daticanStatusSelect.value) {
-                e.preventDefault();
-                alert('Please select your DATICAN Status');
-                daticanStatusSelect.focus();
-            }
-        });
     });
 </script>
 @endsection

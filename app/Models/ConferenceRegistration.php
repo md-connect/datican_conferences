@@ -10,6 +10,7 @@ class ConferenceRegistration extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id', 
         'title',
         'firstname',
         'middlename',
@@ -41,5 +42,14 @@ class ConferenceRegistration extends Model
     public function scopeDaticanMembers($query)
     {
         return $query->where('is_datican_member', true);
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    public function papers()
+    {
+        return $this->belongsToMany(Paper::class, 'paper_registrations')
+                    ->withTimestamps();
     }
 }
