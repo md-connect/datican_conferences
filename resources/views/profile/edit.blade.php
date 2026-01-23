@@ -42,7 +42,7 @@
                 </div>
                 @endif
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div>
                         <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">
                             First Name *
@@ -51,6 +51,16 @@
                                value="{{ old('first_name', auth()->user()->first_name) }}"
                                required
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="middle_name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Middle Name
+                        </label>
+                        <input type="text" id="middle_name" name="middle_name" 
+                               value="{{ old('middle_name', auth()->user()->middle_name) }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">Optional</p>
                     </div>
                     
                     <div>
@@ -79,11 +89,21 @@
                     <label for="affiliation" class="block text-sm font-medium text-gray-700 mb-2">
                         Institution/Affiliation *
                     </label>
-                    <input type="text" id="affiliation" name="affiliation" 
-                           value="{{ old('affiliation', auth()->user()->affiliation) }}"
+                    <input type="text" id="institution" name="institution" 
+                           value="{{ old('institution', auth()->user()->institution) }}"
                            required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <p class="mt-1 text-sm text-gray-500">Your university, organization, or company.</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="department" class="block text-sm font-medium text-gray-700 mb-2">
+                        Department/Position
+                    </label>
+                    <input type="text" id="department" name="department" 
+                           value="{{ old('department', auth()->user()->department) }}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">Your department, faculty, or position within your organization.</p>
                 </div>
                 
                 <div class="mb-6">
@@ -92,7 +112,16 @@
                     </label>
                     <textarea id="bio" name="bio" rows="4"
                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ old('bio', auth()->user()->bio) }}</textarea>
-                    <p class="mt-1 text-sm text-gray-500">Tell us about your research interests and background.</p>
+                    <p class="mt-1 text-sm text-gray-500">Tell us about your research interests, background, and achievements (max 500 words).</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="research_interests" class="block text-sm font-medium text-gray-700 mb-2">
+                        Research Interests
+                    </label>
+                    <textarea id="research_interests" name="research_interests" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ old('research_interests', auth()->user()->research_interests) }}</textarea>
+                    <p class="mt-1 text-sm text-gray-500">List your main research areas or topics (comma-separated).</p>
                 </div>
                 
                 <!-- Conference Registration Notice -->
@@ -138,8 +167,8 @@
             </div>
             <div class="p-6">
                 <p class="text-gray-600 mb-4">For security reasons, password changes must be done through the password reset process.</p>
-                <a href="{{ route('password.request') }}" 
-                   class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                <a href="{{ route('password.change') }}" 
+                    class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
                     <i class="fas fa-key mr-2"></i> Change Password
                 </a>
             </div>

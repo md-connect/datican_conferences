@@ -25,46 +25,115 @@
                             </div>
                             
                             <div class="flex-1">
-                                <h3 class="text-2xl font-semibold text-gray-900">{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</h3>
-                                <p class="text-gray-600 mt-1">{{ auth()->user()->affiliation }}</p>
+                                <h3 class="text-2xl font-semibold text-gray-900">
+                                    {{ auth()->user()->first_name }} 
+                                    @if(auth()->user()->middle_name)
+                                        {{ auth()->user()->middle_name }} 
+                                    @endif
+                                    {{ auth()->user()->last_name }}
+                                </h3>
                                 
-                                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Contact Information</h4>
-                                        <div class="space-y-3">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-envelope text-gray-400 w-5 mr-3"></i>
-                                                <span class="text-gray-700">{{ auth()->user()->email }}</span>
-                                            </div>
-                                            @if(auth()->user()->phone)
-                                            <div class="flex items-center">
-                                                <i class="fas fa-phone text-gray-400 w-5 mr-3"></i>
-                                                <span class="text-gray-700">{{ auth()->user()->phone }}</span>
-                                            </div>
-                                            @endif
+                                @if(auth()->user()->department)
+                                    <p class="text-gray-600 mt-1">{{ auth()->user()->department }}</p>
+                                @endif
+                                
+                                <p class="text-gray-600">{{ auth()->user()->institution }}</p>
+                                
+                                <!-- Role Badges -->
+                                <div class="flex flex-wrap gap-2 mt-3">
+                                    @if(auth()->user()->is_admin)
+                                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">Administrator</span>
+                                    @endif
+                                    @if(auth()->user()->is_chair)
+                                    <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">Chair</span>
+                                    @endif
+                                    @if(auth()->user()->is_reviewer)
+                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Reviewer</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Detailed Information -->
+                        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Contact Information -->
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Contact Information</h4>
+                                <div class="space-y-4">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-envelope text-gray-400 w-5 mr-3 mt-1"></i>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Email</p>
+                                            <p class="text-gray-700">{{ auth()->user()->email }}</p>
                                         </div>
                                     </div>
                                     
-                                    <div>
-                                        <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Account Information</h4>
-                                        <div class="space-y-3">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-calendar text-gray-400 w-5 mr-3"></i>
-                                                <span class="text-gray-700">
-                                                    Member since {{ auth()->user()->created_at->format('F d, Y') }}
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-clock text-gray-400 w-5 mr-3"></i>
-                                                <span class="text-gray-700">
-                                                    Last updated {{ auth()->user()->updated_at->diffForHumans() }}
-                                                </span>
-                                            </div>
+                                    @if(auth()->user()->phone)
+                                    <div class="flex items-start">
+                                        <i class="fas fa-phone text-gray-400 w-5 mr-3 mt-1"></i>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Phone</p>
+                                            <p class="text-gray-700">{{ auth()->user()->phone }}</p>
+                                        </div>
+                                    </div>
+                                    @endif
+                                </div>
+                                
+                                <!-- Account Information -->
+                                <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 mt-6">Account Information</h4>
+                                <div class="space-y-4">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-calendar text-gray-400 w-5 mr-3 mt-1"></i>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Member Since</p>
+                                            <p class="text-gray-700">{{ auth()->user()->created_at->format('F d, Y') }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start">
+                                        <i class="fas fa-clock text-gray-400 w-5 mr-3 mt-1"></i>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-500">Last Updated</p>
+                                            <p class="text-gray-700">{{ auth()->user()->updated_at->diffForHumans() }}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Professional Information -->
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Professional Information</h4>
+                                
+                                @if(auth()->user()->department)
+                                <div class="mb-4">
+                                    <p class="text-sm font-medium text-gray-500">Department / Position</p>
+                                    <p class="text-gray-700">{{ auth()->user()->department }}</p>
+                                </div>
+                                @endif
+                                
+                                <div class="mb-4">
+                                    <p class="text-sm font-medium text-gray-500">Institution / Affiliation</p>
+                                    <p class="text-gray-700">{{ auth()->user()->institution }}</p>
+                                </div>
+                                
+                                @if(auth()->user()->research_interests)
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Research Interests</p>
+                                    <p class="text-gray-700">{{ auth()->user()->research_interests }}</p>
+                                </div>
+                                @endif
+                            </div>
                         </div>
+                        
+                        <!-- Biography -->
+                        @if(auth()->user()->bio)
+                        <div class="mt-8 pt-8 border-t">
+                            <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Biography</h4>
+                            <div class="prose max-w-none">
+                                <p class="text-gray-700 whitespace-pre-line">{{ auth()->user()->bio }}</p>
+                            </div>
+                        </div>
+                        @endif
                         
                         <!-- Conference Registration -->
                         @php
@@ -72,8 +141,8 @@
                                 ->orWhere('user_id', auth()->user()->id)
                                 ->first();
                         @endphp
-                        <div class="mt-8 pt-6 border-t">
-                            <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Conference Registration</h4>
+                        <div class="mt-8 pt-8 border-t">
+                            <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Conference Registration</h4>
                             @if($registration)
                             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                                 <div class="flex items-center">
@@ -81,7 +150,6 @@
                                     <div>
                                         <p class="font-medium text-green-800">Registered for DATICAN Conference 2026</p>
                                         <p class="text-sm text-green-600 mt-1">
-                                            Registration ID: {{ $registration->id }}
                                             @if($registration->is_presenting_paper)
                                             • You are registered as a presenter
                                             @endif
@@ -138,17 +206,17 @@
                             <span class="text-gray-600">Reviews Assigned</span>
                             <span class="font-semibold text-gray-900">{{ auth()->user()->reviewAssignments()->count() }}</span>
                         </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Reviews Completed</span>
+                            <span class="font-semibold text-gray-900">
+                                {{ auth()->user()->reviewAssignments()->where('status', 'completed')->count() }}
+                            </span>
+                        </div>
                         @endif
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Account Status</span>
                             <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Active</span>
                         </div>
-                        @if(auth()->user()->is_admin)
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Role</span>
-                            <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">Administrator</span>
-                        </div>
-                        @endif
                     </div>
                 </div>
                 
@@ -224,10 +292,22 @@
                             <span>My Reviews</span>
                         </a>
                         @endif
+                        @if(auth()->user()->is_chair || auth()->user()->is_admin)
+                        <a href="{{ route('chair.dashboard') }}" 
+                           class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-lg">
+                            <i class="fas fa-gavel text-gray-400 mr-3"></i>
+                            <span>Chair Dashboard</span>
+                        </a>
+                        @endif
                         <a href="{{ route('conference.registration') }}" 
                            class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-lg">
                             <i class="fas fa-calendar-plus text-gray-400 mr-3"></i>
                             <span>Conference Registration</span>
+                        </a>
+                        <a href="{{ route('password.change') }}" 
+                           class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-lg">
+                            <i class="fas fa-key text-gray-400 mr-3"></i>
+                            <span>Change Password</span>
                         </a>
                     </div>
                 </div>
