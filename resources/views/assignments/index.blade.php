@@ -116,30 +116,50 @@
                                     <div>
                                         <div class="font-medium text-gray-900">{{ $paper->anonymous_id }}</div>
                                         <div class="text-sm text-gray-500 truncate max-w-xs">{{ Str::limit($paper->title, 50) }}</div>
-                                        <div class="text-xs text-gray-400 mt-1">{{ $paper->topic_area }}</div>
+                                        <div class="flex items-center space-x-2 mt-1">
+                                            <span class="text-xs text-gray-400">{{ $paper->topic_area }}</span>
+                                            @if($paper->status === 'abstract_submitted')
+                                            <span class="inline-block px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded">
+                                                Abstract Only
+                                            </span>
+                                            @endif
+                                            <!-- Add status badge -->
+                                            <span class="px-2 py-1 text-xs rounded-full 
+                                                @if($paper->status === 'abstract_submitted') bg-orange-100 text-orange-800
+                                                @elseif($paper->status === 'submitted') bg-blue-100 text-blue-800
+                                                @elseif($paper->status === 'under_review') bg-yellow-100 text-yellow-800
+                                                @else bg-gray-100 text-gray-800 @endif">
+                                                {{ ucfirst(str_replace('_', ' ', $paper->status)) }}
+                                            </span>
+                                        </div>
                                     </div>
+                                </td>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex -space-x-2">
-                                        @foreach($paper->reviews->whereIn('status', ['pending', 'accepted'])->take(3) as $review)
+                                        @foreach($paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->take(3) as $review) <!-- Updated statuses -->
                                         <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center" 
-                                            title="{{ $review->reviewer->full_name }}">
+                                            title="{{ $review->reviewer->full_name ?? 'Unknown' }}">
                                             <span class="text-xs font-medium text-blue-700">
-                                                {{ strtoupper(substr($review->reviewer->first_name, 0, 1)) }}
+                                                @if($review->reviewer)
+                                                    {{ strtoupper(substr($review->reviewer->first_name, 0, 1)) }}
+                                                @else
+                                                    ?
+                                                @endif
                                             </span>
                                         </div>
                                         @endforeach
-                                        @if($paper->reviews->whereIn('status', ['pending', 'accepted'])->count() > 3)
+                                        @if($paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() > 3) <!-- Updated statuses -->
                                         <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
-                                            <span class="text-xs font-medium text-gray-700">+{{ $paper->reviews->whereIn('status', ['pending', 'accepted'])->count() - 3 }}</span>
+                                            <span class="text-xs font-medium text-gray-700">+{{ $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() - 3 }}</span> <!-- Updated statuses -->
                                         </div>
                                         @endif
-                                        @if($paper->reviews->whereIn('status', ['pending', 'accepted'])->count() === 0)
+                                        @if($paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() === 0) <!-- Updated statuses -->
                                         <span class="text-sm text-gray-500">No assignments</span>
                                         @endif
                                     </div>
                                     <div class="text-xs text-gray-500 mt-2">
-                                        {{ $paper->reviews->whereIn('status', ['pending', 'accepted'])->count() }}/{{ config('conference.min_reviews_per_paper', 3) }} reviewers
+                                        {{ $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() }} reviewer(s) assigned <!-- Updated statuses -->
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">

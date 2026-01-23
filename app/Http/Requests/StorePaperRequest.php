@@ -16,7 +16,7 @@ class StorePaperRequest extends FormRequest
     {
         $rules = [
             'title' => 'required|string|max:500',
-            'abstract' => 'required|string|min:100|max:2000',
+            'abstract' => 'required|string|min:100|max:250',
             'keywords' => 'required|string|max:255',
             'topic_area' => 'required|string|max:255',
             'submission_type' => [

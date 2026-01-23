@@ -14,30 +14,30 @@ class Paper extends Model
     use HasFactory;
 
     // In app/Models/Paper.php
-protected $fillable = [
-    'title',
-    'abstract',
-    'keywords',
-    'topic_area',
-    'submission_type',
-    'file_path',
-    'file_name',
-    'file_size',
-    'status',
-    'anonymous_id',
-    'is_anonymous',
-    'author_comments',
-    'decision',
-    'decision_notes',
-    'decision_made_at',
-    'decision_made_by',
-    'submitted_at',
-    'review_due_date',
-    'revision_deadline', 
-    'conference_year',
-    'created_by',
-    'updated_by',
-];
+    protected $fillable = [
+        'title',
+        'abstract',
+        'keywords',
+        'topic_area',
+        'submission_type',
+        'file_path',
+        'file_name',
+        'file_size',
+        'status',
+        'anonymous_id',
+        'is_anonymous',
+        'author_comments',
+        'decision',
+        'decision_notes',
+        'decision_made_at',
+        'decision_made_by',
+        'submitted_at',
+        'review_due_date',
+        'revision_deadline', 
+        'conference_year',
+        'created_by',
+        'updated_by',
+    ];
     protected $casts = [
         'submitted_at' => 'datetime',
         'revision_deadline' => 'date',
@@ -178,6 +178,8 @@ protected $fillable = [
             'accepted' => 'bg-green-100 text-green-800',
             'rejected' => 'bg-red-100 text-red-800',
             'camera_ready' => 'bg-purple-100 text-purple-800',
+            'abstract_submitted' => 'bg-orange-100 text-orange-800',
+
         ];
 
         $status = ucfirst(str_replace('_', ' ', $this->status));

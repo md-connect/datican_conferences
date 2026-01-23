@@ -60,6 +60,11 @@ class ReviewAssignment extends Model
         return $query->where('status', 'accepted');
     }
 
+    public function scopeUnderReview($query) // ADD THIS
+    {
+        return $query->where('status', 'under_review');
+    }
+
     public function scopeInProgress($query)
     {
         return $query->where('status', 'in_progress');
@@ -78,12 +83,12 @@ class ReviewAssignment extends Model
     public function scopeOverdue($query)
     {
         return $query->where('deadline', '<', now())
-                     ->whereIn('status', ['pending', 'accepted', 'in_progress']);
+                     ->whereIn('status', ['pending', 'under_review', 'in_progress']); // UPDATED
     }
 
     public function scopeActive($query)
     {
-        return $query->whereIn('status', ['pending', 'accepted', 'in_progress']);
+        return $query->whereIn('status', ['pending', 'under_review', 'in_progress']); // UPDATED
     }
 
     /**
@@ -97,7 +102,7 @@ class ReviewAssignment extends Model
     {
         return $this->deadline && 
                $this->deadline < now() && 
-               in_array($this->status, ['pending', 'accepted', 'in_progress']);
+               in_array($this->status, ['pending', 'under_review', 'in_progress']); // UPDATED
     }
 
     /**
@@ -126,6 +131,7 @@ class ReviewAssignment extends Model
         $statusColors = [
             'pending' => 'bg-yellow-100 text-yellow-800',
             'accepted' => 'bg-blue-100 text-blue-800',
+            'under_review' => 'bg-blue-100 text-blue-800', // ADD THIS
             'in_progress' => 'bg-indigo-100 text-indigo-800',
             'completed' => 'bg-green-100 text-green-800',
             'declined' => 'bg-red-100 text-red-800',
@@ -133,8 +139,12 @@ class ReviewAssignment extends Model
         
         $colorClass = $statusColors[$this->status] ?? 'bg-gray-100 text-gray-800';
         
+        $statusText = $this->status === 'under_review' 
+            ? 'Under Review' 
+            : ucfirst(str_replace('_', ' ', $this->status));
+        
         return '<span class="px-2 py-1 text-xs font-medium rounded-full ' . $colorClass . '">' .
-               ucfirst(str_replace('_', ' ', $this->status)) .
+               $statusText .
                '</span>';
     }
 
@@ -221,7 +231,7 @@ class ReviewAssignment extends Model
     public function getCanSubmitAttribute(): bool
     {
         return $this->reviewer_id === auth()->id() && 
-               in_array($this->status, ['accepted', 'in_progress']);
+               in_array($this->status, ['under_review', 'in_progress']); // UPDATED
     }
 
     /**
@@ -234,12 +244,12 @@ class ReviewAssignment extends Model
     }
 
     /**
-     * Accept assignment
+     * Accept assignment - UPDATED to use 'under_review'
      */
     public function accept(): void
     {
         $this->update([
-            'status' => 'accepted',
+            'status' => 'under_review', // CHANGED from 'accepted'
             'started_at' => now()
         ]);
     }
@@ -253,11 +263,11 @@ class ReviewAssignment extends Model
     }
 
     /**
-     * Start review (when reviewer first opens edit page)
+     * Start review (when reviewer first opens edit page) - UPDATED
      */
     public function startReview(): void
     {
-        if ($this->status === 'accepted') {
+        if ($this->status === 'under_review') { // CHANGED from 'accepted'
             $this->update(['status' => 'in_progress']);
         }
     }

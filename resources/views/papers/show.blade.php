@@ -15,11 +15,37 @@
                     <h1 class="text-2xl font-bold text-gray-900">{{ $paper->title }}</h1>
                 </div>
                 <div>
-                    @if(auth()->user()->is_admin || auth()->user()->is_chair || auth()->user()->is_reviewer || $paper->authors()->where('users.id', auth()->id())->exists())
-                    <a href="{{ route('papers.download', $paper) }}" 
-                       class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 font-medium">
-                        <i class="fas fa-download mr-2"></i>Download
-                    </a>
+                    @php
+                        $canAccess = auth()->user()->is_admin || auth()->user()->is_chair || 
+                                    auth()->user()->is_reviewer || $paper->authors()->where('users.id', auth()->id())->exists();
+                        $hasFile = !empty($paper->file_path);
+                        $isAbstractOnly = $paper->submission_type === 'abstract_only';
+                        $isAuthor = $paper->authors()->where('users.id', auth()->id())->exists();
+                    @endphp
+                    
+                    @if($canAccess)
+                        @if($hasFile)
+                        <a href="{{ route('papers.download', $paper) }}" 
+                        class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 font-medium">
+                            <i class="fas fa-download mr-2"></i>Download
+                        </a>
+                        @elseif($isAbstractOnly && $isAuthor)
+                        <!-- Author viewing abstract-only paper - show submit full paper button -->
+                        <a href="{{ route('papers.submit-full-form', $paper) }}" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                            <i class="fas fa-upload mr-2"></i>Upload Paper
+                        </a>
+                        @elseif($isAbstractOnly)
+                        <!-- Non-author viewing abstract-only paper -->
+                        <span class="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-medium inline-flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>Abstract Submission
+                        </span>
+                        @else
+                        <!-- Paper should have file but doesn't -->
+                        <span class="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg font-medium inline-flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>File Not Available
+                        </span>
+                        @endif
                     @endif
                 </div>
             </div>

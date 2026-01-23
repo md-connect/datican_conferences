@@ -120,14 +120,16 @@
                                     $statusColors = [
                                         'pending' => 'bg-yellow-100 text-yellow-800',
                                         'accepted' => 'bg-blue-100 text-blue-800',
+                                        'under_review' => 'bg-blue-100 text-blue-800',
                                         'declined' => 'bg-red-100 text-red-800',
                                         'in_progress' => 'bg-indigo-100 text-indigo-800',
                                         'completed' => 'bg-green-100 text-green-800',
                                     ];
                                     $colorClass = $statusColors[$review->status] ?? 'bg-gray-100 text-gray-800';
+                                    $statusText = $review->status === 'under_review' ? 'Under Review' : ucfirst(str_replace('_', ' ', $review->status));
                                 @endphp
                                 <span class="px-3 py-1 text-xs font-medium rounded-full {{ $colorClass }}">
-                                    {{ ucfirst(str_replace('_', ' ', $review->status)) }}
+                                    {{ $statusText }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -155,7 +157,7 @@
                                             @csrf
                                             <button type="submit" 
                                                     class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 hover-lift transition duration-300 flex items-center">
-                                                <i class="fas fa-check mr-1"></i> Accept
+                                                <i class="fas fa-clipboard-check mr-1"></i> Accept & Review
                                             </button>
                                         </form>
                                         <form method="POST" action="{{ route('reviews.decline', $review) }}" class="inline">
@@ -166,34 +168,34 @@
                                                 <i class="fas fa-times mr-1"></i> Decline
                                             </button>
                                         </form>
-                                    @elseif($review->status === 'accepted')
+                                    @elseif($review->status === 'under_review') <!-- CHANGED from 'accepted' -->
                                         <a href="{{ route('reviews.edit', $review) }}" 
-                                           class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 hover-lift transition duration-300 flex items-center">
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-play mr-1"></i> Start Review
                                         </a>
                                         <a href="{{ route('papers.show', $review->paper) }}" 
-                                           target="_blank"
-                                           class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 hover-lift transition duration-300 flex items-center">
+                                        target="_blank"
+                                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-file-alt mr-1"></i> View Paper
                                         </a>
                                     @elseif($review->status === 'in_progress')
                                         <a href="{{ route('reviews.edit', $review) }}" 
-                                           class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 hover-lift transition duration-300 flex items-center">
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-edit mr-1"></i> Continue Review
                                         </a>
                                         <a href="{{ route('papers.show', $review->paper) }}" 
-                                           target="_blank"
-                                           class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 hover-lift transition duration-300 flex items-center">
+                                        target="_blank"
+                                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-file-alt mr-1"></i> View Paper
                                         </a>
                                     @elseif($review->status === 'completed')
                                         <a href="{{ route('reviews.show', $review) }}" 
-                                           class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 hover-lift transition duration-300 flex items-center">
+                                        class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-eye mr-1"></i> View Review
                                         </a>
                                         <a href="{{ route('papers.show', $review->paper) }}" 
-                                           target="_blank"
-                                           class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 hover-lift transition duration-300 flex items-center">
+                                        target="_blank"
+                                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-file-alt mr-1"></i> View Paper
                                         </a>
                                     @elseif($review->status === 'declined')

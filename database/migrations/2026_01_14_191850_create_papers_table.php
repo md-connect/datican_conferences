@@ -9,52 +9,49 @@ return new class extends Migration
     public function up()
     {
         Schema::create('papers', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->text('abstract');
-            $table->string('keywords')->nullable();
-            $table->string('topic_area');
-            $table->enum('submission_type', [
-                'full_paper', 
-                'short_paper', 
-                'poster', 
-                'demo',
-                'workshop',
-                'tutorial'
-            ])->default('full_paper');
-            $table->string('file_path');
-            $table->string('file_name');
-            $table->integer('file_size');
-            $table->enum('status', [
-                'draft',
-                'submitted',
-                'under_review',
-                'accepted',
-                'rejected',
-                'camera_ready'
-            ])->default('draft');
-            $table->string('anonymous_id')->unique()->nullable();
-            $table->boolean('is_anonymous')->default(true);
-            $table->text('author_comments')->nullable();
-            $table->enum('decision', [
-                'accept',
-                'minor_revisions',
-                'major_revisions',
-                'reject'
-            ])->nullable();
-            $table->text('decision_notes')->nullable();
-            $table->dateTime('decision_at')->nullable();
-            $table->dateTime('submitted_at')->nullable();
-            $table->dateTime('review_due_date')->nullable();
-            $table->string('conference_year');
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
-            $table->timestamps();
-            
-            $table->index(['conference_year', 'status']);
-            $table->index('anonymous_id');
-            $table->index('submitted_at');
-        });
+        $table->id();
+        $table->string('title');
+        $table->text('abstract');
+        $table->string('keywords')->nullable();
+        $table->string('topic_area');
+        $table->enum('submission_type', [
+            'abstract_only',  
+            'full_paper', 
+        ])->default('full_paper');
+        $table->string('file_path')->nullable();  // Make nullable
+        $table->string('file_name')->nullable();  // Make nullable
+        $table->integer('file_size')->nullable(); // Make nullable
+        $table->enum('status', [
+            'draft',
+            'submitted',
+            'under_review',
+            'accepted',
+            'rejected',
+            'camera_ready',
+            'abstract_submitted'  // ADD THIS
+        ])->default('draft');
+        $table->string('anonymous_id')->unique()->nullable();
+        $table->boolean('is_anonymous')->default(true);
+        $table->text('author_comments')->nullable();
+        $table->enum('decision', [
+            'accept',
+            'minor_revisions',
+            'major_revisions',
+            'reject'
+        ])->nullable();
+        $table->text('decision_notes')->nullable();
+        $table->dateTime('decision_at')->nullable();
+        $table->dateTime('submitted_at')->nullable();
+        $table->dateTime('review_due_date')->nullable();
+        $table->string('conference_year');
+        $table->foreignId('created_by')->constrained('users');
+        $table->foreignId('updated_by')->nullable()->constrained('users');
+        $table->timestamps();
+        
+        $table->index(['conference_year', 'status']);
+        $table->index('anonymous_id');
+        $table->index('submitted_at');
+    });
 
         // Paper Authors Pivot Table
         Schema::create('paper_authors', function (Blueprint $table) {

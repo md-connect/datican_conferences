@@ -36,21 +36,21 @@ class AssignmentController extends Controller
         $tab = $request->input('tab', 'papers');
         $paperId = $request->input('paper');
         
-        // Papers needing assignments
+        // Papers needing assignments - ADD 'abstract_submitted' to the status array
         $papersQuery = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'under_review']);
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']); // ADD 'abstract_submitted' here
         
         // For papers tab, only show papers that need reviewers
         if ($tab === 'papers') {
             $papersQuery->withCount(['reviews as pending_reviews_count' => function($query) {
-                $query->whereIn('status', ['pending', 'accepted']);
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
             }])
             ->having('pending_reviews_count', '<', 3);
         }
         
         $papers = $papersQuery->with(['reviews' => function($query) {
-                $query->whereIn('status', ['pending', 'accepted'])
-                      ->with('reviewer');
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress']) // Updated statuses
+                    ->with('reviewer');
             }, 'bids'])
             ->orderBy('submitted_at')
             ->get();
@@ -60,19 +60,19 @@ class AssignmentController extends Controller
             ->with(['expertise', 'reviewAssignments' => function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
                     $q2->where('conference_year', $year);
-                })->whereIn('status', ['pending', 'accepted']);
+                })->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
             }])
             ->get();
         
-        // Statistics
+        // Statistics - UPDATE THESE QUERIES TOO
         $totalPapers = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'under_review'])
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']) // ADD 'abstract_submitted'
             ->count();
             
         $papersNeedingAssignments = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'under_review'])
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']) // ADD 'abstract_submitted'
             ->withCount(['reviews as pending_reviews_count' => function($query) {
-                $query->whereIn('status', ['pending', 'accepted']);
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
             }])
             ->having('pending_reviews_count', '<', 3)
             ->count();
@@ -80,14 +80,14 @@ class AssignmentController extends Controller
         $totalAssignedReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
                 $q->where('conference_year', $year);
             })
-            ->whereIn('status', ['pending', 'accepted'])
+            ->whereIn('status', ['pending', 'under_review', 'in_progress']) // Updated statuses
             ->count();
 
         $activeReviewers = User::where('is_reviewer', true)
             ->whereHas('reviewAssignments', function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
                     $q2->where('conference_year', $year);
-                })->whereIn('status', ['pending', 'accepted']);
+                })->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
             })
             ->count();
         
@@ -105,7 +105,6 @@ class AssignmentController extends Controller
         
         return view('assignments.index', compact('papers', 'reviewers', 'stats'));
     }
-
     /**
      * Show form to assign reviewers to a specific paper
      */
@@ -114,20 +113,17 @@ class AssignmentController extends Controller
         $year = $request->input('year', date('Y'));
         $tab = $request->input('tab', 'papers');
         
-        // Get suggested reviewers - fix this to return proper structure
+        // Get suggested reviewers
         $suggestedReviewers = $this->assignmentService->suggestReviewers($paper, 10);
-        
-        // Debug: Check what's being returned
-        // dd($suggestedReviewers);
         
         // Get all available reviewers - ONLY users marked as reviewers
         $reviewers = User::where('is_admin', false)
-            ->where('is_reviewer', true) // ADD THIS LINE to only get reviewers
-            ->where('id', '!=', Auth::id()) // Exclude current user (admin)
+            ->where('is_reviewer', true)
+            ->where('id', '!=', Auth::id())
             ->with(['expertise', 'reviewAssignments' => function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
                     $q2->where('conference_year', $year);
-                })->whereIn('status', ['pending', 'accepted']);
+                })->whereIn('status', ['pending', 'under_review', 'in_progress']);
             }])
             ->get();
         
@@ -171,7 +167,7 @@ class AssignmentController extends Controller
                 ]);
                 $assignedCount++;
             } else {
-                // Create new assignment
+                // Create new assignment - MAKE SURE THIS PART WORKS
                 ReviewAssignment::create([
                     'paper_id' => $paper->id,
                     'reviewer_id' => $reviewerId,
@@ -186,7 +182,8 @@ class AssignmentController extends Controller
         }
         
         // Update paper status if this is the first assignment
-        if ($assignedCount > 0 && $paper->status == 'submitted') {
+        // This should work for abstract_submitted papers
+        if ($assignedCount > 0 && in_array($paper->status, ['submitted', 'abstract_submitted'])) {
             $paper->update(['status' => 'under_review']);
         }
         

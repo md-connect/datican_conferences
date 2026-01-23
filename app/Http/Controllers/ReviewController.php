@@ -15,40 +15,47 @@ class ReviewController extends Controller
         $this->middleware('auth');
     }
 
-    /**
+        /**
      * Display a listing of the user's reviews
      */
     public function index()
     {
         $user = auth()->user();
         
+        // Get paginated reviews for the table
         $reviews = ReviewAssignment::with(['paper' => function($query) {
                 $query->select('id', 'anonymous_id', 'title', 'topic_area', 'submission_type');
             }])
             ->where('reviewer_id', $user->id)
-            ->whereIn('status', ['pending', 'accepted', 'in_progress', 'completed'])
-            ->orderByRaw("FIELD(status, 'pending', 'accepted', 'in_progress', 'completed', 'declined')")
+            ->whereIn('status', ['pending', 'under_review', 'in_progress', 'completed'])
+            ->orderByRaw("FIELD(status, 'pending', 'under_review', 'in_progress', 'completed', 'declined')")
             ->orderBy('deadline')
             ->paginate(10);
         
-        // Count overdue reviews
-        $overdueCount = $reviews->where('deadline', '<', now())
+        // Get ALL reviews for stats calculation (not paginated)
+        $allReviews = ReviewAssignment::where('reviewer_id', $user->id)
+            ->whereIn('status', ['pending', 'under_review', 'in_progress', 'completed'])
+            ->get();
+        
+        // Count overdue reviews from all reviews
+        $overdueCount = $allReviews->where('deadline', '<', now())
             ->whereNotIn('status', ['completed', 'declined'])
             ->count();
         
-        // Calculate stats for dashboard view
+        // Calculate stats from all reviews
         $reviewStats = [
-            'total' => $reviews->count(),
-            'pending' => $reviews->where('status', 'pending')->count(),
-            'in_progress' => $reviews->whereIn('status', ['accepted', 'in_progress'])->count(),
-            'completed' => $reviews->where('status', 'completed')->count(),
+            'total' => $allReviews->count(),
+            'pending' => $allReviews->where('status', 'pending')->count(),
+            'in_progress' => $allReviews->whereIn('status', ['under_review', 'in_progress'])->count(),
+            'completed' => $allReviews->where('status', 'completed')->count(),
             'overdue' => $overdueCount,
         ];
         
         return view('reviews.my', compact('reviews', 'overdueCount', 'reviewStats'));
     }
 
-    /**
+    
+        /**
      * Show the form for creating/editing a review
      */
     public function create(Request $request)
@@ -72,13 +79,14 @@ class ReviewController extends Controller
         // Load the paper
         $paper = $review->paper;
         
-        // Update status to in_progress if it's accepted
-        if ($review->status === 'accepted') {
+        // Update status to in_progress if it's under_review
+        if ($review->status === 'under_review') {
             $review->update(['status' => 'in_progress']);
         }
         
         return view('reviews.create', compact('paper', 'review'));
     }
+    
 
     /**
      * Store a newly created review (first submission)
@@ -171,10 +179,13 @@ class ReviewController extends Controller
                 ->with('error', 'Completed reviews cannot be edited.');
         }
         
-        // Start review if it's accepted
-        $review->startReview(); // Uses model method
+        // Start review if it's under_review
+        if ($review->status === 'under_review') {
+            $review->update(['status' => 'in_progress']);
+        }
         
         $paper = $review->paper;
+        
         
         return view('reviews.create', compact('paper', 'review'));
     }
@@ -244,7 +255,10 @@ class ReviewController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        $review->accept(); // Uses model method
+        $review->update([
+        'status' => 'under_review',
+        'started_at' => now()
+    ]);
         
         return redirect()->route('reviews.edit', $review)
             ->with('success', 'Review assignment accepted. You can now start reviewing.');
@@ -293,7 +307,7 @@ class ReviewController extends Controller
             ->selectRaw('
                 COUNT(*) as total,
                 SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status IN ("accepted", "in_progress") THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN status IN ("under_review", "in_progress") THEN 1 ELSE 0 END) as in_progress,
                 SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = "declined" THEN 1 ELSE 0 END) as declined
             ')

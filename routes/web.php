@@ -39,7 +39,7 @@ Route::get('/acknowledgement', [PageController::class, 'acknowledgement'])->name
 Route::prefix('conference')->group(function () {
     Route::get('2026-registration', [ConferenceRegistrationController::class, 'showRegistrationForm'])
         ->name('conference.registration');
-    Route::get('/conference-registration/view', [ConferenceRegistrationController::class, 'view'])
+    Route::get('/conference-registration/view', [ConferenceRegistrationController::class, 'showRegistrationForm'])
         ->name('conference.registration.view');
     
     Route::post('2026-registration', [ConferenceRegistrationController::class, 'register'])
@@ -67,6 +67,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('papers', PaperController::class);
     Route::post('/papers/{paper}/submit', [PaperController::class, 'submit'])->name('papers.submit');
     Route::get('/papers/{paper}/download', [PaperController::class, 'download'])->name('papers.download');
+    Route::get('/papers/{paper}/submit-full', [PaperController::class, 'submitFullForm'])->name('papers.submit-full-form');
+    Route::post('/papers/{paper}/submit-full', [PaperController::class, 'submitFull'])->name('papers.submit-full');
     
     // Reviews
     Route::middleware(['auth'])->group(function () {
