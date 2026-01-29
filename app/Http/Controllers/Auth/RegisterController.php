@@ -36,7 +36,9 @@ class RegisterController extends Controller
         // Create user account
         $user = User::create([
             'first_name' => $request->first_name,
+            'middle_name' => $request->middle_name,
             'last_name' => $request->last_name,
+            'institution' => $request->affiliation,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_admin' => false,
@@ -48,10 +50,11 @@ class RegisterController extends Controller
                 'user_id' => $user->id,
                 'title' => $request->title,
                 'firstname' => $user->first_name,
+                'middlename' => $user->middle_name,
                 'lastname' => $user->last_name,
                 'email' => $user->email,
                 'phone_number' => $request->phone_number,
-                'institution' => $request->affiliation,
+                'institution' => $user->institution,
                 'gender' => $request->gender,
                 'is_datican_member' => $request->boolean('is_datican_member'),
                 'datican_status' => $request->datican_status,

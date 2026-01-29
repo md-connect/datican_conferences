@@ -32,7 +32,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_admin' => 'boolean',
-        'is_chair' => 'boolean', // Add this
+        'is_chair' => 'boolean', 
         'is_reviewer' => 'boolean',
     ];
 
