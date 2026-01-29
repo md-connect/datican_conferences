@@ -168,6 +168,10 @@
                     class="text-gray-700 hover:text-primary font-medium {{ request()->routeIs('committees') ? 'text-primary border-b-2 border-primary' : '' }}">
                         Committee
                     </a>
+                    <a href="https://datican.org/about.php" 
+                    class="text-gray-700 hover:text-primary font-medium {{ str_contains(request()->path(), 'about.php') ? 'text-primary border-b-2 border-primary' : '' }}">
+                        About DATICAN
+                    </a>
                     
                     <!-- Auth Links -->
                     @auth
@@ -331,6 +335,10 @@
                         <a href="{{ route('committees') }}" 
                         class="text-gray-700 hover:text-primary font-medium py-2 {{ request()->routeIs('committees') ? 'text-primary' : '' }}">
                             Committee
+                        </a>
+                        <a href="https://datican.org/about.php" target="_blank" rel="noopener"
+                        class="text-gray-700 hover:text-primary font-medium {{ str_contains(request()->path(), 'about.php') ? 'text-primary border-b-2 border-primary' : '' }}">
+                            About DATICAN
                         </a>
                         
                         @auth

@@ -32,9 +32,9 @@
         <div class="container mx-auto px-4">
             <div class="max-w-4xl mx-auto text-center">
                 <div class="mb-6">
-                    <span class="bg-accent text-white px-4 py-1 rounded-full text-sm font-semibold">International Conference</span>
+                    <span class="bg-accent text-white px-4 py-1 rounded-full text-2xl font-semibold">1st International Conference</span>
                 </div>
-                <h1 class="text-4xl md:text-5xl font-bold mb-6">Improving Medical Diagnostics in Nigeria Using AI and Data Science</h1>
+                <h1 class="text-4xl md:text-5xl font-bold mb-6">Theme: "Improving Medical Diagnostics in Nigeria Using AI and Data Science"</h1>
                 <p class="text-xl mb-8 text-gray-200">Join leading experts, researchers, and practitioners in advancing healthcare through artificial intelligence and data science.</p>
                 <div class="flex flex-col md:flex-row gap-4 justify-center">
                     <a href="{{ route('register') }}" class="bg-white text-primary px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-300 hover-lift">Register Now</a>
@@ -55,7 +55,7 @@
         <div class="flex items-center gap-4 mb-6">
           <span class="h-px w-12 bg-accent"></span>
           <span class="text-sm font-semibold uppercase tracking-wide text-accent">
-            About DATICAN Conference
+            About The Conference
           </span>
         </div>
 

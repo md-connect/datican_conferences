@@ -19,18 +19,17 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $request->validate([
+            'title' => 'required|in:Prof.,Dr.,Mr.,Mrs.,Miss.',
             'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'affiliation' => 'required|string|max:255',
-            'terms' => 'required|accepted',
-            'register_conference' => 'sometimes|boolean',
-            'title' => 'nullable|string|max:10',
-            'phone_number' => 'nullable|string|max:20',
-            'gender' => 'nullable|in:Male,Female',
-            'is_datican_member' => 'nullable|boolean',
+            'phone_number' => 'nullable|string|max:15',
+            'gender' => 'required|in:Male,Female',
+            'is_datican_member' => 'required|boolean',
             'datican_status' => 'nullable|in:PI,Faculty,Trainer,PhD Student,MSc. Student',
+            'email' => 'required|string|email|max:255|unique:users',
+            'affiliation' => 'required|string|max:255',
+            'password' => 'required|string|min:8|confirmed',
             'presenting_paper' => 'nullable|in:yes,no',
         ]);
 
@@ -44,9 +43,7 @@ class RegisterController extends Controller
             'is_reviewer' => false,
         ]);
 
-        // Check if user wants to register for conference
-        if ($request->has('register_conference') && $request->boolean('register_conference')) {
-            // Create conference registration only if checkbox is checked
+            // Create conference registration
             $conferenceData = [
                 'user_id' => $user->id,
                 'title' => $request->title,
@@ -63,7 +60,6 @@ class RegisterController extends Controller
             
             // Note: Removed primary_role as requested
             ConferenceRegistration::create($conferenceData);
-        }
 
         Auth::login($user);
 

@@ -9,7 +9,7 @@
             
             <!-- Header -->
             <div class="text-center mb-10">
-                <h1 class="text-4xl font-bold text-primary mb-4">DATICAN CONFERENCE 2026</h1>
+                <h1 class="text-4xl font-bold text-primary mb-4">   </h1>
                 <h2 class="text-2xl font-semibold text-gray-700 mb-2">Registration Form</h2>
                 <p class="text-gray-600">Please fill out all required fields to complete your registration</p>
             </div>
@@ -298,14 +298,7 @@
                         <!-- Abstract Submission Link -->
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <p class="text-blue-800 font-medium mb-2">For paper presenters:</p>
-                            <p class="text-blue-700 mb-2">Please, submit your abstract to the link below:</p>
-                            <a href="https://cmt3.research.microsoft.com/DATICANCONF2026" target="_blank"
-                                class="inline-flex items-center text-primary hover:text-secondary font-semibold">
-                                <span>cmt3.research.microsoft.com</span>
-                                <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                                </svg>
-                            </a>
+                            <p class="text-blue-700 mb-2">Please, submit your abstract on your dashboard</p>
                         </div>
                         @error('is_presenting_paper')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -325,7 +318,7 @@
             <!-- Footer Note -->
             <div class="mt-8 text-center text-gray-600 text-sm">
                 <p>All fields marked with * are required.</p>
-                <p class="mt-2">Need help? Contact conference organizers at info@datican2026.org</p>
+                <p class="mt-2">Need help? Contact conference organizers at manager.datican@gmail.com</p>
             </div>
             
             @endif {{-- End of registration check --}}
