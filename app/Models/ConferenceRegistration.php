@@ -18,6 +18,7 @@ class ConferenceRegistration extends Model
         'email',
         'phone_number',
         'institution',
+        'department',
         'gender',
         'is_datican_member',
         'datican_status',

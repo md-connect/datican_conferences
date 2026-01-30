@@ -183,6 +183,7 @@
                                         <tbody class="bg-white divide-y divide-gray-200">
                                             @foreach([
                                                 'Conference Announcement' => '7th January, 2026',
+                                                'Abstract Submission Opens' => '1st February, 2026',
                                                 'Abstract Submission Deadline' => '1st March, 2026',
                                                 'Full Paper Submission Deadline' => '1st April, 2026',
                                                 'Reviewers\' Feedback Returned' => '1st May, 2026',
@@ -327,6 +328,17 @@
                                                 <p>• Submit camera-ready manuscript with revisions</p>
                                                 <p>• Complete copyright transfer</p>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 6: Paper Publication -->
+                                    <div class="flex items-start">
+                                        <div class="bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
+                                            <span class="font-bold">6</span>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold mb-2 text-gray-800">Paper Publication</h3>
+                                            <p class="text-gray-700">Manuscripts of good quality will be published at LASU Journal of PG school or Journal of Research and Review in Science (JRRS).</p>
                                         </div>
                                     </div>
                                 </div>

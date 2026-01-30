@@ -133,7 +133,7 @@
                                     </div>
                                     
                                     <!-- DATICAN Member -->
-                                    <div class="mt-6">
+                                    <!-- <div class="mt-6">
                                         <label class="block text-gray-700 font-medium mb-2">
                                             Are you a DATICAN Member? <span class="text-red-500">*</span>
                                         </label>
@@ -154,10 +154,10 @@
                                         @error('is_datican_member')
                                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                         @enderror
-                                    </div>
+                                    </div> -->
                                     
                                     <!-- DATICAN Status (Conditional) -->
-                                    <div class="mb-6 {{ old('is_datican_member') != '1' ? 'hidden' : '' }}" id="datican_status_section">
+                                    <!-- <div class="mb-6 {{ old('is_datican_member') != '1' ? 'hidden' : '' }}" id="datican_status_section">
                                         <label for="datican_status" class="block text-gray-700 font-medium mb-2">
                                             DATICAN Status <span class="text-red-500">*</span>
                                             <span class="text-sm text-gray-500">PI, Faculty, Trainer, PhD Student, MSc. Student</span>
@@ -174,12 +174,32 @@
                                         @error('datican_status')
                                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                         @enderror
-                                    </div>
+                                    </div> -->
                                 </div>
 
                                 <div class="mb-8">
                                     <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Account Information</h3>
                                     <div class="space-y-6">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                    Institution/Affiliation <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" name="affiliation" value="{{ old('affiliation') }}"
+                                                    required
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                                    placeholder="University, Organization, or Company">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                    Department <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" name="department" value="{{ old('department') }}"
+                                                    required
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                                    placeholder="Your Department">
+                                            </div>
+                                        </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                                 Email Address <span class="text-red-500">*</span>
@@ -191,15 +211,7 @@
                                             <p class="mt-1 text-sm text-gray-500">This will be used for all conference communications</p>
                                         </div>
                                         
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                                Institution/Affiliation <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="text" name="affiliation" value="{{ old('affiliation') }}"
-                                                   required
-                                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                                                   placeholder="University, Organization, or Company">
-                                        </div>
+                                        
                                         
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
@@ -396,15 +408,6 @@
             // Initialize on page load
             toggleDaticanStatus();
             
-            // Optional: Add form validation before submission
-            document.getElementById('registrationForm').addEventListener('submit', function(e) {
-                // If DATICAN Member is Yes but status is not selected
-                if (daticanMemberYes.checked && !daticanStatusSelect.value) {
-                    e.preventDefault();
-                    alert('Please select your DATICAN Status');
-                    daticanStatusSelect.focus();
-                }
-            });
         }
     });
 </script>

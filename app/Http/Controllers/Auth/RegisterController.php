@@ -25,10 +25,9 @@ class RegisterController extends Controller
             'last_name' => 'required|string|max:255',
             'phone_number' => 'nullable|string|max:15',
             'gender' => 'required|in:Male,Female',
-            'is_datican_member' => 'required|boolean',
-            'datican_status' => 'nullable|in:PI,Faculty,Trainer,PhD Student,MSc. Student',
             'email' => 'required|string|email|max:255|unique:users',
             'affiliation' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
             'presenting_paper' => 'nullable|in:yes,no',
         ]);
@@ -39,6 +38,7 @@ class RegisterController extends Controller
             'middle_name' => $request->middle_name,
             'last_name' => $request->last_name,
             'institution' => $request->affiliation,
+            'department' => $request->department,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_admin' => false,
@@ -55,6 +55,7 @@ class RegisterController extends Controller
                 'email' => $user->email,
                 'phone_number' => $request->phone_number,
                 'institution' => $user->institution,
+                'department' => $request->department,
                 'gender' => $request->gender,
                 'is_datican_member' => $request->boolean('is_datican_member'),
                 'datican_status' => $request->datican_status,
@@ -66,7 +67,7 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('home')
             ->with('success', 'Account created successfully!');
     }
 }
