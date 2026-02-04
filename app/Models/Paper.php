@@ -50,15 +50,34 @@ class Paper extends Model
     protected $appends = ['author_list', 'file_size_formatted', 'status_badge'];
 
     protected static function booted()
-    {
-        static::creating(function ($paper) {
-            if (empty($paper->anonymous_id)) {
-                $year = date('Y');
-                $count = Paper::where('conference_year', $year)->count() + 1;
-                $paper->anonymous_id = "DAT-{$year}-" . str_pad($count, 4, '0', STR_PAD_LEFT);
+{
+    static::creating(function ($paper) {
+        if (empty($paper->anonymous_id)) {
+            $year = date('Y');
+
+            // Get all existing anonymous_ids for this year
+            $existingIds = Paper::where('conference_year', $year)
+                                ->pluck('anonymous_id')
+                                ->toArray();
+
+            $nextNumber = 1;
+
+            if (!empty($existingIds)) {
+                // Extract the numeric part from all IDs
+                $numbers = array_map(function ($id) {
+                    return (int) substr($id, -4); // last 4 digits
+                }, $existingIds);
+
+                // Find the next available number (max + 1)
+                $nextNumber = max($numbers) + 1;
             }
-        });
-    }
+
+            // Assign the unique anonymous_id
+            $paper->anonymous_id = "DAT-{$year}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        }
+    });
+}
+
 
     /**
      * Relationships
