@@ -22,127 +22,120 @@ class ChairController extends Controller
     /**
      * Display chair dashboard
      */
-    /**
- * Display chair dashboard
- */
-public function dashboard(Request $request)
-{
-    $year = $request->input('year', date('Y'));
-    
-    // Get statistics
-    $stats = [
-        'papers' => Paper::where('conference_year', $year)->count(),
-        'reviewers' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
-            $q->where('conference_year', $year);
-        })->distinct('reviewer_id')->count(),
-        'pending_reviews' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
-            $q->where('conference_year', $year);
-        })->where('status', 'pending')->count(),
-        'acceptance_rate' => $this->calculateAcceptanceRate($year),
-    ];
-    
-    // Get papers needing decisions (papers where all assigned reviews are completed)
-    // In ChairController::dashboard() method, update this section:
-    $pendingDecisions = Paper::where('conference_year', $year)
-        ->where('status', 'under_review')
-        ->withCount(['reviewAssignments as total_assignments'])
-        ->withCount(['reviewAssignments as completed_assignments_count' => function($query) {
-            $query->where('status', 'completed');
-        }])
-        ->having('total_assignments', '>', 0) // Papers with at least one assignment
-        ->havingRaw('completed_assignments_count = total_assignments') // All reviews completed
-        ->with(['reviewAssignments' => function($query) {
-            $query->where('status', 'completed');
-        }])
-        ->get()
-        ->each(function($paper) {
-            $paper->average_score = $paper->reviewAssignments->avg('overall_score');
-            $paper->review_count = $paper->reviewAssignments->count();
-        });
-    
-    // Get recent submissions
-    $recentSubmissions = Paper::where('conference_year', $year)
-        ->latest()
-        ->take(10)
-        ->get();
-    
-    // Get reviewer performance
-    $reviewerPerformance = User::where('is_reviewer', true)
-        ->withCount(['reviewAssignments as assigned_count' => function($query) use ($year) {
-            $query->whereHas('paper', function($q) use ($year) {
+    public function dashboard(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        
+        // Get statistics
+        $stats = [
+            'papers' => Paper::where('conference_year', $year)->count(),
+            'reviewers' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
                 $q->where('conference_year', $year);
+            })->distinct('reviewer_id')->count(),
+            'pending_reviews' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'pending')->count(),
+            'acceptance_rate' => $this->calculateAcceptanceRate($year),
+        ];
+        
+        // Get papers needing decisions (papers where all assigned reviews are completed)
+        $pendingDecisions = Paper::where('conference_year', $year)
+            ->where('status', 'under_review')
+            ->withCount(['reviewAssignments as total_assignments'])
+            ->withCount(['reviewAssignments as completed_assignments_count' => function($query) {
+                $query->where('status', 'completed');
+            }])
+            ->having('total_assignments', '>', 0) // Papers with at least one assignment
+            ->havingRaw('completed_assignments_count = total_assignments') // All reviews completed
+            ->with(['reviewAssignments' => function($query) {
+                $query->where('status', 'completed');
+            }])
+            ->get()
+            ->each(function($paper) {
+                $paper->average_score = $paper->reviewAssignments->avg('overall_score');
+                $paper->review_count = $paper->reviewAssignments->count();
             });
-        }])
-        ->withCount(['reviewAssignments as completed_count' => function($query) use ($year) {
-            $query->whereHas('paper', function($q) use ($year) {
-                $q->where('conference_year', $year);
-            })->where('status', 'completed');
-        }])
-        ->withCount(['reviewAssignments as pending_count' => function($query) use ($year) {
-            $query->whereHas('paper', function($q) use ($year) {
-                $q->where('conference_year', $year);
-            })->where('status', 'pending');
-        }])
-        ->withCount(['reviewAssignments as in_progress_count' => function($query) use ($year) {
-            $query->whereHas('paper', function($q) use ($year) {
-                $q->where('conference_year', $year);
-            })->whereIn('status', ['accepted', 'in_progress']);
-        }])
-        ->having('assigned_count', '>', 0)
-        ->get();
+        
+        // Get recent submissions
+        $recentSubmissions = Paper::where('conference_year', $year)
+            ->latest()
+            ->take(10)
+            ->get();
+        
+        // Get reviewer performance
+        $reviewerPerformance = User::where('is_reviewer', true)
+            ->withCount(['reviewAssignments as assigned_count' => function($query) use ($year) {
+                $query->whereHas('paper', function($q) use ($year) {
+                    $q->where('conference_year', $year);
+                });
+            }])
+            ->withCount(['reviewAssignments as completed_count' => function($query) use ($year) {
+                $query->whereHas('paper', function($q) use ($year) {
+                    $q->where('conference_year', $year);
+                })->where('status', 'completed');
+            }])
+            ->withCount(['reviewAssignments as pending_count' => function($query) use ($year) {
+                $query->whereHas('paper', function($q) use ($year) {
+                    $q->where('conference_year', $year);
+                })->where('status', 'pending');
+            }])
+            ->withCount(['reviewAssignments as in_progress_count' => function($query) use ($year) {
+                $query->whereHas('paper', function($q) use ($year) {
+                    $q->where('conference_year', $year);
+                })->whereIn('status', ['accepted', 'in_progress']);
+            }])
+            ->having('assigned_count', '>', 0)
+            ->get();
+        
+        // Calculate average review time for each reviewer
+        foreach ($reviewerPerformance as $reviewer) {
+            $reviewer->avg_review_time = ReviewAssignment::where('reviewer_id', $reviewer->id)
+                ->where('status', 'completed')
+                ->whereHas('paper', function($q) use ($year) {
+                    $q->where('conference_year', $year);
+                })
+                ->whereNotNull('assigned_at')
+                ->whereNotNull('submitted_at')
+                ->avg(DB::raw('DATEDIFF(submitted_at, assigned_at)'));
+        }
+        
+        // Get topics distribution
+        $topicsDistribution = Paper::where('conference_year', $year)
+            ->select('topic_area as name', DB::raw('count(*) as papers_count'))
+            ->groupBy('topic_area')
+            ->orderByDesc('papers_count')
+            ->get();
+        
+        // Get important deadlines
+        $deadlines = [];
+
+$dates = [
+    ['title' => 'Paper Submission Deadline', 'description' => 'Final date for paper submissions', 'month' => 3, 'day' => 15],
+    ['title' => 'Review Deadline', 'description' => 'All reviews must be completed', 'month' => 4, 'day' => 15],
+    ['title' => 'Camera Ready Deadline', 'description' => 'Final camera-ready versions due', 'month' => 5, 'day' => 1],
+];
+
+foreach ($dates as $item) {
+    $date = Carbon::create($year, $item['month'], $item['day']);
+    $isPast = $date->isPast();
+    $daysDiff = now()->diffInDays($date, false); // false means negative if past
     
-    // Calculate average review time for each reviewer
-    foreach ($reviewerPerformance as $reviewer) {
-        $reviewer->avg_review_time = ReviewAssignment::where('reviewer_id', $reviewer->id)
-            ->where('status', 'completed')
-            ->whereHas('paper', function($q) use ($year) {
-                $q->where('conference_year', $year);
-            })
-            ->whereNotNull('assigned_at')
-            ->whereNotNull('submitted_at')
-            ->avg(DB::raw('DATEDIFF(submitted_at, assigned_at)'));
-    }
-    
-    // Get topics distribution
-    $topicsDistribution = Paper::where('conference_year', $year)
-        ->select('topic_area as name', DB::raw('count(*) as papers_count'))
-        ->groupBy('topic_area')
-        ->orderByDesc('papers_count')
-        ->get();
-    
-    // Get deadlines
-    $deadlines = [
-        (object)[
-            'title' => 'Paper Submission Deadline',
-            'description' => 'Final date for paper submissions',
-            'date' => Carbon::create($year, 3, 15),
-            'is_past' => Carbon::create($year, 3, 15)->isPast(),
-            'is_approaching' => Carbon::create($year, 3, 15)->diffInDays(now()) <= 30,
-            'days_left' => Carbon::create($year, 3, 15)->diffInDays(now()),
-        ],
-        (object)[
-            'title' => 'Review Deadline',
-            'description' => 'All reviews must be completed',
-            'date' => Carbon::create($year, 4, 15),
-            'is_past' => Carbon::create($year, 4, 15)->isPast(),
-            'is_approaching' => Carbon::create($year, 4, 15)->diffInDays(now()) <= 30,
-            'days_left' => Carbon::create($year, 4, 15)->diffInDays(now()),
-        ],
-        (object)[
-            'title' => 'Camera Ready Deadline',
-            'description' => 'Final camera-ready versions due',
-            'date' => Carbon::create($year, 5, 1),
-            'is_past' => Carbon::create($year, 5, 1)->isPast(),
-            'is_approaching' => Carbon::create($year, 5, 1)->diffInDays(now()) <= 30,
-            'days_left' => Carbon::create($year, 5, 1)->diffInDays(now()),
-        ],
+    $deadlines[] = (object)[
+        'title' => $item['title'],
+        'description' => $item['description'],
+        'date' => $date,
+        'is_past' => $isPast,
+        'is_approaching' => !$isPast && $date->diffInDays(now()) <= 30,
+        'days_left' => max(0, floor($daysDiff)),
     ];
-    
-    return view('dashboard.chair', compact(
-        'stats', 'pendingDecisions', 'recentSubmissions', 
-        'reviewerPerformance', 'topicsDistribution', 'deadlines', 'year'
-    ));
 }
+
+        
+        return view('dashboard.chair', compact(
+            'stats', 'pendingDecisions', 'recentSubmissions', 
+            'reviewerPerformance', 'topicsDistribution', 'deadlines', 'year'
+        ));
+    }
 
     /**
      * Manage papers (for chairs)
