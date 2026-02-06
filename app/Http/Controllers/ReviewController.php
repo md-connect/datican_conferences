@@ -93,20 +93,22 @@ class ReviewController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $isDraft = $request->boolean('save_draft');
+
+        $rules = [
             'paper_id' => 'required|exists:papers,id',
-            'overall_score' => 'required|integer|min:1|max:5',
-            'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject',
-            'comments_author' => 'required|string|min:50',
-            'comments_chair' => 'nullable|string',
-            'strengths' => 'nullable|string',
-            'weaknesses' => 'nullable|string',
-            'suggestions' => 'nullable|string',
-            'summary' => 'nullable|string',
-            'confidence' => 'nullable|in:expert,familiar,passing,knowledgeable',
-            'scores' => 'nullable|array',
-            'save_draft' => 'nullable|boolean',
-        ]);
+        ];
+
+        if (!$isDraft) {
+            $rules += [
+                'overall_score' => 'required|integer|min:1|max:5',
+                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject',
+                'comments_author' => 'required|string|min:50',
+            ];
+        }
+
+        $request->validate($rules);
+
         
         // Find the review assignment
         $review = ReviewAssignment::where('paper_id', $request->paper_id)
@@ -200,20 +202,20 @@ class ReviewController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        $request->validate([
-            'overall_score' => 'required|integer|min:1|max:5',
-            'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject',
-            'comments_author' => 'required|string|min:50',
-            'comments_chair' => 'nullable|string',
-            'strengths' => 'nullable|string',
-            'weaknesses' => 'nullable|string',
-            'suggestions' => 'nullable|string',
-            'summary' => 'nullable|string',
-            'confidence' => 'nullable|in:expert,familiar,passing,knowledgeable',
-            'scores' => 'nullable|array',
-            'save_draft' => 'nullable|boolean',
-        ]);
-        
+        $isDraft = $request->boolean('save_draft');
+
+        $rules = [];
+
+        if (!$isDraft) {
+            $rules += [
+                'overall_score' => 'required|integer|min:1|max:5',
+                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject',
+                'comments_author' => 'required|string|min:50',
+            ];
+        }
+
+        $request->validate($rules);
+                
         // Prepare update data
         $updateData = [
             'overall_score' => $request->overall_score,

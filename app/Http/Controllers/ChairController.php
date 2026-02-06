@@ -58,9 +58,12 @@ class ChairController extends Controller
         
         // Get recent submissions
         $recentSubmissions = Paper::where('conference_year', $year)
+            ->whereIn('status', ['submitted', 'abstract_submitted'])
+            ->whereDoesntHave('reviewAssignments')
             ->latest()
             ->take(10)
             ->get();
+
         
         // Get reviewer performance
         $reviewerPerformance = User::where('is_reviewer', true)

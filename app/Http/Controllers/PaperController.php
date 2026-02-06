@@ -59,6 +59,16 @@ class PaperController extends Controller
 
     public function create()
     {
+        // Check if the user has an existing draft
+        $draft = Paper::where('created_by', Auth::id())
+            ->where('status', 'draft')
+            ->latest()
+            ->first();
+
+        if ($draft) {
+            return redirect()->route('papers.edit', $draft);
+        }
+
         $users = User::orderBy('first_name')->get();
         $registrations = ConferenceRegistration::where('email', Auth::user()->email)
             ->orWhereHas('papers', function ($query) {
@@ -72,7 +82,6 @@ class PaperController extends Controller
     public function store(Request $request)
     {
         // Validate the request
-        // Create validation rules array
         $rules = [
             'title' => 'required|string|max:255',
             'abstract' => [
@@ -93,7 +102,7 @@ class PaperController extends Controller
             'is_anonymous' => 'nullable|boolean',
             'authors' => 'required|array|min:1',
             'authors.*.user_id' => 'required|exists:users,id',
-            'authors.*.is_corresponding' => 'nullable|boolean',
+            'corresponding_author' => 'required|integer|min:0', // Radio button for corresponding author
             'registration_ids' => 'nullable|array',
             'registration_ids.*' => 'exists:conference_registrations,id',
         ];
@@ -145,10 +154,12 @@ class PaperController extends Controller
         // Create the paper
         $paper = Paper::create($paperData);
 
-        // Attach authors
+        // Attach authors with corresponding author flag from radio button
         foreach ($validated['authors'] as $index => $authorData) {
+            $isCorresponding = ($index == $validated['corresponding_author']);
+            
             $paper->authors()->attach($authorData['user_id'], [
-                'is_corresponding' => $authorData['is_corresponding'] ?? ($index === 0), // First author is corresponding by default
+                'is_corresponding' => $isCorresponding,
                 'author_order' => $index,
             ]);
         }
@@ -175,25 +186,26 @@ class PaperController extends Controller
         return view('papers.show', compact('paper'));
     }
 
-    public function edit(Paper $paper)
+   public function edit(Paper $paper)
     {
         if (!$paper->canBeEditedBy(Auth::user())) {
             abort(403, 'This paper cannot be edited at this stage.');
         }
 
+        $paper->load('authors'); // ensure authors relationship is loaded
         $users = User::orderBy('first_name')->get();
-        $registrations = ConferenceRegistration::whereIn('email', 
-            $paper->authors->pluck('email')
-        )->get();
+        $registrations = ConferenceRegistration::whereIn('email', $paper->authors->pluck('email'))->get();
 
         return view('papers.edit', compact('paper', 'users', 'registrations'));
     }
 
-    public function update(StorePaperRequest $request, Paper $paper)
+
+    public function update(Request $request, Paper $paper)
     {
         if (!$paper->canBeEditedBy(Auth::user())) {
             abort(403, 'This paper cannot be edited at this stage.');
         }
+
         // Create validation rules array
         $rules = [
             'title' => 'required|string|max:255',
@@ -214,14 +226,13 @@ class PaperController extends Controller
             'is_anonymous' => 'nullable|boolean',
             'authors' => 'required|array|min:1',
             'authors.*.user_id' => 'required|exists:users,id',
-            'authors.*.is_corresponding' => 'nullable|boolean',
+            'corresponding_author' => 'required|integer|min:0', // Radio button for corresponding author
         ];
 
         // Conditionally add file validation for full paper submissions
         if ($request->submission_type === 'full_paper') {
             $rules['paper_file'] = 'required|file|mimes:pdf|max:10240';
-        }
-         else {
+        } else {
             $rules['paper_file'] = 'nullable|file|mimes:pdf|max:10240';
         }
 
@@ -251,16 +262,22 @@ class PaperController extends Controller
         }
 
         if ($request->action === 'submit' && $paper->status === 'draft') {
-            $data['status'] = 'submitted';
+            $data['status'] = $paper->submission_type === 'abstract_only'
+                ? 'abstract_submitted'
+                : 'submitted';
+
             $data['submitted_at'] = now();
         }
 
         $paper->update($data);
 
+        // Update authors with corresponding author flag from radio button
         $paper->authors()->detach();
-        foreach ($request->authors as $index => $authorData) {
+        foreach ($validated['authors'] as $index => $authorData) {
+            $isCorresponding = ($index == $validated['corresponding_author']);
+            
             $paper->authors()->attach($authorData['user_id'], [
-                'is_corresponding' => $authorData['is_corresponding'] ?? false,
+                'is_corresponding' => $isCorresponding,
                 'author_order' => $index,
             ]);
         }

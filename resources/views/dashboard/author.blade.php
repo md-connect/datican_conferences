@@ -88,7 +88,10 @@
                             <div class="flex items-center space-x-4 mt-2">
                                 <span class="text-sm text-gray-500">{{ $paper->anonymous_id }}</span>
                                 {!! $paper->status_badge !!}
-                                <span class="text-sm text-gray-500">{{ $paper->submitted_at->format('M d, Y') }}</span>
+                                <span class="text-sm text-gray-500">
+                                    {{ $paper->submitted_at ? $paper->submitted_at->format('M d, Y') : 'Not submitted' }}
+                                </span>
+
                             </div>
                         </div>
                         <div class="flex space-x-2">

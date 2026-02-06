@@ -41,12 +41,11 @@ class AssignmentController extends Controller
             ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']); // ADD 'abstract_submitted' here
         
         // For papers tab, only show papers that need reviewers
+        // For papers tab, show ONLY unassigned papers
         if ($tab === 'papers') {
-            $papersQuery->withCount(['reviews as pending_reviews_count' => function($query) {
-                $query->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
-            }])
-            ->having('pending_reviews_count', '<', 3);
+            $papersQuery->doesntHave('reviews');
         }
+
         
         $papers = $papersQuery->with(['reviews' => function($query) {
                 $query->whereIn('status', ['pending', 'under_review', 'in_progress']) // Updated statuses
@@ -70,12 +69,10 @@ class AssignmentController extends Controller
             ->count();
             
         $papersNeedingAssignments = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']) // ADD 'abstract_submitted'
-            ->withCount(['reviews as pending_reviews_count' => function($query) {
-                $query->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
-            }])
-            ->having('pending_reviews_count', '<', 3)
+            ->whereIn('status', ['submitted', 'abstract_submitted'])
+            ->doesntHave('reviews')
             ->count();
+
         
         $totalAssignedReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
                 $q->where('conference_year', $year);
