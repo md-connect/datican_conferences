@@ -245,7 +245,7 @@
                 </div>
             </div>
             
-            <!-- Action Buttons -->
+            <!-- Action Buttons - Using Hidden Input Method -->
             <div class="flex justify-between pt-6 border-t">
                 <div>
                     <a href="{{ route('reviews.my') }}" 
@@ -263,6 +263,7 @@
                 
                 <div class="space-x-4">
                     @if($review->exists && $review->status !== 'completed')
+                    <!-- Save as Draft Button -->
                     <button type="submit" 
                             name="save_draft" 
                             value="1"
@@ -271,9 +272,17 @@
                     </button>
                     @endif
                     
+                    <!-- Submit/Update Review Button -->
                     <button type="submit" 
-                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        <i class="fas fa-check-circle mr-2"></i>{{ $review->exists ? 'Update' : 'Submit' }} Review
+                            name="submit_review" 
+                            value="1"
+                            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        @if($review->exists)
+                            {{ $review->status === 'completed' ? 'Update' : 'Submit' }} Review
+                        @else
+                            Submit Review
+                        @endif
                     </button>
                 </div>
             </div>
@@ -323,14 +332,50 @@
         updateCharacterCount(); // Initial call
     }
     
-    // Validate form before submission
+    // Validate form before submission - using hidden input method
     document.querySelector('form').addEventListener('submit', function(e) {
-        const authorComments = document.querySelector('textarea[name="comments_author"]').value;
-        if (authorComments.length < 50) {
-            e.preventDefault();
-            alert('Comments for authors must be at least 50 characters long.');
-            document.querySelector('textarea[name="comments_author"]').focus();
+        // Check if this is a save draft submission
+        const isSaveDraft = document.activeElement && 
+                            document.activeElement.getAttribute('name') === 'save_draft';
+        
+        console.log('Form submission:', {
+            activeElement: document.activeElement ? document.activeElement.getAttribute('name') : 'unknown',
+            isSaveDraft: isSaveDraft
+        });
+        
+        // Skip validation for save draft
+        if (isSaveDraft) {
+            console.log('Saving draft - skipping validation');
+            return true;
         }
+        
+        // Validate for final submission
+        const recommendation = document.querySelector('select[name="recommendation"]').value;
+        const overallScore = document.querySelector('input[name="overall_score"]:checked');
+        const authorComments = authorTextarea ? authorTextarea.value : '';
+        
+        let errors = [];
+        
+        if (!recommendation) {
+            errors.push('Please select a recommendation.');
+        }
+        
+        if (!overallScore) {
+            errors.push('Please select an overall score.');
+        }
+        
+        if (authorComments.length < 50) {
+            errors.push('Comments for authors must be at least 50 characters long.');
+        }
+        
+        if (errors.length > 0) {
+            e.preventDefault();
+            alert('Please fix the following errors:\n\n' + errors.join('\n'));
+            return false;
+        }
+        
+        console.log('Validation passed, form will submit');
+        return true;
     });
 </script>
 @endsection

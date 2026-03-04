@@ -14,7 +14,12 @@ class ReviewAssignment extends Model
         'paper_id', 'reviewer_id', 'assigned_by', 'status', 'assigned_at', 'deadline', 'notes',
         'overall_score', 'scores', 'comments_author', 'comments_chair', 'confidence',
         'summary', 'strengths', 'weaknesses', 'suggestions', 'recommendation',
-        'started_at', 'submitted_at', 'due_date', 'is_anonymous'
+        'started_at', 'submitted_at', 'due_date', 'is_anonymous',
+        // NEW FIELDS
+        'revision_suggestions',
+        'is_revision_review',
+        'original_review_id',
+        'paper_version',
     ];
 
     protected $casts = [
@@ -25,6 +30,10 @@ class ReviewAssignment extends Model
         'due_date' => 'datetime',
         'scores' => 'array',
         'is_anonymous' => 'boolean',
+        // NEW CASTS
+        'is_revision_review' => 'boolean',
+        'paper_version' => 'integer',
+
     ];
 
     protected $appends = ['recommendation_text', 'is_overdue'];

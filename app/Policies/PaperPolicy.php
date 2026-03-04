@@ -43,17 +43,90 @@ class PaperPolicy
      * Determine whether the user can update the model.
      */
     public function update(User $user, Paper $paper): bool
-    {
-        // Users can update if they are admin or chair
-        if ($user->is_admin || $user->is_chair) {
-            return true;
-        }
-        
-        // Regular users can only update their own papers in draft/submitted status
-        return $paper->authors()->where('users.id', $user->id)->exists()
-            && in_array($paper->status, ['draft', 'submitted']);
+{
+    \Log::info('========== PAPER POLICY UPDATE ==========', [
+        'timestamp' => now()->toDateTimeString(),
+        'user_id' => $user->id,
+        'user_email' => $user->email,
+        'paper_id' => $paper->id,
+        'paper_status' => $paper->status,
+        'paper_submission_type' => $paper->submission_type,
+        'is_admin' => $user->is_admin,
+        'is_chair' => $user->is_chair ?? false
+    ]);
+    
+    // Users can update if they are admin or chair
+    if ($user->is_admin || $user->is_chair) {
+        \Log::info('POLICY: Allowed - user is admin/chair');
+        return true;
     }
-
+    
+    // Check if user is an author of the paper
+    \Log::info('POLICY: Checking author status');
+    $authorQuery = $paper->authors()->where('users.id', $user->id);
+    $isAuthor = $authorQuery->exists();
+    
+    // Get all authors for debugging
+    $allAuthors = $paper->authors->map(function($author) {
+        return [
+            'id' => $author->id,
+            'email' => $author->email,
+            'name' => $author->name
+        ];
+    })->toArray();
+    
+    \Log::info('POLICY: Author check results', [
+        'is_author' => $isAuthor,
+        'current_user_id' => $user->id,
+        'all_authors' => $allAuthors,
+        'author_count' => $paper->authors->count()
+    ]);
+    
+    if (!$isAuthor) {
+        \Log::info('POLICY: Denied - user is not an author');
+        return false;
+    }
+    
+    // Log the status check
+    \Log::info('POLICY: Checking status', [
+        'current_status' => $paper->status,
+        'editable_statuses' => ['draft', 'submitted', 'needs_revision'],
+        'is_abstract_accepted' => ($paper->status === 'abstract_accepted' && $paper->submission_type === 'abstract_only')
+    ]);
+    
+    // Authors can edit papers in these statuses
+    $editableStatuses = ['draft', 'submitted', 'needs_revision'];
+    
+    // Also allow if abstract is accepted (to upload full paper)
+    if ($paper->status === 'abstract_accepted' && $paper->submission_type === 'abstract_only') {
+        \Log::info('POLICY: Allowed - abstract accepted, can upload full paper');
+        return true;
+    }
+    
+    $result = in_array($paper->status, $editableStatuses);
+    
+    \Log::info('POLICY: Final decision', [
+        'status_in_array' => $result,
+        'result' => $result
+    ]);
+    
+    \Log::info('========== POLICY UPDATE END ==========');
+    
+    return $result;
+}
+public function before(User $user, $ability)
+{
+    \Log::info('========== POLICY BEFORE ==========', [
+        'user_id' => $user->id,
+        'user_email' => $user->email,
+        'ability' => $ability,
+        'is_admin' => $user->is_admin,
+        'is_chair' => $user->is_chair ?? false
+    ]);
+    
+    // Return null to let other methods decide
+    return null;
+}
     /**
      * Determine whether the user can delete the model.
      */

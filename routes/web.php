@@ -120,6 +120,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/papers/{paper}/decision', [ChairController::class, 'makeDecision'])->name('chair.papers.decision');
         
         // Review Management
+        Route::post('/assignments/reset/{paper}', [AssignmentController::class, 'resetForReassignment'])
+            ->name('assignments.reset')
+            ->middleware(['auth', 'can:admin,App\Models\Paper']);
         Route::post('/reviews/{review}/reassign', [ChairController::class, 'reassign'])->name('chair.reviews.reassign');
         Route::post('/reviews/{review}/remind', [ChairController::class, 'sendReminder'])->name('chair.reviews.remind');
         

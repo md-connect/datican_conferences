@@ -36,61 +36,95 @@ class AssignmentController extends Controller
         $tab = $request->input('tab', 'papers');
         $paperId = $request->input('paper');
         
-        // Papers needing assignments - ADD 'abstract_submitted' to the status array
+        // Papers needing assignments - INCLUDE papers with declined reviews
         $papersQuery = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']); // ADD 'abstract_submitted' here
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']);
         
-        // For papers tab, only show papers that need reviewers
-        // For papers tab, show ONLY unassigned papers
+        // For papers tab, show papers that need reviewers (including those with declined reviews)
         if ($tab === 'papers') {
-            $papersQuery->doesntHave('reviews');
+            $papersQuery->where(function($query) {
+                $query->doesntHave('reviews') // Papers with no reviews at all
+                    ->orWhereHas('reviews', function($q) {
+                        // Papers where ALL reviews are declined
+                        $q->where('status', 'declined')
+                        ->havingRaw('COUNT(*) = (SELECT COUNT(*) FROM review_assignments WHERE paper_id = papers.id)');
+                    });
+            });
         }
 
-        
         $papers = $papersQuery->with(['reviews' => function($query) {
-                $query->whereIn('status', ['pending', 'under_review', 'in_progress']) // Updated statuses
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'declined']) // Include declined in the eager loading
                     ->with('reviewer');
             }, 'bids'])
             ->orderBy('submitted_at')
-            ->get();
+            ->get()
+            ->filter(function($paper) {
+                // Additional filtering to ensure we only get papers that need reviewers
+                // A paper needs a reviewer if:
+                // 1. It has no reviews, OR
+                // 2. All its reviews are declined
+                if ($paper->reviews->isEmpty()) {
+                    return true;
+                }
+                
+                // Check if ALL reviews are declined
+                return $paper->reviews->every(function($review) {
+                    return $review->status === 'declined';
+                });
+            });
         
-        // Available reviewers
+        // Available reviewers - exclude those who already declined this specific paper
         $reviewers = User::where('is_reviewer', true)
             ->with(['expertise', 'reviewAssignments' => function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
                     $q2->where('conference_year', $year);
-                })->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
+                })->whereIn('status', ['pending', 'under_review', 'in_progress']);
             }])
-            ->get();
+            ->get()
+            ->map(function($reviewer) use ($papers) {
+                // Get all papers this reviewer has declined
+                $reviewer->declined_paper_ids = ReviewAssignment::where('reviewer_id', $reviewer->id)
+                    ->where('status', 'declined')
+                    ->pluck('paper_id')
+                    ->toArray();
+                return $reviewer;
+            });
         
         // Statistics - UPDATE THESE QUERIES TOO
         $totalPapers = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review']) // ADD 'abstract_submitted'
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
             ->count();
             
+        // Papers needing assignments (including those with all reviews declined)
         $papersNeedingAssignments = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'abstract_submitted'])
-            ->doesntHave('reviews')
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
+            ->where(function($query) {
+                $query->doesntHave('reviews')
+                    ->orWhereHas('reviews', function($q) {
+                        $q->where('status', 'declined')
+                        ->havingRaw('COUNT(*) = (SELECT COUNT(*) FROM review_assignments WHERE paper_id = papers.id)');
+                    });
+            })
             ->count();
 
-        
         $totalAssignedReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
                 $q->where('conference_year', $year);
             })
-            ->whereIn('status', ['pending', 'under_review', 'in_progress']) // Updated statuses
+            ->whereIn('status', ['pending', 'under_review', 'in_progress'])
             ->count();
 
         $activeReviewers = User::where('is_reviewer', true)
             ->whereHas('reviewAssignments', function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
                     $q2->where('conference_year', $year);
-                })->whereIn('status', ['pending', 'under_review', 'in_progress']); // Updated statuses
+                })->whereIn('status', ['pending', 'under_review', 'in_progress']);
             })
             ->count();
         
         $avgLoad = $activeReviewers > 0 ? round($totalAssignedReviews / $activeReviewers, 1) : 0;
         
-        $maxPossibleReviews = $totalPapers * 3;
+        // Calculate max possible reviews (3 per paper that needs reviewers)
+        $maxPossibleReviews = $papersNeedingAssignments * 3;
         $coverage = $maxPossibleReviews > 0 ? round(($totalAssignedReviews / $maxPossibleReviews) * 100, 1) : 0;
         
         $stats = [
@@ -101,6 +135,45 @@ class AssignmentController extends Controller
         ];
         
         return view('assignments.index', compact('papers', 'reviewers', 'stats'));
+    }
+
+    /**
+     * Reset a paper for reassignment after all reviews declined
+     */
+    public function resetForReassignment(Paper $paper)
+    {
+        // Check if all reviews are declined
+        $activeReviews = $paper->reviews()
+            ->whereIn('status', ['pending', 'under_review', 'in_progress'])
+            ->count();
+        
+        $declinedReviews = $paper->reviews()
+            ->where('status', 'declined')
+            ->count();
+        
+        $totalReviews = $paper->reviews()->count();
+        
+        // Only allow reset if there are no active reviews and at least one declined
+        if ($activeReviews > 0 || $declinedReviews === 0) {
+            return back()->with('error', 'Paper cannot be reset at this time.');
+        }
+        
+        // Update paper status to show it needs reviewers
+        $paper->update([
+            'status' => $paper->submission_type === 'abstract_only' ? 'abstract_submitted' : 'submitted',
+            'needs_reviewer' => true
+        ]);
+        
+        // Log the reset
+        \Log::info('Paper reset for reassignment', [
+            'paper_id' => $paper->id,
+            'paper_title' => $paper->title,
+            'declined_count' => $declinedReviews,
+            'total_reviews' => $totalReviews
+        ]);
+        
+        return redirect()->route('assignments.index')
+            ->with('success', 'Paper has been reset and is now available for new reviewer assignments.');
     }
     /**
      * Show form to assign reviewers to a specific paper

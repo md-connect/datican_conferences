@@ -100,14 +100,57 @@
                     </div>
                     @endif
                     
+                    <!-- Show revision suggestions if present -->
+                    @if($review->revision_suggestions)
+                    <div class="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400">
+                        <p class="text-sm font-medium text-yellow-800 mb-1">Revision Suggestions</p>
+                        <p class="text-sm text-yellow-700">{{ $review->revision_suggestions }}</p>
+                    </div>
+                    @endif
+                    
                     <div class="mt-3 flex space-x-3">
                         <a href="{{ route('reviews.show', $review) }}" 
-                           class="text-sm text-blue-600 hover:text-blue-800">
+                        class="text-sm text-blue-600 hover:text-blue-800">
                             View Full Review
                         </a>
+                        
+                        <!-- Show original review link if this is a revision -->
+                        @if($review->original_review_id)
+                        <span class="text-sm text-gray-400">|</span>
+                        <a href="{{ route('reviews.show', $review->original_review_id) }}" 
+                        class="text-sm text-green-600 hover:text-green-800">
+                            View Original Review
+                        </a>
+                        @endif
                     </div>
                 </div>
                 @endforeach
+                
+                <!-- Revision Recommendations Summary -->
+                @if($paper->has_revision_recommendations)
+                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                        <div>
+                            <p class="font-medium text-blue-800">Revision Recommendations Detected</p>
+                            <p class="text-sm text-blue-600 mt-1">
+                                {{ $paper->revision_recommendation_count }} out of {{ $paper->reviewAssignments->where('status', 'completed')->count() }} 
+                                reviewers have recommended revisions.
+                            </p>
+                            @if($paper->revision_recommendations_list->count() > 0)
+                            <div class="mt-2 text-sm text-blue-700">
+                                <strong>Common suggestions:</strong>
+                                <ul class="list-disc list-inside mt-1">
+                                    @foreach($paper->revision_recommendations_list->take(3) as $suggestion)
+                                    <li>{{ Str::limit($suggestion, 100) }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @endif
                 
                 <!-- Average Score -->
                 <div class="bg-gray-50 rounded-lg p-4 mt-6">
@@ -194,85 +237,89 @@
 
         @if($allReviewsCompleted)
         <div class="bg-white rounded-xl shadow-md p-6">
-    <h3 class="text-lg font-semibold text-gray-800 mb-6">Make Decision</h3>
-    
-    @if ($errors->any())
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <h3 class="text-red-800 font-medium mb-2">Form Errors:</h3>
-            <ul class="list-disc list-inside text-red-700">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    
-    <form method="POST" action="{{ route('chair.papers.decision', $paper) }}" id="decisionForm">
-        @csrf
-        
-        <div class="space-y-6">
-            <!-- Decision Selection -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-3">Decision *</label>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <label class="flex flex-col items-center p-4 border-2 border-green-200 rounded-lg hover:bg-green-50 cursor-pointer">
-                        <input type="radio" name="decision" value="accept" class="mb-3" required>
-                        <i class="fas fa-check-circle text-3xl text-green-600 mb-2"></i>
-                        <span class="font-medium text-green-700">Accept</span>
-                        <span class="text-xs text-gray-600 text-center mt-1">Paper meets standards</span>
-                    </label>
-                    
-                    <label class="flex flex-col items-center p-4 border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 cursor-pointer">
-                        <input type="radio" name="decision" value="revise" class="mb-3" required>
-                        <i class="fas fa-edit text-3xl text-yellow-600 mb-2"></i>
-                        <span class="font-medium text-yellow-700">Revise & Resubmit</span>
-                        <span class="text-xs text-gray-600 text-center mt-1">Needs improvements</span>
-                    </label>
-                    
-                    <label class="flex flex-col items-center p-4 border-2 border-red-200 rounded-lg hover:bg-red-50 cursor-pointer">
-                        <input type="radio" name="decision" value="reject" class="mb-3" required>
-                        <i class="fas fa-times-circle text-3xl text-red-600 mb-2"></i>
-                        <span class="font-medium text-red-700">Reject</span>
-                        <span class="text-xs text-gray-600 text-center mt-1">Does not meet standards</span>
-                    </label>
+            <h3 class="text-lg font-semibold text-gray-800 mb-6">Make Decision</h3>
+            
+            @if ($errors->any())
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <h3 class="text-red-800 font-medium mb-2">Form Errors:</h3>
+                    <ul class="list-disc list-inside text-red-700">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
-            </div>
+            @endif
             
-            <!-- Revision Deadline (Conditional) -->
-            <div id="revisionDeadline" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Revision Deadline *
-                </label>
-                <input type="date" 
-                    name="revision_deadline" 
-                    id="revisionDeadlineInput"
-                    class="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    min="{{ date('Y-m-d', strtotime('+1 day')) }}">
-                <p class="text-sm text-gray-500 mt-1">Date by which authors must submit revised version</p>
-            </div>
-            
-            <!-- Decision Notes -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Decision Notes (Optional)
-                </label>
-                <textarea name="decision_notes" 
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Additional notes for authors...">{{ old('decision_notes') }}</textarea>
-                <p class="text-sm text-gray-500 mt-1">These notes will be shared with the authors</p>
-            </div>
-            
-            <!-- Submit Button -->
-            <div class="flex justify-end pt-6 border-t">
-                <button type="submit" 
-                        class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                    <i class="fas fa-gavel mr-2"></i> Submit Decision
-                </button>
-            </div>
+            <form method="POST" action="{{ route('chair.papers.decision', $paper) }}" id="decisionForm">
+                @csrf
+                
+                <div class="space-y-6">
+                    <!-- Decision Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Decision *</label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <label class="flex flex-col items-center p-4 border-2 border-green-200 rounded-lg hover:bg-green-50 cursor-pointer">
+                                <input type="radio" name="decision" value="accept" class="mb-3" required>
+                                <i class="fas fa-check-circle text-3xl text-green-600 mb-2"></i>
+                                <span class="font-medium text-green-700">Accept</span>
+                                <span class="text-xs text-gray-600 text-center mt-1">Paper meets standards</span>
+                            </label>
+                            
+                            <label class="flex flex-col items-center p-4 border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 cursor-pointer">
+                                <input type="radio" name="decision" value="revise" class="mb-3" required>
+                                <i class="fas fa-edit text-3xl text-yellow-600 mb-2"></i>
+                                <span class="font-medium text-yellow-700">Revise & Resubmit</span>
+                                <span class="text-xs text-gray-600 text-center mt-1">Needs improvements</span>
+                            </label>
+                            
+                            <label class="flex flex-col items-center p-4 border-2 border-red-200 rounded-lg hover:bg-red-50 cursor-pointer">
+                                <input type="radio" name="decision" value="reject" class="mb-3" required>
+                                <i class="fas fa-times-circle text-3xl text-red-600 mb-2"></i>
+                                <span class="font-medium text-red-700">Reject</span>
+                                <span class="text-xs text-gray-600 text-center mt-1">Does not meet standards</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Revision Deadline (Conditional) -->
+                    <div id="revisionDeadlineContainer" class="hidden" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Revision Deadline <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" 
+                            name="revision_deadline" 
+                            id="revisionDeadlineInput"
+                            class="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            min="{{ date('Y-m-d', strtotime('+1 day')) }}"
+                            value="{{ old('revision_deadline') }}">
+                        <p class="text-sm text-gray-500 mt-1">Date by which authors must submit revised version</p>
+                        @error('revision_deadline')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Decision Notes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Decision Notes (Optional)
+                        </label>
+                        <textarea name="decision_notes" 
+                                rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Additional notes for authors...">{{ old('decision_notes') }}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">These notes will be shared with the authors</p>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="flex justify-end pt-6 border-t">
+                        <button type="submit" 
+                                class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                            <i class="fas fa-gavel mr-2"></i> Submit Decision
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-    </form>
-</div>
         @else
         <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
             <i class="fas fa-clock text-3xl text-yellow-600 mb-4"></i>
@@ -301,50 +348,103 @@
     </div>
 </div>
 
-@section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Decision form script loaded');
+    
     const decisionRadios = document.querySelectorAll('input[name="decision"]');
-    const revisionDeadlineDiv = document.getElementById('revisionDeadline');
+    const revisionDeadlineContainer = document.getElementById('revisionDeadlineContainer');
     const revisionDeadlineInput = document.getElementById('revisionDeadlineInput');
     const form = document.getElementById('decisionForm');
     
+    console.log('Elements found:', {
+        decisionRadios: decisionRadios.length,
+        revisionDeadlineContainer: revisionDeadlineContainer ? 'yes' : 'no',
+        revisionDeadlineInput: revisionDeadlineInput ? 'yes' : 'no',
+        form: form ? 'yes' : 'no'
+    });
+    
+    // Function to toggle revision deadline field
     function toggleRevisionDeadline() {
         const selectedDecision = document.querySelector('input[name="decision"]:checked');
         
+        console.log('Toggle function called', {
+            selectedDecision: selectedDecision ? selectedDecision.value : 'none'
+        });
+        
         if (selectedDecision && selectedDecision.value === 'revise') {
-            revisionDeadlineDiv.classList.remove('hidden');
-            if (revisionDeadlineInput) {
-                revisionDeadlineInput.required = true;
-            }
+            console.log('Showing revision deadline field');
+            revisionDeadlineContainer.style.display = 'block';
+            revisionDeadlineContainer.classList.remove('hidden');
+            revisionDeadlineInput.required = true;
+            revisionDeadlineInput.disabled = false;
         } else {
-            revisionDeadlineDiv.classList.add('hidden');
-            if (revisionDeadlineInput) {
-                revisionDeadlineInput.required = false;
-                revisionDeadlineInput.value = '';
-            }
+            console.log('Hiding revision deadline field');
+            revisionDeadlineContainer.style.display = 'none';
+            revisionDeadlineContainer.classList.add('hidden');
+            revisionDeadlineInput.required = false;
+            revisionDeadlineInput.disabled = true;
+            revisionDeadlineInput.value = '';
         }
     }
     
-    // Add change listeners
+    // Add change event listeners to all radio buttons
     decisionRadios.forEach(radio => {
         radio.addEventListener('change', toggleRevisionDeadline);
+        console.log('Added change listener to radio:', radio.value);
     });
     
-    // Handle form submission to ensure clean data
+    // Form submission handler
     if (form) {
         form.addEventListener('submit', function(e) {
             const selectedDecision = document.querySelector('input[name="decision"]:checked');
             
-            // If not "revise", disable the revision_deadline field
-            if (selectedDecision && selectedDecision.value !== 'revise' && revisionDeadlineInput) {
-                revisionDeadlineInput.disabled = true;
+            console.log('Form submission triggered', {
+                selectedDecision: selectedDecision ? selectedDecision.value : 'none',
+                revisionDeadlineValue: revisionDeadlineInput ? revisionDeadlineInput.value : 'no input'
+            });
+            
+            if (!selectedDecision) {
+                e.preventDefault();
+                alert('Please select a decision.');
+                return false;
             }
+            
+            // For revise decision, ensure deadline is set
+            if (selectedDecision.value === 'revise') {
+                // Make sure field is enabled so its value is submitted
+                revisionDeadlineInput.disabled = false;
+                
+                if (!revisionDeadlineInput.value) {
+                    e.preventDefault();
+                    alert('Please select a revision deadline date.');
+                    revisionDeadlineInput.focus();
+                    return false;
+                }
+            }
+            
+            // Log that we're allowing submission
+            console.log('Form submission allowed');
+            return true;
         });
     }
     
-    // Initial setup
+    // Initial call
     toggleRevisionDeadline();
+    
+    // Handle old input
+    @if(old('decision') === 'revise')
+        console.log('Old decision was revise');
+        const reviseRadio = document.querySelector('input[name="decision"][value="revise"]');
+        if (reviseRadio) {
+            reviseRadio.checked = true;
+            toggleRevisionDeadline();
+            @if(old('revision_deadline'))
+                revisionDeadlineInput.value = "{{ old('revision_deadline') }}";
+            @endif
+        }
+    @endif
 });
 </script>
+
 @endsection

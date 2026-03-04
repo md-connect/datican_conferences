@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Rules\MaxWords;
+use Illuminate\Support\Facades\DB;
 
 
 class PaperController extends Controller
@@ -67,7 +68,8 @@ class PaperController extends Controller
             ->first();
 
         if ($draft) {
-            return redirect()->route('papers.edit', $draft);
+            return redirect()->route('papers.edit', $draft)
+                ->with('info', 'You have an existing draft. Please complete it before creating a new submission.');
         }
 
         $users = User::orderBy('first_name')->get();
@@ -80,53 +82,30 @@ class PaperController extends Controller
         return view('papers.create', compact('users', 'registrations'));
     }
 
-    public function store(Request $request)
+    public function store(StorePaperRequest $request)
     {
-        // Validate the request
-        // Create validation rules array
-        $rules = [
-            'title' => 'required|string|max:255',
-            'abstract' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    $wordCount = str_word_count($value);
-                    if ($wordCount > 250) {
-                        $fail('The abstract must not exceed 250 words.');
-                    }
-                }
-            ],
-            'keywords' => 'required|string',
-            'topic_area' => 'required|string',
-            'submission_type' => 'required|in:abstract_only,full_paper',
-            'conference_year' => 'required|string',
-            'author_comments' => 'nullable|string',
-            'is_anonymous' => 'nullable|boolean',
-            'authors' => 'required|array|min:1',
-            'authors.*.user_id' => 'required|exists:users,id',
-            'authors.*.is_corresponding' => 'nullable|boolean',
-            'registration_ids' => 'nullable|array',
-            'registration_ids.*' => 'exists:conference_registrations,id',
-        ];
+        // The request is already validated at this point
+        
+        // Check for duplicate title
+        $existingPaper = Paper::where('title', $request->title)
+            ->where('created_by', Auth::id())
+            ->where('status', '!=', 'rejected')
+            ->first();
 
-        // Conditionally add file validation for full paper submissions
-        if ($request->submission_type === 'full_paper') {
-            $rules['paper_file'] = 'required|file|mimes:pdf|max:10240';
-        } else {
-            $rules['paper_file'] = 'nullable|file|mimes:pdf|max:10240';
+        if ($existingPaper) {
+            return back()->withErrors([
+                'title' => 'You already have a paper with this title. Please use a different title.'
+            ])->withInput();
         }
 
-        // Validate the request
-        $validated = $request->validate($rules);
-
         $paperData = [
-            'title' => $validated['title'],
-            'abstract' => $validated['abstract'],
-            'keywords' => $validated['keywords'],
-            'topic_area' => $validated['topic_area'],
-            'submission_type' => $validated['submission_type'],
-            'author_comments' => $validated['author_comments'] ?? null,
-            'conference_year' => $validated['conference_year'],
+            'title' => $request->title,
+            'abstract' => $request->abstract,
+            'keywords' => $request->keywords,
+            'topic_area' => $request->topic_area,
+            'submission_type' => $request->submission_type,
+            'author_comments' => $request->author_comments ?? null,
+            'conference_year' => $request->conference_year,
             'is_anonymous' => $request->boolean('is_anonymous', true),
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
@@ -134,7 +113,7 @@ class PaperController extends Controller
 
         // Determine status based on submission type and action
         if ($request->action === 'submit') {
-            $paperData['status'] = $validated['submission_type'] === 'abstract_only' 
+            $paperData['status'] = $request->submission_type === 'abstract_only' 
                 ? 'abstract_submitted' 
                 : 'submitted';
             $paperData['submitted_at'] = now();
@@ -143,10 +122,10 @@ class PaperController extends Controller
         }
 
         // Handle file upload if not abstract only
-        if ($validated['submission_type'] !== 'abstract_only' && $request->hasFile('paper_file')) {
+        if ($request->submission_type !== 'abstract_only' && $request->hasFile('paper_file')) {
             $file = $request->file('paper_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('papers/' . $validated['conference_year'], $fileName, 'public');
+            $filePath = $file->storeAs('papers/' . $request->conference_year, $fileName, 'public');
             
             $paperData['file_path'] = $filePath;
             $paperData['file_name'] = $file->getClientOriginalName();
@@ -157,21 +136,20 @@ class PaperController extends Controller
         $paper = Paper::create($paperData);
 
         // Attach authors
-        foreach ($validated['authors'] as $index => $authorData) {
+        foreach ($request->authors as $index => $authorData) {
             $paper->authors()->attach($authorData['user_id'], [
-                'is_corresponding' => $authorData['is_corresponding'] ?? ($index === 0), // First author is corresponding by default
+                'is_corresponding' => $authorData['is_corresponding'] ?? ($index === 0),
                 'author_order' => $index,
             ]);
         }
 
         // Attach registrations if provided
-        if (!empty($validated['registration_ids'])) {
-            $paper->registrations()->attach($validated['registration_ids']);
+        if ($request->has('registration_ids')) {
+            $paper->registrations()->attach($request->registration_ids);
         }
 
-        // Success message
         $message = $request->action === 'submit' 
-            ? ($validated['submission_type'] === 'abstract_only' 
+            ? ($request->submission_type === 'abstract_only' 
                 ? 'Abstract submitted successfully! You can submit the full paper later.'
                 : 'Paper submitted successfully! Your paper ID: ' . $paper->anonymous_id)
             : 'Paper saved as draft.';
@@ -182,49 +160,73 @@ class PaperController extends Controller
 
     public function show(Paper $paper)
     {
+        // Debug - check actual status
+        \Log::info('=== PAPER SHOW DEBUG ===', [
+            'paper_id' => $paper->id,
+            'paper_status' => $paper->status,
+            'user_id' => Auth::id(),
+            'is_author' => $paper->authors()->where('users.id', Auth::id())->exists()
+        ]);
+        
         $paper->load(['authors', 'reviews.reviewer', 'registrations']);
-        return view('papers.show', compact('paper'));
+        
+        // Check if this is an abstract-only paper that needs full paper submission
+        $canSubmitFullPaper = $paper->submission_type === 'abstract_only' && 
+                            !$paper->file_path && 
+                            $paper->status !== 'draft' &&
+                            $paper->authors()->where('users.id', Auth::id())->exists();
+        
+        // Check if paper needs revision and user is author
+        $needsRevision = $paper->status === 'needs_revision' && 
+                        $paper->authors()->where('users.id', Auth::id())->exists();
+        
+        return view('papers.show', compact('paper', 'canSubmitFullPaper', 'needsRevision'));
     }
 
-   
+    /**
+     * Show the form for editing the specified paper.
+     */
+    public function edit(Paper $paper)
+    {
+        // Check if paper can be edited
+        if (!$paper->canBeEditedBy(Auth::user())) {
+            \Log::warning('Edit attempt blocked by canBeEditedBy', [
+                'user_id' => Auth::id(),
+                'paper_id' => $paper->id,
+                'paper_status' => $paper->status,
+                'is_author' => $paper->authors()->where('users.id', Auth::id())->exists()
+            ]);
+            abort(403, 'This paper cannot be edited at this stage.');
+        }
+
+        $users = User::orderBy('first_name')->get();
+        $registrations = ConferenceRegistration::where('email', Auth::user()->email)
+            ->orWhereHas('papers', function ($query) use ($paper) {
+                $query->where('created_by', Auth::id());
+            })
+            ->get();
+            
+        return view('papers.edit', compact('paper', 'users', 'registrations'));
+    }
 
     public function update(StorePaperRequest $request, Paper $paper)
     {
         if (!$paper->canBeEditedBy(Auth::user())) {
             abort(403, 'This paper cannot be edited at this stage.');
         }
-        // Create validation rules array
-        $rules = [
-            'title' => 'required|string|max:255',
-            'abstract' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    $wordCount = str_word_count($value);
-                    if ($wordCount > 250) {
-                        $fail('The abstract must not exceed 250 words.');
-                    }
-                }
-            ],
-            'keywords' => 'required|string',
-            'topic_area' => 'required|string',
-            'submission_type' => 'required|in:abstract_only,full_paper',
-            'author_comments' => 'nullable|string',
-            'is_anonymous' => 'nullable|boolean',
-            'authors' => 'required|array|min:1',
-            'authors.*.user_id' => 'required|exists:users,id',
-            'authors.*.is_corresponding' => 'nullable|boolean',
-        ];
 
-        // Conditionally add file validation for full paper submissions
-        if ($request->submission_type === 'full_paper') {
-            $rules['paper_file'] = 'required|file|mimes:pdf|max:10240';
-        }
-         else {
-            $rules['paper_file'] = 'nullable|file|mimes:pdf|max:10240';
-        }
+        // Check for duplicate title (excluding current paper)
+        $existingPaper = Paper::where('title', $request->title)
+            ->where('created_by', Auth::id())
+            ->where('id', '!=', $paper->id)
+            ->where('status', '!=', 'rejected')
+            ->first();
 
-        $validated = $request->validate($rules);
+        if ($existingPaper) {
+            return back()->withErrors([
+                'title' => 'You already have another paper with this title. Please use a different title.'
+            ])->withInput();
+        }
 
         $data = [
             'title' => $request->title,
@@ -237,8 +239,12 @@ class PaperController extends Controller
             'updated_by' => Auth::id(),
         ];
 
+        // Handle file upload
         if ($request->hasFile('paper_file')) {
-            Storage::disk('public')->delete($paper->file_path);
+            // Delete old file if exists
+            if ($paper->file_path) {
+                Storage::disk('public')->delete($paper->file_path);
+            }
 
             $file = $request->file('paper_file');
             $fileName = time() . '_' . $file->getClientOriginalName();
@@ -247,19 +253,35 @@ class PaperController extends Controller
             $data['file_path'] = $filePath;
             $data['file_name'] = $file->getClientOriginalName();
             $data['file_size'] = $file->getSize();
+            
+            // If this was an abstract-only paper and now uploading full paper
+            if ($paper->submission_type === 'abstract_only' && $request->submission_type === 'full_paper') {
+                $data['submission_type'] = 'full_paper';
+            }
         }
 
+        // Handle submission from draft
         if ($request->action === 'submit' && $paper->status === 'draft') {
             $data['status'] = $paper->submission_type === 'abstract_only'
                 ? 'abstract_submitted'
                 : 'submitted';
-
             $data['submitted_at'] = now();
         }
-
+        
+        // Handle revision submission
+        if ($request->action === 'submit_revision' && $paper->status === 'needs_revision') {
+            $data['status'] = 'under_review';
+            $data['revision_submitted_at'] = now();
+            $data['revision_notes'] = $request->revision_notes;
+            
+            // Reset revision fields
+            $data['needs_revision'] = false;
+            $data['revision_requested_at'] = null;
+        }
 
         $paper->update($data);
 
+        // Update authors
         $paper->authors()->detach();
         foreach ($request->authors as $index => $authorData) {
             $paper->authors()->attach($authorData['user_id'], [
@@ -272,8 +294,16 @@ class PaperController extends Controller
             $paper->registrations()->sync($request->registration_ids);
         }
 
+        $message = 'Paper updated successfully!';
+        
+        if ($request->action === 'submit_revision') {
+            $message = 'Revision submitted successfully! The paper is now back under review.';
+        } elseif ($request->action === 'submit') {
+            $message = 'Paper submitted successfully!';
+        }
+
         return redirect()->route('papers.show', $paper)
-            ->with('success', 'Paper updated successfully!');
+            ->with('success', $message);
     }
 
     public function submit(Request $request, Paper $paper)
@@ -285,7 +315,7 @@ class PaperController extends Controller
         }
 
         $paper->update([
-            'status' => 'submitted',
+            'status' => $paper->submission_type === 'abstract_only' ? 'abstract_submitted' : 'submitted',
             'submitted_at' => now(),
             'updated_by' => Auth::id(),
         ]);
@@ -313,9 +343,10 @@ class PaperController extends Controller
         $this->authorize('updateStatus', $paper);
 
         $request->validate([
-            'status' => 'required|in:draft,submitted,under_review,accepted,rejected,camera_ready',
+            'status' => 'required|in:draft,submitted,under_review,accepted,rejected,camera_ready,needs_revision,abstract_submitted',
             'decision' => 'nullable|in:accept,minor_revisions,major_revisions,reject',
             'decision_notes' => 'nullable|string',
+            'revision_deadline' => 'required_if:status,needs_revision|nullable|date|after:today',
         ]);
 
         $updateData = [
@@ -329,9 +360,25 @@ class PaperController extends Controller
             $updateData['decision_at'] = now();
         }
 
+        // Handle revision request
+        if ($request->status === 'needs_revision') {
+            $updateData['needs_revision'] = true;
+            $updateData['revision_requested_at'] = now();
+            $updateData['revision_deadline'] = $request->revision_deadline;
+            $updateData['revision_notes'] = $request->decision_notes;
+        }
+
         $paper->update($updateData);
 
-        return back()->with('success', 'Paper status updated!');
+        $message = 'Paper status updated!';
+        
+        if ($request->status === 'needs_revision') {
+            $message = 'Revision requested. Author has been notified.';
+        } elseif ($request->status === 'accepted') {
+            $message = 'Paper accepted! Author can now submit camera-ready version.';
+        }
+
+        return back()->with('success', $message);
     }
 
     public function submitFullForm(Paper $paper)
@@ -352,7 +399,6 @@ class PaperController extends Controller
         }
         
         // Check if paper is in a state that allows full paper submission
-        // Allow submission even if paper is accepted (for camera ready version)
         $allowedStatuses = ['abstract_submitted', 'submitted', 'under_review', 'accepted', 'needs_revision'];
         
         if (!in_array($paper->status, $allowedStatuses)) {
@@ -418,5 +464,126 @@ class PaperController extends Controller
 
         return redirect()->route('papers.show', $paper)
             ->with('success', 'Full paper submitted successfully!');
+    }
+    
+    /**
+     * Show revision form for papers that need revisions
+     */
+    public function reviseForm(Paper $paper)
+    {
+        // Check if paper needs revision
+        if ($paper->status !== 'needs_revision') {
+            abort(403, 'This paper does not need revision at this time.');
+        }
+        
+        // Check if user is author of this paper
+        if (!$paper->authors()->where('users.id', Auth::id())->exists()) {
+            abort(403, 'Only authors can revise this paper.');
+        }
+        
+        // Check if revision deadline has passed
+        if ($paper->revision_deadline && now()->gt($paper->revision_deadline)) {
+            return redirect()->route('papers.show', $paper)
+                ->with('error', 'Revision deadline has passed. Please contact the conference chair.');
+        }
+        
+        $paper->load(['authors', 'reviews' => function($query) {
+            $query->where('status', 'completed')->with('reviewer');
+        }]);
+        
+        $users = User::orderBy('first_name')->get();
+        
+        return view('papers.revise', compact('paper', 'users'));
+    }
+    
+    /**
+     * Submit revision
+     */
+    public function submitRevision(Request $request, Paper $paper)
+    {
+        // Check if paper needs revision
+        if ($paper->status !== 'needs_revision') {
+            abort(403, 'This paper does not need revision at this time.');
+        }
+        
+        // Check if user is author of this paper
+        if (!$paper->authors()->where('users.id', Auth::id())->exists()) {
+            abort(403, 'Only authors can revise this paper.');
+        }
+        
+        // Check if revision deadline has passed
+        if ($paper->revision_deadline && now()->gt($paper->revision_deadline)) {
+            return redirect()->route('papers.show', $paper)
+                ->with('error', 'Revision deadline has passed. Please contact the conference chair.');
+        }
+        
+        $request->validate([
+            'abstract' => 'required|string',
+            'keywords' => 'required|string',
+            'topic_area' => 'required|string',
+            'author_comments' => 'nullable|string',
+            'paper_file' => 'nullable|file|mimes:pdf|max:10240',
+            'revision_notes' => 'required|string|max:2000',
+            'authors' => 'required|array|min:1',
+            'authors.*.user_id' => 'required|exists:users,id',
+            'authors.*.is_corresponding' => 'nullable|boolean',
+        ]);
+
+        // Check for duplicate title (excluding current paper)
+        $existingPaper = Paper::where('title', $paper->title)
+            ->where('created_by', Auth::id())
+            ->where('id', '!=', $paper->id)
+            ->where('status', '!=', 'rejected')
+            ->first();
+
+        if ($existingPaper) {
+            return back()->withErrors([
+                'title' => 'You already have another paper with this title. Please use a different title.'
+            ])->withInput();
+        }
+
+        $data = [
+            'abstract' => $request->abstract,
+            'keywords' => $request->keywords,
+            'topic_area' => $request->topic_area,
+            'author_comments' => $request->author_comments,
+            'updated_by' => Auth::id(),
+            'status' => 'under_review',
+            'revision_submitted_at' => now(),
+            'revision_notes' => $request->revision_notes,
+            'needs_revision' => false,
+            'revision_requested_at' => null,
+            'revision_deadline' => null,
+        ];
+
+        // Handle file upload if provided
+        if ($request->hasFile('paper_file')) {
+            // Delete old file if exists
+            if ($paper->file_path) {
+                Storage::disk('public')->delete($paper->file_path);
+            }
+
+            $file = $request->file('paper_file');
+            $fileName = time() . '_rev_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('papers/' . $paper->conference_year, $fileName, 'public');
+
+            $data['file_path'] = $filePath;
+            $data['file_name'] = $file->getClientOriginalName();
+            $data['file_size'] = $file->getSize();
+        }
+
+        $paper->update($data);
+
+        // Update authors
+        $paper->authors()->detach();
+        foreach ($request->authors as $index => $authorData) {
+            $paper->authors()->attach($authorData['user_id'], [
+                'is_corresponding' => $authorData['is_corresponding'] ?? false,
+                'author_order' => $index,
+            ]);
+        }
+
+        return redirect()->route('papers.show', $paper)
+            ->with('success', 'Revision submitted successfully! The paper is now back under review.');
     }
 }

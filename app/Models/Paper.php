@@ -13,7 +13,6 @@ class Paper extends Model
 {
     use HasFactory;
 
-    // In app/Models/Paper.php
     protected $fillable = [
         'title',
         'abstract',
@@ -33,51 +32,82 @@ class Paper extends Model
         'decision_made_by',
         'submitted_at',
         'review_due_date',
-        'revision_deadline', 
+        'revision_deadline',
         'conference_year',
         'created_by',
         'updated_by',
+        // NEW FIELDS
+        'needs_revision',
+        'revision_requested_at',
+        'revision_submitted_at',
+        'revision_notes',
+        'has_revision_recommendations',
+        'revision_recommendation_count',
+        'version',
+        'all_reviews_completed',
+        'abstract_accepted_at',
+        'full_paper_deadline',
+        'needs_revision',
+        'revision_requested_at',
+        'revision_deadline',
     ];
+
     protected $casts = [
         'submitted_at' => 'datetime',
         'revision_deadline' => 'date',
         'review_due_date' => 'datetime',
-        'decision_at' => 'datetime',
+        'decision_made_at' => 'datetime',
         'is_anonymous' => 'boolean',
         'file_size' => 'integer',
+        // NEW CASTS
+        'needs_revision' => 'boolean',
+        'revision_requested_at' => 'datetime',
+        'revision_submitted_at' => 'datetime',
+        'has_revision_recommendations' => 'boolean',
+        'revision_recommendation_count' => 'integer',
+        'version' => 'integer',
+        'all_reviews_completed' => 'boolean',
+        'abstract_accepted_at' => 'datetime',
+        'full_paper_deadline' => 'date',
+        'revision_deadline' => 'date',
     ];
 
-    protected $appends = ['author_list', 'file_size_formatted', 'status_badge'];
+    protected $appends = ['author_list', 'file_size_formatted', 'status_badge', 'is_abstract_only', 'is_full_paper'];
 
     protected static function booted()
-{
-    static::creating(function ($paper) {
-        if (empty($paper->anonymous_id)) {
-            $year = date('Y');
+    {
+        static::creating(function ($paper) {
+            if (empty($paper->anonymous_id)) {
+                $year = date('Y');
+                $existingIds = Paper::where('conference_year', $year)
+                                    ->pluck('anonymous_id')
+                                    ->toArray();
 
-            // Get all existing anonymous_ids for this year
-            $existingIds = Paper::where('conference_year', $year)
-                                ->pluck('anonymous_id')
-                                ->toArray();
+                $nextNumber = 1;
 
-            $nextNumber = 1;
+                if (!empty($existingIds)) {
+                    $numbers = array_map(function ($id) {
+                        return (int) substr($id, -4);
+                    }, $existingIds);
+                    $nextNumber = max($numbers) + 1;
+                }
 
-            if (!empty($existingIds)) {
-                // Extract the numeric part from all IDs
-                $numbers = array_map(function ($id) {
-                    return (int) substr($id, -4); // last 4 digits
-                }, $existingIds);
-
-                // Find the next available number (max + 1)
-                $nextNumber = max($numbers) + 1;
+                $paper->anonymous_id = "DAT-{$year}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
             }
-
-            // Assign the unique anonymous_id
-            $paper->anonymous_id = "DAT-{$year}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        }
-    });
-}
-
+            
+            // Set default version
+            if (empty($paper->version)) {
+                $paper->version = 1;
+            }
+        });
+        
+        static::updating(function ($paper) {
+            // Increment version when revision is submitted
+            if ($paper->isDirty('revision_submitted_at') && $paper->revision_submitted_at !== null) {
+                $paper->version = $paper->version + 1;
+            }
+        });
+    }
 
     /**
      * Relationships
@@ -165,6 +195,27 @@ class Paper extends Model
             $q->where('users.id', $userId);
         });
     }
+    
+    // NEW SCOPES
+    public function scopeAbstractOnly($query)
+    {
+        return $query->where('submission_type', 'abstract_only');
+    }
+    
+    public function scopeFullPaper($query)
+    {
+        return $query->where('submission_type', 'full_paper');
+    }
+    
+    public function scopeNeedsRevision($query)
+    {
+        return $query->where('needs_revision', true);
+    }
+    
+    public function scopeWithRevisionRecommendations($query)
+    {
+        return $query->where('has_revision_recommendations', true);
+    }
 
     /**
      * Attributes
@@ -198,7 +249,10 @@ class Paper extends Model
             'rejected' => 'bg-red-100 text-red-800',
             'camera_ready' => 'bg-purple-100 text-purple-800',
             'abstract_submitted' => 'bg-orange-100 text-orange-800',
-
+            'abstract_under_review' => 'bg-yellow-100 text-yellow-800',
+            'abstract_accepted' => 'bg-emerald-100 text-emerald-800',
+            'abstract_rejected' => 'bg-red-100 text-red-800',
+            'needs_revision' => 'bg-yellow-100 text-yellow-800',
         ];
 
         $status = ucfirst(str_replace('_', ' ', $this->status));
@@ -214,11 +268,48 @@ class Paper extends Model
     {
         return $this->reviews()->count();
     }
+    
+    // NEW ATTRIBUTES
+    public function getIsAbstractOnlyAttribute()
+    {
+        return $this->submission_type === 'abstract_only';
+    }
+    
+    public function getIsFullPaperAttribute()
+    {
+        return $this->submission_type === 'full_paper';
+    }
+    
+    public function getCanSubmitFullPaperAttribute()
+    {
+        return $this->submission_type === 'abstract_only' && 
+               !$this->file_path && 
+               in_array($this->status, ['abstract_accepted', 'accepted']);
+    }
+    
+    public function getRevisionRecommendationsListAttribute()
+    {
+        return $this->reviews()
+            ->where('status', 'completed')
+            ->whereNotNull('revision_suggestions')
+            ->pluck('revision_suggestions');
+    }
 
     public function canBeEditedBy($user)
     {
-        return $this->authors()->where('users.id', $user->id)->exists()
-            && in_array($this->status, ['draft', 'submitted']);
+        if (!$this->authors()->where('users.id', $user->id)->exists()) {
+            return false;
+        }
+        
+        // Allow editing in these states
+        $editableStates = ['draft', 'needs_revision'];
+        
+        // Also allow if abstract is accepted (to upload full paper)
+        if ($this->status === 'abstract_accepted' && $this->submission_type === 'abstract_only') {
+            return true;
+        }
+        
+        return in_array($this->status, $editableStates);
     }
 
     public function canBeReviewedBy($user)
@@ -237,5 +328,36 @@ class Paper extends Model
     public function completedReviews()
     {
         return $this->reviewAssignments()->where('status', 'completed');
+    }
+    
+    // NEW METHODS
+    public function updateRevisionRecommendationStatus()
+    {
+        $revisionCount = $this->reviews()
+            ->where('status', 'completed')
+            ->whereIn('recommendation', ['minor_revisions', 'major_revisions'])
+            ->count();
+        
+        $this->update([
+            'has_revision_recommendations' => $revisionCount > 0,
+            'revision_recommendation_count' => $revisionCount,
+        ]);
+    }
+    
+    public function checkAllReviewsCompleted()
+    {
+        $totalAssignments = $this->reviewAssignments()
+            ->where('status', '!=', 'declined')
+            ->count();
+        
+        $completedAssignments = $this->reviewAssignments()
+            ->where('status', 'completed')
+            ->count();
+        
+        $allCompleted = ($totalAssignments > 0) && ($completedAssignments === $totalAssignments);
+        
+        $this->update(['all_reviews_completed' => $allCompleted]);
+        
+        return $allCompleted;
     }
 }

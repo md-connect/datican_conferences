@@ -15,7 +15,7 @@ class ReviewController extends Controller
         $this->middleware('auth');
     }
 
-        /**
+    /**
      * Display a listing of the user's reviews
      */
     public function index()
@@ -24,7 +24,7 @@ class ReviewController extends Controller
         
         // Get paginated reviews for the table
         $reviews = ReviewAssignment::with(['paper' => function($query) {
-                $query->select('id', 'anonymous_id', 'title', 'topic_area', 'submission_type');
+                $query->select('id', 'anonymous_id', 'title', 'topic_area', 'submission_type', 'status', 'needs_revision', 'revision_submitted_at', 'version');
             }])
             ->where('reviewer_id', $user->id)
             ->whereIn('status', ['pending', 'under_review', 'in_progress', 'completed'])
@@ -54,8 +54,7 @@ class ReviewController extends Controller
         return view('reviews.my', compact('reviews', 'overdueCount', 'reviewStats'));
     }
 
-    
-        /**
+    /**
      * Show the form for creating/editing a review
      */
     public function create(Request $request)
@@ -76,68 +75,135 @@ class ReviewController extends Controller
                 ->with('error', 'You have declined this review assignment.');
         }
         
-        // Load the paper
-        $paper = $review->paper;
+        // Load the paper with all necessary relationships
+        $paper = $review->paper()->with(['authors', 'reviews' => function($query) {
+                $query->where('status', 'completed')->with('reviewer');
+            }])->first();
+        
+        // Check if this is a revision review
+        $isRevision = $paper->needs_revision === false && 
+                      $paper->revision_submitted_at !== null &&
+                      $paper->status === 'under_review';
         
         // Update status to in_progress if it's under_review
         if ($review->status === 'under_review') {
             $review->update(['status' => 'in_progress']);
         }
         
-        return view('reviews.create', compact('paper', 'review'));
+        // Get previous review versions if any
+        $previousReviews = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('reviewer_id', Auth::id())
+            ->where('status', 'completed')
+            ->where('id', '!=', $review->id)
+            ->latest()
+            ->get();
+        
+        // Get revision suggestions from previous reviews if this is a revision
+        $previousRevisionSuggestions = [];
+        if ($isRevision) {
+            $previousRevisionSuggestions = ReviewAssignment::where('paper_id', $paper->id)
+                ->where('status', 'completed')
+                ->whereNotNull('revision_suggestions')
+                ->latest()
+                ->get()
+                ->pluck('revision_suggestions')
+                ->toArray();
+        }
+        
+        return view('reviews.create', compact('paper', 'review', 'isRevision', 'previousReviews', 'previousRevisionSuggestions'));
     }
-    
 
     /**
      * Store a newly created review (first submission)
      */
     public function store(Request $request)
     {
-        $isDraft = $request->boolean('save_draft');
+        // Determine if it's a draft based on which button was clicked
+        $isDraft = $request->has('save_draft') && $request->save_draft == '1';
 
         $rules = [
             'paper_id' => 'required|exists:papers,id',
+            'is_revision_review' => 'nullable|boolean',
+            'original_review_id' => 'nullable|exists:review_assignments,id',
         ];
 
         if (!$isDraft) {
             $rules += [
                 'overall_score' => 'required|integer|min:1|max:5',
-                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject',
+                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject,minor_revisions,major_revisions',
                 'comments_author' => 'required|string|min:50',
+                'revision_suggestions' => 'nullable|required_if:recommendation,minor_revisions,major_revisions|string|max:2000',
             ];
         }
 
         $request->validate($rules);
 
-        
         // Find the review assignment
         $review = ReviewAssignment::where('paper_id', $request->paper_id)
             ->where('reviewer_id', Auth::id())
             ->firstOrFail();
         
+        // Get the paper
+        $paper = Paper::find($request->paper_id);
+        
         // Prepare update data
-        $updateData = [
-            'overall_score' => $request->overall_score,
-            'recommendation' => $request->recommendation,
-            'comments_author' => $request->comments_author,
-            'comments_chair' => $request->comments_chair,
-            'strengths' => $request->strengths,
-            'weaknesses' => $request->weaknesses,
-            'suggestions' => $request->suggestions,
-            'summary' => $request->summary,
-            'confidence' => $request->confidence,
-            'scores' => $request->scores ? json_encode($request->scores) : null,
-        ];
+        $updateData = [];
+        
+        if ($request->has('overall_score')) {
+            $updateData['overall_score'] = $request->overall_score;
+        }
+        
+        if ($request->has('recommendation')) {
+            $updateData['recommendation'] = $request->recommendation;
+        }
+        
+        if ($request->has('comments_author')) {
+            $updateData['comments_author'] = $request->comments_author;
+        }
+        
+        $optionalFields = ['comments_chair', 'strengths', 'weaknesses', 'suggestions', 'summary', 'confidence', 'revision_suggestions'];
+        foreach ($optionalFields as $field) {
+            if ($request->has($field)) {
+                $updateData[$field] = $request->$field;
+            }
+        }
+        
+        if ($request->has('scores')) {
+            $updateData['scores'] = $request->scores ? json_encode($request->scores) : null;
+        }
+        
+        // Add revision tracking
+        if ($request->is_revision_review) {
+            $updateData['is_revision_review'] = true;
+            $updateData['original_review_id'] = $request->original_review_id;
+            $updateData['paper_version'] = $paper->version ?? 1;
+        }
         
         // Determine if it's a draft or final submission
-        if ($request->has('save_draft') && $request->save_draft) {
+        if ($isDraft) {
             $updateData['status'] = 'in_progress';
             $updateData['submitted_at'] = null;
             $message = 'Review saved as draft.';
         } else {
             $updateData['status'] = 'completed';
             $updateData['submitted_at'] = now();
+            
+            // Check if this review recommends revisions
+            if (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
+                $paper->updateRevisionRecommendationStatus();
+            }
+            
+            // Check if this completes all reviews for the paper
+            $paper->checkAllReviewsCompleted();
+            
             $message = 'Review submitted successfully!';
+            
+            // Add revision-specific message
+            if ($request->is_revision_review) {
+                $message = 'Revision review submitted successfully!';
+            } elseif (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
+                $message = 'Review submitted with revision recommendations. The chair will review these suggestions.';
+            }
         }
         
         // Update the review assignment
@@ -157,14 +223,37 @@ class ReviewController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        $review->load(['paper', 'reviewer']);
+        $review->load(['paper' => function($query) {
+                $query->with(['authors', 'reviews' => function($q) {
+                    $q->where('status', 'completed');
+                }]);
+            }, 'reviewer']);
         
         // Decode scores if they exist
         if ($review->scores) {
             $review->scores = json_decode($review->scores, true);
         }
         
-        return view('reviews.show', compact('review'));
+        // Get the paper's revision history
+        $paper = $review->paper;
+        $hasRevisions = $paper->revision_submitted_at !== null;
+        
+        // Get original review if this is a revision review
+        $originalReview = null;
+        if ($review->original_review_id) {
+            $originalReview = ReviewAssignment::with(['reviewer', 'paper'])
+                ->find($review->original_review_id);
+        }
+        
+        // Get all reviews for this paper to show revision history
+        $allReviews = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('status', 'completed')
+            ->with('reviewer')
+            ->orderBy('paper_version')
+            ->orderBy('created_at')
+            ->get();
+        
+        return view('reviews.show', compact('review', 'hasRevisions', 'originalReview', 'allReviews'));
     }
 
     /**
@@ -186,10 +275,36 @@ class ReviewController extends Controller
             $review->update(['status' => 'in_progress']);
         }
         
-        $paper = $review->paper;
+        $paper = $review->paper()->with(['authors', 'reviews' => function($query) {
+                $query->where('status', 'completed')->with('reviewer');
+            }])->first();
         
+        // Check if this is a revision review
+        $isRevision = $paper->needs_revision === false && 
+                      $paper->revision_submitted_at !== null &&
+                      $paper->status === 'under_review';
         
-        return view('reviews.create', compact('paper', 'review'));
+        // Get previous review versions if any
+        $previousReviews = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('reviewer_id', Auth::id())
+            ->where('status', 'completed')
+            ->where('id', '!=', $review->id)
+            ->latest()
+            ->get();
+        
+        // Get revision suggestions from previous reviews if this is a revision
+        $previousRevisionSuggestions = [];
+        if ($isRevision) {
+            $previousRevisionSuggestions = ReviewAssignment::where('paper_id', $paper->id)
+                ->where('status', 'completed')
+                ->whereNotNull('revision_suggestions')
+                ->latest()
+                ->get()
+                ->pluck('revision_suggestions')
+                ->toArray();
+        }
+        
+        return view('reviews.create', compact('paper', 'review', 'isRevision', 'previousReviews', 'previousRevisionSuggestions'));
     }
 
     /**
@@ -202,43 +317,98 @@ class ReviewController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        $isDraft = $request->boolean('save_draft');
+        // Determine if it's a draft based on which button was clicked
+        $isDraft = $request->has('save_draft') && $request->save_draft == '1';
 
-        $rules = [];
+        // Log for debugging
+        \Log::info('Update request', [
+            'review_id' => $review->id,
+            'has_save_draft' => $request->has('save_draft'),
+            'save_draft_value' => $request->input('save_draft'),
+            'has_submit' => $request->has('submit_review'),
+            'isDraft' => $isDraft,
+            'all_input' => $request->all()
+        ]);
+
+        $rules = [
+            'is_revision_review' => 'nullable|boolean',
+            'original_review_id' => 'nullable|exists:review_assignments,id',
+        ];
 
         if (!$isDraft) {
             $rules += [
                 'overall_score' => 'required|integer|min:1|max:5',
-                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject',
+                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject,minor_revisions,major_revisions',
                 'comments_author' => 'required|string|min:50',
+                'revision_suggestions' => 'nullable|required_if:recommendation,minor_revisions,major_revisions|string|max:2000',
             ];
         }
 
         $request->validate($rules);
-                
-        // Prepare update data
-        $updateData = [
-            'overall_score' => $request->overall_score,
-            'recommendation' => $request->recommendation,
-            'comments_author' => $request->comments_author,
-            'comments_chair' => $request->comments_chair,
-            'strengths' => $request->strengths,
-            'weaknesses' => $request->weaknesses,
-            'suggestions' => $request->suggestions,
-            'summary' => $request->summary,
-            'confidence' => $request->confidence,
-            'scores' => $request->scores ? json_encode($request->scores) : null,
-        ];
         
-        // Determine if it's a draft or final submission
-        if ($request->has('save_draft') && $request->save_draft) {
+        $paper = Paper::find($review->paper_id);
+        
+        // Prepare update data - only include fields that were actually submitted
+        $updateData = [];
+        
+        // Only include score fields if they were submitted (for drafts, they might be empty)
+        if ($request->has('overall_score')) {
+            $updateData['overall_score'] = $request->overall_score;
+        }
+        
+        if ($request->has('recommendation')) {
+            $updateData['recommendation'] = $request->recommendation;
+        }
+        
+        if ($request->has('comments_author')) {
+            $updateData['comments_author'] = $request->comments_author;
+        }
+        
+        // Always include these fields if present (they can be empty for drafts)
+        $optionalFields = ['comments_chair', 'strengths', 'weaknesses', 'suggestions', 'summary', 'confidence', 'revision_suggestions'];
+        foreach ($optionalFields as $field) {
+            if ($request->has($field)) {
+                $updateData[$field] = $request->$field;
+            }
+        }
+        
+        // Handle scores JSON
+        if ($request->has('scores')) {
+            $updateData['scores'] = $request->scores ? json_encode($request->scores) : null;
+        }
+        
+        // Add revision tracking
+        if ($request->is_revision_review) {
+            $updateData['is_revision_review'] = true;
+            $updateData['original_review_id'] = $request->original_review_id;
+            $updateData['paper_version'] = $paper->version ?? 1;
+        }
+        
+        // Determine if it's a draft or final submission based on the button clicked
+        if ($isDraft) {
             $updateData['status'] = 'in_progress';
             $updateData['submitted_at'] = null;
             $message = 'Review saved as draft.';
         } else {
             $updateData['status'] = 'completed';
             $updateData['submitted_at'] = now();
-            $message = 'Review updated successfully!';
+            
+            // Check if this review recommends revisions
+            if (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
+                $paper->updateRevisionRecommendationStatus();
+            }
+            
+            // Check if this completes all reviews for the paper
+            $paper->checkAllReviewsCompleted();
+            
+            $message = 'Review submitted successfully!';
+            
+            // Add revision-specific message
+            if ($request->is_revision_review) {
+                $message = 'Revision review submitted successfully!';
+            } elseif (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
+                $message = 'Review submitted with revision recommendations. The chair will review these suggestions.';
+            }
         }
         
         // Update the review assignment
@@ -258,9 +428,9 @@ class ReviewController extends Controller
         }
         
         $review->update([
-        'status' => 'under_review',
-        'started_at' => now()
-    ]);
+            'status' => 'under_review',
+            'started_at' => now()
+        ]);
         
         return redirect()->route('reviews.edit', $review)
             ->with('success', 'Review assignment accepted. You can now start reviewing.');
@@ -316,5 +486,86 @@ class ReviewController extends Controller
             ->first();
         
         return response()->json($stats);
+    }
+
+    /**
+     * Check if all reviews for a paper are completed
+     */
+    private function checkPaperReviewStatus(Paper $paper)
+    {
+        $totalAssignments = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('status', '!=', 'declined')
+            ->count();
+        
+        $completedAssignments = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('status', 'completed')
+            ->count();
+        
+        // If all assigned reviews are completed, update paper status
+        if ($totalAssignments > 0 && $totalAssignments === $completedAssignments) {
+            // Only update if paper is under review
+            if ($paper->status === 'under_review') {
+                // You might want to notify the chair that all reviews are complete
+                Log::info('All reviews completed for paper', [
+                    'paper_id' => $paper->id,
+                    'paper_title' => $paper->title
+                ]);
+                
+                // Optionally, you can update a flag on the paper
+                $paper->update(['all_reviews_completed' => true]);
+            }
+        }
+    }
+
+    /**
+     * Get revision history for a paper (for reviewers)
+     */
+    public function revisionHistory(Paper $paper)
+    {
+        // Check if user is assigned to review this paper
+        $review = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('reviewer_id', Auth::id())
+            ->exists();
+        
+        if (!$review && !Auth::user()->is_admin) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $paper->load(['revisions' => function($query) {
+            $query->latest();
+        }]);
+        
+        $reviews = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('status', 'completed')
+            ->with('reviewer')
+            ->latest()
+            ->get()
+            ->groupBy('paper_version');
+        
+        return view('reviews.revision-history', compact('paper', 'reviews'));
+    }
+
+    /**
+     * Download paper file for review
+     */
+    public function downloadPaper(Paper $paper)
+    {
+        // Check if user is assigned to review this paper
+        $review = ReviewAssignment::where('paper_id', $paper->id)
+            ->where('reviewer_id', Auth::id())
+            ->exists();
+        
+        if (!$review && !Auth::user()->is_admin) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        if (!\Storage::disk('public')->exists($paper->file_path)) {
+            abort(404, 'File not found.');
+        }
+        
+        return \Storage::disk('public')->download(
+            $paper->file_path,
+            $paper->anonymous_id . '_' . $paper->file_name
+        );
     }
 }

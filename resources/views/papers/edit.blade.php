@@ -77,13 +77,11 @@
                         <textarea name="abstract" rows="4" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="Enter paper abstract (maximum 250 words)"
-                                oninput="updateWordCount(this)"
+                                id="abstract-textarea"
                                 {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'readonly' : '' }}>{{ old('abstract', $paper->abstract) }}</textarea>
                         <div class="flex justify-between mt-1">
                             <p class="text-sm text-gray-500">Maximum 250 words</p>
-                            <p class="text-sm text-gray-500" id="word-count">
-                                {{ str_word_count($paper->abstract) }}/250 words
-                            </p>
+                            <p class="text-sm" id="word-count-display"></p>
                         </div>
                         @error('abstract')
                             <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -183,7 +181,7 @@
                 </div>
 
                 <!-- File Upload Section -->
-                <div class="mb-8">
+                <div class="mb-8" id="file-upload-wrapper">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Paper File</h2>
                     
                     @if($paper->file_path)
@@ -278,26 +276,28 @@
                             return $author->pivot->is_corresponding;
                         });
                         $correspondingAuthorIndex = $correspondingAuthorIndex !== false ? $correspondingAuthorIndex : 0;
+                        
+                        // Separate main author from co-authors
+                        $mainAuthor = $existingAuthors->firstWhere('user_id', auth()->id());
+                        $coAuthors = $existingAuthors->filter(function($author) {
+                            return $author->user_id !== auth()->id();
+                        })->values(); // Reset indices
                     @endphp
                     
                     <div id="authors-section">
-                        <!-- First author (current user) -->
-                        <div class="author-field mb-4 p-4 border border-gray-200 rounded-lg">
+                        <!-- First author (current user) - Always present, cannot be removed -->
+                        <div class="author-field mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="font-medium text-gray-700">Author 1 (You)</span>
-                                <button type="button" class="text-gray-400 cursor-not-allowed" disabled>
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <span class="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">Primary Author</span>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm text-gray-600 mb-1">Author *</label>
-                                    <select disabled
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                                        <option selected>
-                                            {{ auth()->user()->first_name }} {{ auth()->user()->last_name }} ({{ auth()->user()->email }})
-                                        </option>
-                                    </select>
+                                    <input type="text" 
+                                        value="{{ auth()->user()->first_name }} {{ auth()->user()->last_name }} ({{ auth()->user()->email }})"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                                        readonly>
                                     <input type="hidden" name="authors[0][user_id]" value="{{ auth()->id() }}">
                                 </div>
                                 <div class="flex items-center">
@@ -312,52 +312,54 @@
                             </div>
                         </div>
                         
-                        <!-- Existing co-authors -->
-                        @foreach($existingAuthors->where('user_id', '!=', auth()->id()) as $index => $author)
-                        @php $authorIndex = $index + 1; @endphp
-                        <div class="author-field mb-4 p-4 border border-gray-200 rounded-lg">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-gray-700">Author {{ $authorIndex + 1 }}</span>
-                                @if($paper->status !== 'under_review' && $paper->status !== 'reviewing')
-                                <button type="button" class="remove-author text-red-600 hover:text-red-800">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                @else
-                                <button type="button" class="text-gray-400 cursor-not-allowed" disabled>
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                @endif
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-1">Select Co-Author *</label>
-                                    <select name="authors[{{ $authorIndex }}][user_id]" required
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg author-select"
-                                            {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'disabled' : '' }}>
-                                        <option value="">Select an author...</option>
-                                        @foreach($users as $user)
-                                        <option value="{{ $user->id }}"
-                                            {{ $author->user_id == $user->id ? 'selected' : '' }}>
-                                            {{ $user->first_name }} {{ $user->last_name }} ({{ $user->email }})
-                                        </option>
-                                        @endforeach
-                                    </select>
-                                    @if($paper->status === 'under_review' || $paper->status === 'reviewing')
-                                        <input type="hidden" name="authors[{{ $authorIndex }}][user_id]" value="{{ $author->user_id }}">
+                        <!-- Co-authors container - Only shows existing co-authors -->
+                        <div id="co-authors-container">
+                            @foreach($coAuthors as $index => $author)
+                            @php $authorIndex = $index + 1; @endphp
+                            <div class="author-field co-author mb-4 p-4 border border-gray-200 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-gray-700">Author {{ $authorIndex + 1 }}</span>
+                                    @if($paper->status !== 'under_review' && $paper->status !== 'reviewing')
+                                    <button type="button" class="remove-author text-red-600 hover:text-red-800">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    @else
+                                    <button type="button" class="text-gray-400 cursor-not-allowed" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                     @endif
                                 </div>
-                                <div class="flex items-center">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="corresponding_author" value="{{ $authorIndex }}"
-                                            class="text-blue-600 focus:ring-blue-500 corresponding-radio"
-                                            {{ $correspondingAuthorIndex == $authorIndex ? 'checked' : '' }}
-                                            {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'disabled' : '' }}>
-                                        <span class="ml-2 text-sm text-gray-600">Corresponding Author</span>
-                                    </label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Select Co-Author *</label>
+                                        <select name="authors[{{ $authorIndex }}][user_id]" required
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg author-select"
+                                                {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'disabled' : '' }}>
+                                            <option value="">Select an author...</option>
+                                            @foreach($users as $user)
+                                            <option value="{{ $user->id }}"
+                                                {{ $author->user_id == $user->id ? 'selected' : '' }}>
+                                                {{ $user->first_name }} {{ $user->last_name }} ({{ $user->email }})
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @if($paper->status === 'under_review' || $paper->status === 'reviewing')
+                                            <input type="hidden" name="authors[{{ $authorIndex }}][user_id]" value="{{ $author->user_id }}">
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label class="flex items-center">
+                                            <input type="radio" name="corresponding_author" value="{{ $authorIndex }}"
+                                                class="text-blue-600 focus:ring-blue-500 corresponding-radio"
+                                                {{ $correspondingAuthorIndex == $authorIndex ? 'checked' : '' }}
+                                                {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'disabled' : '' }}>
+                                            <span class="ml-2 text-sm text-gray-600">Corresponding Author</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
                     
                     @if($paper->status !== 'under_review' && $paper->status !== 'reviewing')
@@ -469,20 +471,19 @@
         </div>
     </div>
 </div>
-@endsection
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // -----------------------------
     // VARIABLES
-    // -----------------------------
-    let authorCount = {{ $existingAuthors->count() }};
-    const authorsSection = document.getElementById('authors-section');
+    //-----------------------------
+    const coAuthorsContainer = document.getElementById('co-authors-container');
     const addAuthorBtn = document.getElementById('add-author');
-    const abstractTextarea = document.querySelector('textarea[name="abstract"]');
-    const wordCountElement = document.getElementById('word-count');
+    const abstractTextarea = document.getElementById('abstract-textarea');
+    const wordCountDisplay = document.getElementById('word-count-display');
 
     const submissionTypeRadios = document.querySelectorAll('.submission-type-radio');
+    const fileUploadWrapper = document.getElementById('file-upload-wrapper');
     const fileUploadSection = document.getElementById('file_upload_section');
     const fileInput = document.getElementById('paper_file_input');
     const fileRequiredIndicator = document.getElementById('file_required_indicator');
@@ -490,182 +491,109 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileSelectedContent = document.getElementById('file_selected_content');
     const fileNameDisplay = document.getElementById('file_name_display');
     const fileError = document.getElementById('file_error');
+    const fileUploadArea = document.getElementById('file_upload_area');
 
     const hasExistingFile = {{ $paper->file_path ? 'true' : 'false' }};
     const isUnderReview = {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'true' : 'false' }};
+
+    // Count existing co-authors (excluding the main author)
+    const existingCoAuthors = {{ $coAuthors->count() }};
+    let coAuthorCount = existingCoAuthors;
+
+    // Log for debugging
+    console.log('Author counts:', {
+        existingCoAuthors: existingCoAuthors,
+        coAuthorCount: coAuthorCount,
+        totalAuthors: {{ $existingAuthors->count() }}
+    });
 
     // -----------------------------
     // ABSTRACT WORD COUNT
     // -----------------------------
     function updateWordCount() {
+        if (!abstractTextarea) return;
+        
         const text = abstractTextarea.value.trim();
         let wordCount = 0;
         if (text.length > 0) {
             wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
         }
-        wordCountElement.textContent = `${wordCount}/250 words`;
-
-        if (wordCount > 240) {
-            wordCountElement.classList.add('text-red-600');
-            wordCountElement.classList.remove('text-yellow-600');
+        
+        // Update display
+        wordCountDisplay.textContent = `${wordCount}/250 words`;
+        
+        // Update styling based on word count
+        wordCountDisplay.classList.remove('text-gray-500', 'text-yellow-600', 'text-red-600');
+        if (wordCount > 250) {
+            wordCountDisplay.classList.add('text-red-600', 'font-bold');
+        } else if (wordCount > 240) {
+            wordCountDisplay.classList.add('text-red-600');
         } else if (wordCount > 200) {
-            wordCountElement.classList.add('text-yellow-600');
-            wordCountElement.classList.remove('text-red-600');
+            wordCountDisplay.classList.add('text-yellow-600');
         } else {
-            wordCountElement.classList.remove('text-yellow-600', 'text-red-600');
-            wordCountElement.classList.add('text-gray-500');
+            wordCountDisplay.classList.add('text-gray-500');
         }
+        
+        return wordCount;
     }
 
     if (abstractTextarea && !abstractTextarea.readOnly) {
         updateWordCount();
         abstractTextarea.addEventListener('input', updateWordCount);
+        abstractTextarea.addEventListener('blur', updateWordCount);
     }
-
-    // -----------------------------
-    // ADD / REMOVE AUTHORS
-    // -----------------------------
-    function reindexAuthors() {
-        document.querySelectorAll('.author-field').forEach((field, idx) => {
-            // Update label
-            const label = field.querySelector('span.font-medium');
-            if (label) label.textContent = `Author ${idx + 1}`;
-
-            // Update select name
-            const select = field.querySelector('select.author-select');
-            if (select) select.name = `authors[${idx}][user_id]`;
-
-            // Update corresponding radio value
-            const radio = field.querySelector('input.corresponding-radio');
-            if (radio) radio.value = idx;
-        });
-        authorCount = document.querySelectorAll('.author-field').length;
-    }
-
-    function addAuthorField() {
-        const index = authorCount;
-        const field = document.createElement('div');
-        field.className = 'author-field mb-4 p-4 border border-gray-200 rounded-lg';
-        field.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-                <span class="font-medium text-gray-700">Author ${index + 1}</span>
-                <button type="button" class="remove-author text-red-600 hover:text-red-800">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm text-gray-600 mb-1">Select Co-Author *</label>
-                    <select name="authors[${index}][user_id]" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg author-select">
-                        <option value="">Select an author...</option>
-                        @foreach($users as $user)
-                        <option value="{{ $user->id }}">
-                            {{ $user->first_name }} {{ $user->last_name }} ({{ $user->email }})
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex items-center">
-                    <label class="flex items-center">
-                        <input type="radio" name="corresponding_author" value="${index}" class="text-blue-600 focus:ring-blue-500 corresponding-radio">
-                        <span class="ml-2 text-sm text-gray-600">Corresponding Author</span>
-                    </label>
-                </div>
-            </div>
-        `;
-        authorsSection.appendChild(field);
-
-        field.querySelector('.remove-author').addEventListener('click', function() {
-            if (document.querySelectorAll('.author-field').length > 1) {
-                field.remove();
-                reindexAuthors();
-            } else {
-                alert('You must have at least one author (yourself).');
-            }
-        });
-
-        authorCount++;
-    }
-
-    if (addAuthorBtn) {
-        addAuthorBtn.addEventListener('click', addAuthorField);
-    }
-
-    // Remove buttons on existing authors
-    document.querySelectorAll('.remove-author').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const field = this.closest('.author-field');
-            if (document.querySelectorAll('.author-field').length > 1) {
-                field.remove();
-                reindexAuthors();
-            } else {
-                alert('You must have at least one author (yourself).');
-            }
-        });
-    });
 
     // -----------------------------
     // SUBMISSION TYPE TOGGLE FILE UPLOAD
     // -----------------------------
     function toggleFileUpload() {
         const selectedRadio = document.querySelector('input[name="submission_type"]:checked');
-        if (!selectedRadio) return;
+        if (!selectedRadio || !fileUploadWrapper) return;
 
         const isAbstractOnly = selectedRadio.value === 'abstract_only';
-        const wrapper = document.getElementById('file_upload_section_wrapper');
-
-        if (wrapper) {
-            if (isAbstractOnly) {
-                wrapper.style.opacity = '0';
-                wrapper.style.pointerEvents = 'none';
+        
+        if (isAbstractOnly) {
+            // Hide and disable file upload for abstract only
+            fileUploadWrapper.style.opacity = '0.5';
+            fileUploadWrapper.style.pointerEvents = 'none';
+            if (fileInput) {
                 fileInput.disabled = true;
                 fileInput.removeAttribute('required');
+            }
+            if (fileRequiredIndicator) {
                 fileRequiredIndicator.classList.add('hidden');
-                if (fileError) fileError.classList.add('hidden');
-            } else {
-                wrapper.style.opacity = '1';
-                wrapper.style.pointerEvents = 'auto';
-                fileInput.disabled = fileInput.hasAttribute('disabled'); // respect under_review
-                if (!hasExistingFile && !fileInput.disabled) {
+            }
+        } else {
+            // Show and enable file upload for full paper
+            fileUploadWrapper.style.opacity = '1';
+            fileUploadWrapper.style.pointerEvents = 'auto';
+            
+            if (fileInput) {
+                // Only enable if not under review
+                fileInput.disabled = isUnderReview;
+                
+                // Set required if no existing file
+                if (!hasExistingFile && !isUnderReview) {
                     fileInput.setAttribute('required', 'required');
-                    fileRequiredIndicator.classList.remove('hidden');
+                    if (fileRequiredIndicator) {
+                        fileRequiredIndicator.classList.remove('hidden');
+                    }
                 } else {
                     fileInput.removeAttribute('required');
-                    fileRequiredIndicator.classList.add('hidden');
+                    if (fileRequiredIndicator) {
+                        fileRequiredIndicator.classList.add('hidden');
+                    }
                 }
             }
         }
     }
-// Drag and drop functionality
-if (fileUploadArea) {
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        // Only highlight if not disabled
-        if (!fileInput.disabled) {
-            this.classList.add('border-blue-400', 'bg-blue-50');
-        }
+
+    // Add event listeners to radio buttons
+    submissionTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleFileUpload);
     });
-
-    fileUploadArea.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        this.classList.remove('border-blue-400', 'bg-blue-50');
-    });
-
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.classList.remove('border-blue-400', 'bg-blue-50');
-
-        // Only allow drop if not disabled
-        if (!fileInput.disabled && e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
-}
-
-
-    submissionTypeRadios.forEach(radio => radio.addEventListener('change', toggleFileUpload));
+    
+    // Initial call
     toggleFileUpload();
 
     // -----------------------------
@@ -678,29 +606,43 @@ if (fileUploadArea) {
     }
 
     if (fileUploadSection && fileInput) {
-        fileUploadSection.addEventListener('click', function() {
+        fileUploadSection.addEventListener('click', function(e) {
             if (!fileInput.disabled) fileInput.click();
         });
 
         fileInput.addEventListener('change', function() {
             const file = this.files[0];
-            const maxSize = 10 * 1024 * 1024;
-            if (fileError) { fileError.classList.add('hidden'); fileError.textContent = ''; }
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            if (fileError) { 
+                fileError.classList.add('hidden'); 
+                fileError.textContent = ''; 
+            }
 
             if (file) {
+                // Validate file type
                 if (!file.name.toLowerCase().endsWith('.pdf')) {
-                    if (fileError) { fileError.textContent = 'File must be PDF format'; fileError.classList.remove('hidden'); }
+                    if (fileError) { 
+                        fileError.textContent = 'File must be PDF format'; 
+                        fileError.classList.remove('hidden'); 
+                    }
                     this.value = '';
                     resetFileDisplay();
                     return;
                 }
+                
+                // Validate file size
                 if (file.size > maxSize) {
-                    if (fileError) { fileError.textContent = 'File size must be less than 10MB'; fileError.classList.remove('hidden'); }
+                    if (fileError) { 
+                        fileError.textContent = 'File size must be less than 10MB'; 
+                        fileError.classList.remove('hidden'); 
+                    }
                     this.value = '';
                     resetFileDisplay();
                     return;
                 }
 
+                // Show selected file
                 if (fileNameDisplay) fileNameDisplay.textContent = file.name;
                 if (fileUploadContent) fileUploadContent.classList.add('hidden');
                 if (fileSelectedContent) fileSelectedContent.classList.remove('hidden');
@@ -709,17 +651,118 @@ if (fileUploadArea) {
             }
         });
 
-        fileUploadSection.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('border-blue-400','bg-blue-50'); });
-        fileUploadSection.addEventListener('dragleave', function(e) { e.preventDefault(); this.classList.remove('border-blue-400','bg-blue-50'); });
+        // Drag and drop functionality
+        fileUploadSection.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (!fileInput.disabled) {
+                this.classList.add('border-blue-400', 'bg-blue-50');
+            }
+        });
+
+        fileUploadSection.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-blue-400', 'bg-blue-50');
+        });
+
         fileUploadSection.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.classList.remove('border-blue-400','bg-blue-50');
+            this.classList.remove('border-blue-400', 'bg-blue-50');
+            
             if (!fileInput.disabled && e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
                 fileInput.dispatchEvent(new Event('change'));
             }
         });
     }
+
+    // -----------------------------
+    // CO-AUTHORS MANAGEMENT
+    // -----------------------------
+    function reindexCoAuthors() {
+        const coAuthorFields = document.querySelectorAll('.co-author');
+        coAuthorFields.forEach((field, idx) => {
+            // Form index starts at 1 because author 0 is the main author
+            const formIndex = idx + 1;
+            
+            // Update label
+            const label = field.querySelector('span.font-medium');
+            if (label) label.textContent = `Author ${formIndex + 1}`;
+
+            // Update select name
+            const select = field.querySelector('select.author-select');
+            if (select) select.name = `authors[${formIndex}][user_id]`;
+
+            // Update corresponding radio value
+            const radio = field.querySelector('input.corresponding-radio');
+            if (radio) radio.value = formIndex;
+        });
+        coAuthorCount = coAuthorFields.length;
+    }
+
+    function addCoAuthorField() {
+        const newIndex = coAuthorCount + 1; // +1 because main author is index 0
+        
+        const field = document.createElement('div');
+        field.className = 'author-field co-author mb-4 p-4 border border-gray-200 rounded-lg';
+        field.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-gray-700">Author ${newIndex + 1}</span>
+                <button type="button" class="remove-author text-red-600 hover:text-red-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Select Co-Author *</label>
+                    <select name="authors[${newIndex}][user_id]" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg author-select">
+                        <option value="">Select an author...</option>
+                        @foreach($users as $user)
+                        <option value="{{ $user->id }}">
+                            {{ $user->first_name }} {{ $user->last_name }} ({{ $user->email }})
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <label class="flex items-center">
+                        <input type="radio" name="corresponding_author" value="${newIndex}" class="text-blue-600 focus:ring-blue-500 corresponding-radio">
+                        <span class="ml-2 text-sm text-gray-600">Corresponding Author</span>
+                    </label>
+                </div>
+            </div>
+        `;
+        
+        if (coAuthorsContainer) {
+            coAuthorsContainer.appendChild(field);
+        }
+
+        // Add remove event listener to the new field
+        field.querySelector('.remove-author').addEventListener('click', function() {
+            field.remove();
+            reindexCoAuthors();
+        });
+
+        coAuthorCount++;
+    }
+
+    // Add click event to Add Co-Author button
+    if (addAuthorBtn) {
+        addAuthorBtn.addEventListener('click', addCoAuthorField);
+    }
+
+    // Add remove event listeners to existing co-author remove buttons
+    document.querySelectorAll('.remove-author').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const field = this.closest('.co-author');
+            if (field) {
+                field.remove();
+                reindexCoAuthors();
+            } else {
+                alert('You cannot remove the primary author.');
+            }
+        });
+    });
 
     // -----------------------------
     // FORM SUBMIT VALIDATION
@@ -729,31 +772,64 @@ if (fileUploadArea) {
         form.addEventListener('submit', function(e) {
             if (isUnderReview) return true;
 
-            // Submission type
+            // Check submission type
             const submissionType = document.querySelector('input[name="submission_type"]:checked');
-            if (!submissionType) { e.preventDefault(); alert('Please select a submission type.'); return; }
-
-            // File validation
-            if (submissionType.value === 'full_paper' && !hasExistingFile) {
-                if (!fileInput.files[0]) { e.preventDefault(); alert('Please upload your paper file.'); return; }
+            if (!submissionType) { 
+                e.preventDefault(); 
+                alert('Please select a submission type.'); 
+                return; 
             }
 
-            // Abstract word count
+            // File validation for full paper
+            if (submissionType.value === 'full_paper' && !hasExistingFile) {
+                if (!fileInput.files || !fileInput.files[0]) { 
+                    e.preventDefault(); 
+                    alert('Please upload your paper file.'); 
+                    return; 
+                }
+            }
+
+            // Abstract word count validation
             if (abstractTextarea) {
                 const wordCount = abstractTextarea.value.trim().split(/\s+/).filter(w => w.length > 0).length;
-                if (wordCount > 250) { e.preventDefault(); alert(`Abstract exceeds 250 words (${wordCount}).`); abstractTextarea.focus(); return; }
+                if (wordCount > 250) { 
+                    e.preventDefault(); 
+                    alert(`Abstract exceeds 250 words (${wordCount} words). Please shorten it.`); 
+                    abstractTextarea.focus(); 
+                    return; 
+                }
+                if (wordCount < 50) {
+                    e.preventDefault(); 
+                    alert(`Abstract is too short (${wordCount} words). Minimum 50 words required.`); 
+                    abstractTextarea.focus(); 
+                    return; 
+                }
             }
 
-            // Authors
-            const authorSelects = this.querySelectorAll('.author-select');
-            let hasAuthor = Array.from(authorSelects).some(sel => sel.value);
-            if (!hasAuthor && authorSelects.length > 0) { e.preventDefault(); alert('Select at least one author.'); return; }
+            // Co-authors validation - check if any co-author fields are empty
+            const coAuthorSelects = document.querySelectorAll('.co-author select.author-select');
+            let hasEmptyCoAuthor = false;
+            coAuthorSelects.forEach(select => {
+                if (!select.value) {
+                    hasEmptyCoAuthor = true;
+                }
+            });
+            
+            if (hasEmptyCoAuthor) { 
+                e.preventDefault(); 
+                alert('Please select all co-authors or remove empty fields.'); 
+                return; 
+            }
 
-            // Corresponding author
+            // Corresponding author validation
             const corrAuthor = document.querySelector('input[name="corresponding_author"]:checked');
-            if (!corrAuthor) { e.preventDefault(); alert('Please select a corresponding author.'); return; }
+            if (!corrAuthor) { 
+                e.preventDefault(); 
+                alert('Please select a corresponding author.'); 
+                return; 
+            }
         });
     }
 });
 </script>
-
+@endsection

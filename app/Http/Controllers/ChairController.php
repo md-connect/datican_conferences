@@ -263,10 +263,17 @@ class ChairController extends Controller
 
     public function makeDecision(Request $request, Paper $paper)
     {
-        // Log for debugging
-        \Log::info('Making decision for paper', [
+        // Log all incoming data
+        \Log::info('=== MAKE DECISION START ===', [
             'paper_id' => $paper->id,
+            'paper_title' => $paper->title,
             'decision' => $request->decision,
+            'has_revision_deadline' => $request->has('revision_deadline'),
+            'revision_deadline' => $request->revision_deadline,
+            'decision_notes' => $request->decision_notes,
+            'all_input' => $request->all(),
+            'method' => $request->method(),
+            'url' => $request->url()
         ]);
         
         // Basic validation
@@ -275,23 +282,37 @@ class ChairController extends Controller
             'decision_notes' => 'nullable|string|max:1000',
         ]);
         
+        \Log::info('After basic validation', [
+            'validator_passes' => !$validator->fails(),
+            'errors' => $validator->errors()->all()
+        ]);
+        
         // Only require revision_deadline for 'revise' decision
         if ($request->decision === 'revise') {
+            \Log::info('Adding revision_deadline validation rules');
             $validator->addRules([
                 'revision_deadline' => 'required|date|after:today'
             ]);
-        } else {
-            // Make it nullable for other decisions
-            $validator->addRules([
-                'revision_deadline' => 'nullable|date|after:today'
+            
+            // Log the rule addition
+            \Log::info('Revision deadline validation added', [
+                'rules' => $validator->getRules()
             ]);
         }
         
         if ($validator->fails()) {
+            \Log::warning('Validation failed', [
+                'errors' => $validator->errors()->all(),
+                'decision' => $request->decision,
+                'revision_deadline' => $request->revision_deadline
+            ]);
+            
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
+        
+        \Log::info('Validation passed, proceeding with update');
         
         try {
             // Determine new status
@@ -302,6 +323,8 @@ class ChairController extends Controller
                 default => 'under_review'
             };
             
+            \Log::info('Status determined', ['status' => $status]);
+            
             // Prepare update data
             $updateData = [
                 'decision' => $request->decision,
@@ -311,26 +334,46 @@ class ChairController extends Controller
                 'status' => $status,
             ];
             
-            // Only add revision_deadline if provided
-            if ($request->filled('revision_deadline')) {
+            \Log::info('Base update data prepared', $updateData);
+            
+            // Only add revision_deadline for revise decisions
+            if ($request->decision === 'revise' && $request->filled('revision_deadline')) {
                 $updateData['revision_deadline'] = $request->revision_deadline;
+                $updateData['needs_revision'] = true;
+                $updateData['revision_requested_at'] = now();
+                
+                \Log::info('Added revision data', [
+                    'revision_deadline' => $request->revision_deadline,
+                    'needs_revision' => true
+                ]);
             }
+            
+            \Log::info('Final update data', $updateData);
             
             // Update paper
             $paper->update($updateData);
             
-            \Log::info('Paper decision saved', [
+            \Log::info('Paper updated successfully', [
                 'paper_id' => $paper->id,
-                'status' => $status,
-                'decision' => $request->decision,
-                'has_revision_deadline' => $request->filled('revision_deadline')
+                'new_status' => $paper->fresh()->status
             ]);
             
+            $message = match($request->decision) {
+                'accept' => 'Paper accepted successfully!',
+                'reject' => 'Paper rejected successfully!',
+                'revise' => 'Revision requested. Deadline: ' . 
+                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y'),
+                default => 'Decision submitted successfully!'
+            };
+            
             return redirect()->route('chair.papers')
-                ->with('success', 'Decision submitted successfully! Paper is now: ' . ucfirst($status));
+                ->with('success', $message);
                 
         } catch (\Exception $e) {
-            \Log::error('Failed to save decision: ' . $e->getMessage());
+            \Log::error('Failed to save decision: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return redirect()->back()
                 ->with('error', 'Failed to save decision: ' . $e->getMessage())

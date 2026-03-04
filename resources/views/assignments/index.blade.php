@@ -123,7 +123,7 @@
                                                 Abstract Only
                                             </span>
                                             @endif
-                                            <!-- Add status badge -->
+                                            <!-- Status badge -->
                                             <span class="px-2 py-1 text-xs rounded-full 
                                                 @if($paper->status === 'abstract_submitted') bg-orange-100 text-orange-800
                                                 @elseif($paper->status === 'submitted') bg-blue-100 text-blue-800
@@ -134,34 +134,68 @@
                                         </div>
                                     </div>
                                 </td>
-                                </td>
+                                
                                 <td class="px-6 py-4">
-                                    <div class="flex -space-x-2">
-                                        @foreach($paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->take(3) as $review) <!-- Updated statuses -->
-                                        <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center" 
-                                            title="{{ $review->reviewer->full_name ?? 'Unknown' }}">
-                                            <span class="text-xs font-medium text-blue-700">
-                                                @if($review->reviewer)
-                                                    {{ strtoupper(substr($review->reviewer->first_name, 0, 1)) }}
-                                                @else
-                                                    ?
+                                    <!-- Active Reviewers Section -->
+                                    @php
+                                        $activeReviews = $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress']);
+                                        $declinedReviews = $paper->reviews->where('status', 'declined');
+                                    @endphp
+                                    
+                                    @if($activeReviews->count() > 0)
+                                    <div class="mb-2">
+                                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Reviewers</div>
+                                        <div class="flex -space-x-2">
+                                            @foreach($activeReviews->take(3) as $review)
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center" 
+                                                title="{{ $review->reviewer->full_name ?? 'Unknown' }} ({{ $review->status }})">
+                                                <span class="text-xs font-medium text-blue-700">
+                                                    @if($review->reviewer)
+                                                        {{ strtoupper(substr($review->reviewer->first_name, 0, 1)) }}
+                                                    @else
+                                                        ?
+                                                    @endif
+                                                </span>
+                                            </div>
+                                            @endforeach
+                                            @if($activeReviews->count() > 3)
+                                            <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
+                                                <span class="text-xs font-medium text-gray-700">+{{ $activeReviews->count() - 3 }}</span>
+                                            </div>
+                                            @endif
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            {{ $activeReviews->count() }} active reviewer(s)
+                                        </div>
+                                    </div>
+                                    @endif
+                                    
+                                    <!-- Declined Reviewers Section -->
+                                    @if($declinedReviews->count() > 0)
+                                    <div class="mt-2 pt-2 border-t border-gray-100">
+                                        <div class="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1 flex items-center">
+                                            <i class="fas fa-exclamation-triangle mr-1 text-xs"></i>
+                                            Declined ({{ $declinedReviews->count() }})
+                                        </div>
+                                        <div class="space-y-1">
+                                            @foreach($declinedReviews as $review)
+                                            <div class="flex items-center text-xs">
+                                                <i class="fas fa-user-times text-red-400 mr-2"></i>
+                                                <span class="text-gray-600">{{ $review->reviewer->full_name ?? 'Unknown' }}</span>
+                                                @if($review->declined_at)
+                                                <span class="text-gray-400 ml-2">({{ $review->declined_at->format('M d') }})</span>
                                                 @endif
-                                            </span>
+                                            </div>
+                                            @endforeach
                                         </div>
-                                        @endforeach
-                                        @if($paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() > 3) <!-- Updated statuses -->
-                                        <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
-                                            <span class="text-xs font-medium text-gray-700">+{{ $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() - 3 }}</span> <!-- Updated statuses -->
-                                        </div>
-                                        @endif
-                                        @if($paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() === 0) <!-- Updated statuses -->
-                                        <span class="text-sm text-gray-500">No assignments</span>
-                                        @endif
                                     </div>
-                                    <div class="text-xs text-gray-500 mt-2">
-                                        {{ $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress'])->count() }} reviewer(s) assigned <!-- Updated statuses -->
-                                    </div>
+                                    @endif
+                                    
+                                    @if($activeReviews->count() === 0 && $declinedReviews->count() === 0)
+                                    <span class="text-sm text-gray-500">No assignments</span>
+                                    @endif
                                 </td>
+                                
                                 <td class="px-6 py-4">
                                     @php
                                         $bids = $paper->bids;
@@ -179,17 +213,32 @@
                                         </div>
                                     </div>
                                 </td>
+                                
                                 <td class="px-6 py-4">
                                     <div class="flex space-x-2">
                                         <a href="{{ route('assignments.suggest', ['paper' => $paper->id, 'year' => request('year', date('Y')), 'tab' => 'papers']) }}" 
-                                           class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200">
+                                        class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200">
                                             Suggest
                                         </a>
                                         <a href="{{ route('assignments.assign', ['paper' => $paper->id, 'year' => request('year', date('Y')), 'tab' => 'papers']) }}" 
-                                           class="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200">
+                                        class="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200">
                                             Assign
                                         </a>
                                     </div>
+                                    
+                                    <!-- Show reassign button if all reviews declined -->
+                                    @if($declinedReviews->count() > 0 && $activeReviews->count() === 0)
+                                    <div class="mt-2">
+                                        <form action="{{ route('assignments.reset', $paper) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" 
+                                                    class="text-xs text-yellow-600 hover:text-yellow-800"
+                                                    onclick="return confirm('This will mark the paper as needing new reviewers. Continue?')">
+                                                <i class="fas fa-redo-alt mr-1"></i> Reset for new assignments
+                                            </button>
+                                        </form>
+                                    </div>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
