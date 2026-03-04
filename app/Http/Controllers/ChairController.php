@@ -26,7 +26,7 @@ class ChairController extends Controller
     {
         $year = $request->input('year', date('Y'));
         
-        // Get statistics
+        // Get statistics - UPDATED with new metrics
         $stats = [
             'papers' => Paper::where('conference_year', $year)->count(),
             'reviewers' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
@@ -36,6 +36,12 @@ class ChairController extends Controller
                 $q->where('conference_year', $year);
             })->where('status', 'pending')->count(),
             'acceptance_rate' => $this->calculateAcceptanceRate($year),
+            // NEW STATS
+            'conference_registrations' => ConferenceRegistration::count(),
+            'total_users' => User::count(),
+            'reviews_completed' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'completed')->count(),
         ];
         
         // Get papers needing decisions (papers where all assigned reviews are completed)
@@ -112,26 +118,26 @@ class ChairController extends Controller
         // Get important deadlines
         $deadlines = [];
 
-$dates = [
-    ['title' => 'Paper Submission Deadline', 'description' => 'Final date for paper submissions', 'month' => 3, 'day' => 15],
-    ['title' => 'Review Deadline', 'description' => 'All reviews must be completed', 'month' => 4, 'day' => 15],
-    ['title' => 'Camera Ready Deadline', 'description' => 'Final camera-ready versions due', 'month' => 5, 'day' => 1],
-];
-
-foreach ($dates as $item) {
-    $date = Carbon::create($year, $item['month'], $item['day']);
-    $isPast = $date->isPast();
-    $daysDiff = now()->diffInDays($date, false); // false means negative if past
-    
-    $deadlines[] = (object)[
-        'title' => $item['title'],
-        'description' => $item['description'],
-        'date' => $date,
-        'is_past' => $isPast,
-        'is_approaching' => !$isPast && $date->diffInDays(now()) <= 30,
-        'days_left' => max(0, floor($daysDiff)),
+    $dates = [
+        ['title' => 'Paper Submission Deadline', 'description' => 'Final date for paper submissions', 'month' => 3, 'day' => 15],
+        ['title' => 'Review Deadline', 'description' => 'All reviews must be completed', 'month' => 4, 'day' => 15],
+        ['title' => 'Camera Ready Deadline', 'description' => 'Final camera-ready versions due', 'month' => 5, 'day' => 1],
     ];
-}
+
+    foreach ($dates as $item) {
+        $date = Carbon::create($year, $item['month'], $item['day']);
+        $isPast = $date->isPast();
+        $daysDiff = now()->diffInDays($date, false); // false means negative if past
+        
+        $deadlines[] = (object)[
+            'title' => $item['title'],
+            'description' => $item['description'],
+            'date' => $date,
+            'is_past' => $isPast,
+            'is_approaching' => !$isPast && $date->diffInDays(now()) <= 30,
+            'days_left' => max(0, floor($daysDiff)),
+        ];
+    }
 
         
         return view('dashboard.chair', compact(
@@ -139,6 +145,7 @@ foreach ($dates as $item) {
             'reviewerPerformance', 'topicsDistribution', 'deadlines', 'year'
         ));
     }
+   
 
     /**
      * Manage papers (for chairs)

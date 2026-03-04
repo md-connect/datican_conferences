@@ -7,11 +7,30 @@
     <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Conference Chair Dashboard</h1>
         
-        <!-- Quick Stats -->
+        <!-- Quick Stats - UPDATED with new stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Conference Registrations -->
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
                     <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                        <i class="fas fa-calendar-check text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['conference_registrations'] }}</p>
+                        <p class="text-sm text-gray-500">Conference Registrations</p>
+                    </div>
+                </div>
+                <div class="mt-3 text-left">
+                    <!-- <a href="{{ route('admin.registrations') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                        View all <i class="fas fa-arrow-right ml-1"></i>
+                    </a> -->
+                </div>
+            </div>
+            
+            <!-- Papers Submitted -->
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
                         <i class="fas fa-file-alt text-xl"></i>
                     </div>
                     <div>
@@ -19,46 +38,42 @@
                         <p class="text-sm text-gray-500">Papers Submitted</p>
                     </div>
                 </div>
-            </div>
-            
-            <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                        <i class="fas fa-users text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $stats['reviewers'] }}</p>
-                        <p class="text-sm text-gray-500">Active Reviewers</p>
-                    </div>
+                <div class="mt-3 text-left">
+                    <!-- <a href="{{ route('chair.papers') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                        View all <i class="fas fa-arrow-right ml-1"></i>
+                    </a> -->
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                        <i class="fas fa-clipboard-check text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $stats['pending_reviews'] }}</p>
-                        <p class="text-sm text-gray-500">Pending Reviews</p>
-                    </div>
-                </div>
-            </div>
-            
+            <!-- Reviews Completed -->
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
                     <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                        <i class="fas fa-percentage text-xl"></i>
+                        <i class="fas fa-clipboard-check text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $stats['acceptance_rate'] }}%</p>
-                        <p class="text-sm text-gray-500">Acceptance Rate</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['reviews_completed'] }}</p>
+                        <p class="text-sm text-gray-500">Reviews Completed</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Users -->
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['total_users'] }}</p>
+                        <p class="text-sm text-gray-500">System Users</p>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Replace the Quick Actions section with this: -->
+        <!-- Rest of your template remains the same -->
+        <!-- Chair Actions -->
         <div class="bg-white rounded-xl shadow p-6 mb-8">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Chair Actions</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -92,7 +107,7 @@
             </div>
         </div>
         
-        <!-- Recent Activity -->
+        <!-- Recent Activity (rest of the template remains unchanged) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Papers Needing Attention -->
             <div class="bg-white rounded-xl shadow">
@@ -251,7 +266,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 @if($reviewer->avg_review_time)
-                                {{ $reviewer->avg_review_time }} days
+                                {{ number_format($reviewer->avg_review_time, 1) }} days
                                 @else
                                 N/A
                                 @endif
