@@ -184,8 +184,8 @@
                                             @foreach([
                                                 'Conference Announcement' => '7th January, 2026',
                                                 'Abstract Submission Opens' => '1st February, 2026',
-                                                'Abstract Submission Deadline' => '1st March, 2026',
-                                                'Full Paper Submission Deadline' => '1st April, 2026',
+                                                'Abstract Submission Deadline' => '21st March, 2026',
+                                                'Full Paper Submission Deadline' => '15th April, 2026',
                                                 'Reviewers\' Feedback Returned' => '1st May, 2026',
                                                 'Conference Dates' => '13th - 14th May, 2026',
                                                 'Camera-Ready Paper Submission' => '21st May, 2026'

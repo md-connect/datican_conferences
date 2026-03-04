@@ -445,14 +445,6 @@
                             <i class="fas fa-arrow-left mr-2"></i>
                             Back to List
                         </a>
-                        
-                        @if($paper->status !== 'under_review' && $paper->status !== 'reviewing')
-                        <button type="submit" name="action" value="update"
-                                class="inline-flex items-center px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">
-                            <i class="fas fa-save mr-2"></i>
-                            Update Draft
-                        </button>
-                        @endif
                     </div>
                     
                     <div class="space-x-4">
@@ -481,154 +473,161 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize author count
+    // -----------------------------
+    // VARIABLES
+    // -----------------------------
     let authorCount = {{ $existingAuthors->count() }};
-    
-    // Word counter for abstract
-    function updateWordCount(textarea) {
-        const wordCountElement = document.getElementById('word-count');
-        const text = textarea.value.trim();
-        
-        // Simple word count - counts words separated by spaces
+    const authorsSection = document.getElementById('authors-section');
+    const addAuthorBtn = document.getElementById('add-author');
+    const abstractTextarea = document.querySelector('textarea[name="abstract"]');
+    const wordCountElement = document.getElementById('word-count');
+
+    const submissionTypeRadios = document.querySelectorAll('.submission-type-radio');
+    const fileUploadSection = document.getElementById('file_upload_section');
+    const fileInput = document.getElementById('paper_file_input');
+    const fileRequiredIndicator = document.getElementById('file_required_indicator');
+    const fileUploadContent = document.getElementById('file_upload_content');
+    const fileSelectedContent = document.getElementById('file_selected_content');
+    const fileNameDisplay = document.getElementById('file_name_display');
+    const fileError = document.getElementById('file_error');
+
+    const hasExistingFile = {{ $paper->file_path ? 'true' : 'false' }};
+    const isUnderReview = {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'true' : 'false' }};
+
+    // -----------------------------
+    // ABSTRACT WORD COUNT
+    // -----------------------------
+    function updateWordCount() {
+        const text = abstractTextarea.value.trim();
         let wordCount = 0;
         if (text.length > 0) {
-            wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+            wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
         }
-        
         wordCountElement.textContent = `${wordCount}/250 words`;
-        
-        // Change color when approaching limit
-        if (wordCount > 200) {
-            wordCountElement.classList.add('text-yellow-600');
-            wordCountElement.classList.remove('text-gray-500');
-        } else if (wordCount > 240) {
+
+        if (wordCount > 240) {
             wordCountElement.classList.add('text-red-600');
             wordCountElement.classList.remove('text-yellow-600');
+        } else if (wordCount > 200) {
+            wordCountElement.classList.add('text-yellow-600');
+            wordCountElement.classList.remove('text-red-600');
         } else {
             wordCountElement.classList.remove('text-yellow-600', 'text-red-600');
             wordCountElement.classList.add('text-gray-500');
         }
     }
-    
-    // Initialize word count
-    const abstractTextarea = document.querySelector('textarea[name="abstract"]');
-    if (abstractTextarea) {
-        updateWordCount(abstractTextarea);
-        if (!abstractTextarea.readOnly) {
-            abstractTextarea.addEventListener('input', function() {
-                updateWordCount(this);
-            });
-        }
+
+    if (abstractTextarea && !abstractTextarea.readOnly) {
+        updateWordCount();
+        abstractTextarea.addEventListener('input', updateWordCount);
     }
-    
-    // Add author button functionality
-    const addAuthorBtn = document.getElementById('add-author');
-    const authorsSection = document.getElementById('authors-section');
-    
-    if (addAuthorBtn && authorsSection) {
-        addAuthorBtn.addEventListener('click', function() {
-            const index = authorCount;
-            
-            // Create new author field
-            const authorField = document.createElement('div');
-            authorField.className = 'author-field mb-4 p-4 border border-gray-200 rounded-lg';
-            authorField.innerHTML = `
-                <div class="flex items-center justify-between mb-2">
-                    <span class="font-medium text-gray-700">Author ${index + 1}</span>
-                    <button type="button" class="remove-author text-red-600 hover:text-red-800">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Select Co-Author *</label>
-                        <select name="authors[${index}][user_id]" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg author-select">
-                            <option value="">Select an author...</option>
-                            @foreach($users as $user)
-                            <option value="{{ $user->id }}">
-                                {{ $user->first_name }} {{ $user->last_name }} ({{ $user->email }})
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="flex items-center">
-                        <label class="flex items-center">
-                            <input type="radio" name="corresponding_author" 
-                                value="${index}" class="text-blue-600 focus:ring-blue-500 corresponding-radio">
-                            <span class="ml-2 text-sm text-gray-600">Corresponding Author</span>
-                        </label>
-                    </div>
-                </div>
-            `;
-            
-            // Add the new field
-            authorsSection.appendChild(authorField);
-            authorCount++;
-            
-            // Add remove functionality
-            const removeBtn = authorField.querySelector('.remove-author');
-            removeBtn.addEventListener('click', function() {
-                if (document.querySelectorAll('.author-field').length > 1) {
-                    authorField.remove();
-                    authorCount--;
-                } else {
-                    alert('You must have at least one author (yourself).');
-                }
-            });
+
+    // -----------------------------
+    // ADD / REMOVE AUTHORS
+    // -----------------------------
+    function reindexAuthors() {
+        document.querySelectorAll('.author-field').forEach((field, idx) => {
+            // Update label
+            const label = field.querySelector('span.font-medium');
+            if (label) label.textContent = `Author ${idx + 1}`;
+
+            // Update select name
+            const select = field.querySelector('select.author-select');
+            if (select) select.name = `authors[${idx}][user_id]`;
+
+            // Update corresponding radio value
+            const radio = field.querySelector('input.corresponding-radio');
+            if (radio) radio.value = idx;
         });
+        authorCount = document.querySelectorAll('.author-field').length;
     }
-    
-    // Remove existing author functionality
+
+    function addAuthorField() {
+        const index = authorCount;
+        const field = document.createElement('div');
+        field.className = 'author-field mb-4 p-4 border border-gray-200 rounded-lg';
+        field.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-gray-700">Author ${index + 1}</span>
+                <button type="button" class="remove-author text-red-600 hover:text-red-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Select Co-Author *</label>
+                    <select name="authors[${index}][user_id]" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg author-select">
+                        <option value="">Select an author...</option>
+                        @foreach($users as $user)
+                        <option value="{{ $user->id }}">
+                            {{ $user->first_name }} {{ $user->last_name }} ({{ $user->email }})
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <label class="flex items-center">
+                        <input type="radio" name="corresponding_author" value="${index}" class="text-blue-600 focus:ring-blue-500 corresponding-radio">
+                        <span class="ml-2 text-sm text-gray-600">Corresponding Author</span>
+                    </label>
+                </div>
+            </div>
+        `;
+        authorsSection.appendChild(field);
+
+        field.querySelector('.remove-author').addEventListener('click', function() {
+            if (document.querySelectorAll('.author-field').length > 1) {
+                field.remove();
+                reindexAuthors();
+            } else {
+                alert('You must have at least one author (yourself).');
+            }
+        });
+
+        authorCount++;
+    }
+
+    if (addAuthorBtn) {
+        addAuthorBtn.addEventListener('click', addAuthorField);
+    }
+
+    // Remove buttons on existing authors
     document.querySelectorAll('.remove-author').forEach(btn => {
         btn.addEventListener('click', function() {
-            const authorField = this.closest('.author-field');
+            const field = this.closest('.author-field');
             if (document.querySelectorAll('.author-field').length > 1) {
-                authorField.remove();
-                authorCount--;
+                field.remove();
+                reindexAuthors();
             } else {
                 alert('You must have at least one author (yourself).');
             }
         });
     });
-    
-    // Submission Type Radio Button Logic
-    const submissionTypeRadios = document.querySelectorAll('.submission-type-radio');
-    const fileUploadSection = document.getElementById('file_upload_section');
-    const fileInput = document.getElementById('paper_file_input');
-    const fileRequiredIndicator = document.getElementById('file_required_indicator');
-    
-    // Function to toggle file upload section
+
+    // -----------------------------
+    // SUBMISSION TYPE TOGGLE FILE UPLOAD
+    // -----------------------------
     function toggleFileUpload() {
         const selectedRadio = document.querySelector('input[name="submission_type"]:checked');
         if (!selectedRadio) return;
-        
-        const selectedType = selectedRadio.value;
-        const isAbstractOnly = selectedType === 'abstract_only';
-        const hasExistingFile = {{ $paper->file_path ? 'true' : 'false' }};
-        
-        if (fileUploadSection && fileInput && fileRequiredIndicator) {
+
+        const isAbstractOnly = selectedRadio.value === 'abstract_only';
+        const wrapper = document.getElementById('file_upload_section_wrapper');
+
+        if (wrapper) {
             if (isAbstractOnly) {
-                // Hide file upload for abstract only
-                fileUploadSection.style.opacity = '0.5';
-                fileUploadSection.style.pointerEvents = 'none';
+                wrapper.style.opacity = '0';
+                wrapper.style.pointerEvents = 'none';
                 fileInput.disabled = true;
                 fileInput.removeAttribute('required');
                 fileRequiredIndicator.classList.add('hidden');
-                
-                const fileError = document.getElementById('file_error');
-                if (fileError) {
-                    fileError.classList.add('hidden');
-                    fileError.textContent = '';
-                }
+                if (fileError) fileError.classList.add('hidden');
             } else {
-                // Show file upload for full paper
-                fileUploadSection.style.opacity = '1';
-                fileUploadSection.style.pointerEvents = 'auto';
-                fileInput.disabled = fileInput.hasAttribute('disabled');
-                
-                // Only require file if there's no existing file
-                if (!hasExistingFile) {
+                wrapper.style.opacity = '1';
+                wrapper.style.pointerEvents = 'auto';
+                fileInput.disabled = fileInput.hasAttribute('disabled'); // respect under_review
+                if (!hasExistingFile && !fileInput.disabled) {
                     fileInput.setAttribute('required', 'required');
                     fileRequiredIndicator.classList.remove('hidden');
                 } else {
@@ -638,205 +637,123 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
-    // Add event listeners to radio buttons
-    if (submissionTypeRadios) {
-        submissionTypeRadios.forEach(radio => {
-            radio.addEventListener('change', toggleFileUpload);
-        });
-    }
-    
-    // Initialize on page load
+// Drag and drop functionality
+if (fileUploadArea) {
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        // Only highlight if not disabled
+        if (!fileInput.disabled) {
+            this.classList.add('border-blue-400', 'bg-blue-50');
+        }
+    });
+
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-blue-400', 'bg-blue-50');
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-blue-400', 'bg-blue-50');
+
+        // Only allow drop if not disabled
+        if (!fileInput.disabled && e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+
+    submissionTypeRadios.forEach(radio => radio.addEventListener('change', toggleFileUpload));
     toggleFileUpload();
-    
-    // File upload functionality
-    const fileUploadArea = document.getElementById('file_upload_area');
-    const fileUploadContent = document.getElementById('file_upload_content');
-    const fileSelectedContent = document.getElementById('file_selected_content');
-    const fileNameDisplay = document.getElementById('file_name_display');
-    const fileError = document.getElementById('file_error');
-    
-    if (fileUploadArea && fileInput) {
-        fileUploadArea.addEventListener('click', function(e) {
-            if (!fileInput.disabled) {
-                fileInput.click();
-            }
+
+    // -----------------------------
+    // FILE UPLOAD DISPLAY & VALIDATION
+    // -----------------------------
+    function resetFileDisplay() {
+        if (fileUploadContent) fileUploadContent.classList.remove('hidden');
+        if (fileSelectedContent) fileSelectedContent.classList.add('hidden');
+        if (fileNameDisplay) fileNameDisplay.textContent = '';
+    }
+
+    if (fileUploadSection && fileInput) {
+        fileUploadSection.addEventListener('click', function() {
+            if (!fileInput.disabled) fileInput.click();
         });
-        
-        fileInput.addEventListener('change', function(e) {
+
+        fileInput.addEventListener('change', function() {
             const file = this.files[0];
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            
-            if (fileError) {
-                fileError.classList.add('hidden');
-                fileError.textContent = '';
-            }
-            
+            const maxSize = 10 * 1024 * 1024;
+            if (fileError) { fileError.classList.add('hidden'); fileError.textContent = ''; }
+
             if (file) {
-                // Check file size
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    if (fileError) { fileError.textContent = 'File must be PDF format'; fileError.classList.remove('hidden'); }
+                    this.value = '';
+                    resetFileDisplay();
+                    return;
+                }
                 if (file.size > maxSize) {
-                    if (fileError) {
-                        fileError.textContent = 'File size must be less than 10MB';
-                        fileError.classList.remove('hidden');
-                    }
+                    if (fileError) { fileError.textContent = 'File size must be less than 10MB'; fileError.classList.remove('hidden'); }
                     this.value = '';
                     resetFileDisplay();
                     return;
                 }
-                
-                // Check file extension
-                const fileName = file.name.toLowerCase();
-                if (!fileName.endsWith('.pdf')) {
-                    if (fileError) {
-                        fileError.textContent = 'File must be PDF format';
-                        fileError.classList.remove('hidden');
-                    }
-                    this.value = '';
-                    resetFileDisplay();
-                    return;
-                }
-                
-                // Show file selected
-                if (fileNameDisplay) {
-                    fileNameDisplay.textContent = file.name;
-                }
-                if (fileUploadContent) {
-                    fileUploadContent.classList.add('hidden');
-                }
-                if (fileSelectedContent) {
-                    fileSelectedContent.classList.remove('hidden');
-                }
+
+                if (fileNameDisplay) fileNameDisplay.textContent = file.name;
+                if (fileUploadContent) fileUploadContent.classList.add('hidden');
+                if (fileSelectedContent) fileSelectedContent.classList.remove('hidden');
             } else {
                 resetFileDisplay();
             }
         });
-    }
-    
-    // Drag and drop functionality
-    if (fileUploadArea) {
-        fileUploadArea.addEventListener('dragover', function(e) {
+
+        fileUploadSection.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('border-blue-400','bg-blue-50'); });
+        fileUploadSection.addEventListener('dragleave', function(e) { e.preventDefault(); this.classList.remove('border-blue-400','bg-blue-50'); });
+        fileUploadSection.addEventListener('drop', function(e) {
             e.preventDefault();
-            if (!fileInput.disabled) {
-                this.classList.add('border-blue-400', 'bg-blue-50');
-            }
-        });
-        
-        fileUploadArea.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            this.classList.remove('border-blue-400', 'bg-blue-50');
-        });
-        
-        fileUploadArea.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('border-blue-400', 'bg-blue-50');
-            
+            this.classList.remove('border-blue-400','bg-blue-50');
             if (!fileInput.disabled && e.dataTransfer.files.length > 0) {
                 fileInput.files = e.dataTransfer.files;
                 fileInput.dispatchEvent(new Event('change'));
             }
         });
     }
-    
-    function resetFileDisplay() {
-        if (fileUploadContent) {
-            fileUploadContent.classList.remove('hidden');
-        }
-        if (fileSelectedContent) {
-            fileSelectedContent.classList.add('hidden');
-        }
-        if (fileNameDisplay) {
-            fileNameDisplay.textContent = '';
-        }
-    }
-    
-    // Form validation
+
+    // -----------------------------
+    // FORM SUBMIT VALIDATION
+    // -----------------------------
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Skip validation if paper is under review
-            const isUnderReview = {{ $paper->status === 'under_review' || $paper->status === 'reviewing' ? 'true' : 'false' }};
-            if (isUnderReview) {
-                return true;
-            }
-            
-            // Check submission type
+            if (isUnderReview) return true;
+
+            // Submission type
             const submissionType = document.querySelector('input[name="submission_type"]:checked');
-            if (!submissionType) {
-                e.preventDefault();
-                alert('Please select a submission type (Abstract Only or Full Paper).');
-                return;
-            }
-            
-            // Check file for full paper submissions without existing file
-            const hasExistingFile = {{ $paper->file_path ? 'true' : 'false' }};
+            if (!submissionType) { e.preventDefault(); alert('Please select a submission type.'); return; }
+
+            // File validation
             if (submissionType.value === 'full_paper' && !hasExistingFile) {
-                const file = fileInput.files[0];
-                if (!file) {
-                    e.preventDefault();
-                    alert('Please upload your paper file for Full Paper submission.');
-                    return;
-                }
-                
-                // Re-validate file on submit
-                const maxSize = 10 * 1024 * 1024;
-                const fileName = file.name.toLowerCase();
-                
-                if (file.size > maxSize) {
-                    e.preventDefault();
-                    if (fileError) {
-                        fileError.textContent = 'File size must be less than 10MB';
-                        fileError.classList.remove('hidden');
-                    }
-                    return;
-                }
-                
-                if (!fileName.endsWith('.pdf')) {
-                    e.preventDefault();
-                    if (fileError) {
-                        fileError.textContent = 'File must be PDF format';
-                        fileError.classList.remove('hidden');
-                    }
-                    return;
-                }
+                if (!fileInput.files[0]) { e.preventDefault(); alert('Please upload your paper file.'); return; }
             }
-            
-            // Abstract word count validation
-            if (abstractTextarea && abstractTextarea.value.trim().length > 0) {
-                const text = abstractTextarea.value.trim();
-                const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
-                
-                if (wordCount > 250) {
-                    e.preventDefault();
-                    alert(`Abstract must not exceed 250 words. Current count: ${wordCount} words.`);
-                    abstractTextarea.focus();
-                    return;
-                }
+
+            // Abstract word count
+            if (abstractTextarea) {
+                const wordCount = abstractTextarea.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+                if (wordCount > 250) { e.preventDefault(); alert(`Abstract exceeds 250 words (${wordCount}).`); abstractTextarea.focus(); return; }
             }
-            
-            // Ensure at least one author is selected
+
+            // Authors
             const authorSelects = this.querySelectorAll('.author-select');
-            let hasValidAuthor = false;
-            
-            authorSelects.forEach(select => {
-                if (select.value) {
-                    hasValidAuthor = true;
-                }
-            });
-            
-            if (!hasValidAuthor && authorSelects.length > 0) {
-                e.preventDefault();
-                alert('Please select at least one author.');
-                return;
-            }
-            
-            // Ensure corresponding author is selected
-            const correspondingAuthor = document.querySelector('input[name="corresponding_author"]:checked');
-            if (!correspondingAuthor) {
-                e.preventDefault();
-                alert('Please select a corresponding author.');
-                return;
-            }
+            let hasAuthor = Array.from(authorSelects).some(sel => sel.value);
+            if (!hasAuthor && authorSelects.length > 0) { e.preventDefault(); alert('Select at least one author.'); return; }
+
+            // Corresponding author
+            const corrAuthor = document.querySelector('input[name="corresponding_author"]:checked');
+            if (!corrAuthor) { e.preventDefault(); alert('Please select a corresponding author.'); return; }
         });
     }
 });
 </script>
+

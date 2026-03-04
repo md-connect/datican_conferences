@@ -190,6 +190,7 @@ class DashboardController extends Controller
         $data = [
             'paperStats' => [
                 'total' => $user->papers()->count(),
+                'abstract_submitted' => $user->papers()->where('status', 'abstract_submitted')->count(),
                 'submitted' => $user->papers()->where('status', 'submitted')->count(),
                 'under_review' => $user->papers()->where('status', 'under_review')->count(),
                 'accepted' => $user->papers()->where('status', 'accepted')->count(),
