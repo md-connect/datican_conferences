@@ -153,7 +153,7 @@
                     <div class="flex items-center justify-between border-b pb-4">
                         <div class="flex items-center">
                             <div class="bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-lg mr-4">
-                                <span class="font-bold">March 21</span>
+                                <span class="font-bold">March 30</span>
                             </div>
                             <span class="font-medium text-gray-800">Abstract Submission Deadline</span>
                         </div>
