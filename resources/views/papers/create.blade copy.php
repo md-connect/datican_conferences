@@ -10,26 +10,11 @@
             <p class="text-gray-600">Submit your research paper for DATICAN Conference 2026</p>
         </div>
 
-        <!-- Submission Temporarily Closed Message -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 mb-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-exclamation-triangle text-yellow-400 text-3xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-yellow-800 mb-2">Submissions Currently Closed</h3>
-                    <p class="text-yellow-700 text-lg">We are currently not accepting submissions. Kindly check back later.</p>
-                    <p class="text-yellow-600 mt-2 text-sm">For any inquiries, please contact the conference organizers.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Submission Form - Temporarily Disabled 
         <div class="bg-white rounded-xl shadow-lg p-6">
             <form action="{{ route('papers.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 
-                <!-- Basic Information 
+                <!-- Basic Information -->
                 <div class="mb-8">
                     @if($errors->any())
                         <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -88,7 +73,7 @@
                     </div>
                 </div>
 
-                <!-- Conference Details 
+                <!-- Conference Details -->
                 <div class="mb-8">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Conference Details</h2>
                     
@@ -121,7 +106,7 @@
                         </div>
                     </div>
                     
-                    <!-- Submission Type Radio buttons 
+                    <!-- Submission Type Radio buttons -->
                     <div class="mt-6">
                         <label class="block text-sm font-medium text-gray-700 mb-4">
                             Submission Type *
@@ -156,7 +141,7 @@
                     </div>
                 </div>
 
-                <!-- File Upload Section - Now conditional 
+                <!-- File Upload Section - Now conditional -->
                 <div class="mb-8">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Paper File</h2>
                     
@@ -192,7 +177,7 @@
                         <div id="file_error" class="mt-2 text-sm text-red-600 hidden"></div>
                     </div>
                     
-                    <!-- Anonymous submission checkbox 
+                    <!-- Anonymous submission checkbox -->
                     <div class="flex items-center mb-4">
                         <input type="checkbox" name="is_anonymous" value="1"
                             {{ old('is_anonymous', true) ? 'checked' : '' }}
@@ -204,13 +189,13 @@
                     </div>
                 </div>
 
-                <!-- Authors 
+                <!-- Authors -->
                 <div class="mb-8">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Authors</h2>
                     <p class="text-sm text-gray-600 mb-4">You are automatically added as the first author.</p>
                     
                     <div id="authors-section">
-                        <!-- First author (current user) - HARDCODED IN HTML 
+                        <!-- First author (current user) - HARDCODED IN HTML -->
                         <div class="author-field mb-4 p-4 border border-gray-200 rounded-lg">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="font-medium text-gray-700">Author 1 (You)</span>
@@ -247,7 +232,7 @@
                     </button>
                 </div>
                 
-                <!-- Conference Registration Link 
+                <!-- Conference Registration Link -->
                 <div class="mb-8">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Conference Registration</h2>
                     
@@ -278,7 +263,7 @@
                     @endif
                 </div>
 
-                <!-- Additional Comments 
+                <!-- Additional Comments -->
                 <div class="mb-8">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Additional Information</h2>
                     
@@ -292,7 +277,7 @@
                     </div>
                 </div>
 
-                <!-- Submit Buttons 
+                <!-- Submit Buttons -->
                 <div class="flex items-center justify-between pt-6 border-t">
                     <div>
                         <p class="text-sm text-gray-600">
@@ -317,13 +302,10 @@
                 </div>
             </form>
         </div>
-        -->
     </div>
 </div>
 @endsection
 
-<!-- JavaScript is also commented out since the form is disabled -->
-<!--
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize author count
@@ -656,4 +638,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
--->
