@@ -75,6 +75,11 @@ Route::middleware(['auth'])->group(function () {
     
     // Reviews
     Route::middleware(['auth'])->group(function () {
+         // Reviewers expertise
+        Route::get('/reviewer/expertise', [App\Http\Controllers\ReviewerExpertiseController::class, 'index'])->name('reviewer.expertise');
+        Route::post('/reviewer/expertise', [App\Http\Controllers\ReviewerExpertiseController::class, 'store'])->name('reviewer.expertise.store');
+        Route::put('/reviewer/expertise/{id}', [App\Http\Controllers\ReviewerExpertiseController::class, 'update'])->name('reviewer.expertise.update');
+        Route::delete('/reviewer/expertise/{id}', [App\Http\Controllers\ReviewerExpertiseController::class, 'destroy'])->name('reviewer.expertise.destroy');
         // Revision routes (add these)
         Route::get('/papers/{paper}/revise', [PaperController::class, 'reviseForm'])->name('papers.revise-form');
         Route::post('/papers/{paper}/revise', [PaperController::class, 'submitRevision'])->name('papers.submit-revision');

@@ -64,22 +64,22 @@
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
             <div class="flex flex-wrap gap-4">
                 <a href="{{ route('bidding.index') }}" 
-                   class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover-lift transition duration-300">
+                class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover-lift transition duration-300">
                     <i class="fas fa-hand-paper mr-2"></i>Browse & Bid on Papers
                 </a>
                 <a href="{{ route('reviews.my') }}" 
-                   class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 hover-lift transition duration-300">
+                class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 hover-lift transition duration-300">
                     <i class="fas fa-clipboard-check mr-2"></i>My Reviews
                 </a>
                 @if($reviewStats['assigned'] > 0)
                 <a href="{{ route('reviews.my') }}?status=assigned" 
-                   class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover-lift transition duration-300">
+                class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover-lift transition duration-300">
                     <i class="fas fa-file-alt mr-2"></i>Review Assigned Papers ({{ $reviewStats['assigned'] }})
                 </a>
                 @endif
-                <a href="{{ route('profile') }}" 
-                   class="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 hover-lift transition duration-300">
-                    <i class="fas fa-user-cog mr-2"></i>Update Expertise Profile
+                <a href="{{ route('reviewer.expertise') }}" 
+                class="inline-flex items-center px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 hover-lift transition duration-300">
+                    <i class="fas fa-user-graduate mr-2"></i>Update Expertise Profile
                 </a>
             </div>
         </div>

@@ -197,28 +197,64 @@
     </div>
 </div>
 
-@push('scripts')
 <script>
     let bidsToSave = {};
+    let isSaving = false;
     
-    // Initialize bids data
-    document.querySelectorAll('.bid-radio:checked').forEach(radio => {
-        const paperId = radio.dataset.paper;
-        bidsToSave[paperId] = {
-            preference: radio.value,
-            comments: document.getElementById(`comments-${paperId}`).value,
-            expertise: document.querySelector(`input[name="expertise[${paperId}]"]:checked`)?.value || null
-        };
-    });
+    console.log('Bidding page loaded');
+    
+    // Function to initialize bids from existing data
+    function initializeBids() {
+        document.querySelectorAll('.bid-radio:checked').forEach(radio => {
+            const paperId = radio.dataset.paper;
+            if (!paperId) {
+                console.error('No paper ID found for radio');
+                return;
+            }
+            
+            const comments = document.getElementById(`comments-${paperId}`);
+            const expertise = document.querySelector(`input[name="expertise[${paperId}]"]:checked`);
+            
+            bidsToSave[paperId] = {
+                preference: radio.value,
+                comments: comments ? comments.value : '',
+                expertise_scores: expertise ? { overall: parseInt(expertise.value) } : null
+            };
+            
+            console.log(`Initialized bid for paper ${paperId}:`, bidsToSave[paperId]);
+        });
+    }
     
     // Track bid changes
     document.querySelectorAll('.bid-radio').forEach(radio => {
-        radio.addEventListener('change', function() {
+        radio.addEventListener('change', function(e) {
             const paperId = this.dataset.paper;
+            if (!paperId) {
+                console.error('No paper ID found for radio');
+                return;
+            }
+            
+            console.log(`Bid changed for paper ${paperId} to:`, this.value);
+            
             if (!bidsToSave[paperId]) {
                 bidsToSave[paperId] = {};
             }
             bidsToSave[paperId].preference = this.value;
+            
+            // Visual feedback
+            const container = this.closest('.grid');
+            if (container) {
+                container.querySelectorAll('.bid-radio').forEach(r => {
+                    const div = r.nextElementSibling;
+                    if (div) {
+                        div.classList.remove('ring-2', 'ring-blue-200', 'border-blue-500');
+                    }
+                });
+                const selectedDiv = this.nextElementSibling;
+                if (selectedDiv) {
+                    selectedDiv.classList.add('ring-2', 'ring-blue-200', 'border-blue-500');
+                }
+            }
         });
     });
     
@@ -226,6 +262,13 @@
     document.querySelectorAll('.bid-comments').forEach(textarea => {
         textarea.addEventListener('input', function() {
             const paperId = this.id.split('-')[1];
+            if (!paperId) {
+                console.error('Could not extract paper ID from:', this.id);
+                return;
+            }
+            
+            console.log(`Comment changed for paper ${paperId}`);
+            
             if (!bidsToSave[paperId]) {
                 bidsToSave[paperId] = {};
             }
@@ -233,116 +276,232 @@
         });
     });
     
-    // Track expertise changes
+    // Track expertise changes - FIXED to send as array/object
     document.querySelectorAll('.expertise-radio').forEach(radio => {
         radio.addEventListener('change', function() {
             const paperId = this.dataset.paper;
+            if (!paperId) {
+                console.error('No paper ID found for expertise radio');
+                return;
+            }
+            
+            const expertiseValue = parseInt(this.value);
+            console.log(`Expertise changed for paper ${paperId} to:`, expertiseValue);
+            
             if (!bidsToSave[paperId]) {
                 bidsToSave[paperId] = {};
             }
-            bidsToSave[paperId].expertise = this.value;
+            
+            // Format as expertise_scores array/object as expected by controller
+            bidsToSave[paperId].expertise_scores = { overall: expertiseValue };
         });
     });
     
     // Save individual bid
     function saveBid(paperId) {
+        console.log('saveBid called for paper:', paperId);
+        console.log('Current bidsToSave:', bidsToSave);
+        
         const bidData = bidsToSave[paperId];
-        if (!bidData) {
-            alert('Please select an interest level.');
+        if (!bidData || !bidData.preference) {
+            showNotification('Please select an interest level first.', 'error');
             return;
         }
+        
+        if (isSaving) {
+            showNotification('Please wait, saving in progress...', 'warning');
+            return;
+        }
+        
+        isSaving = true;
+        
+        // Get the button that triggered this
+        const button = document.querySelector(`button[onclick="saveBid(${paperId})"]`);
+        const originalText = button ? button.innerHTML : 'Save Bid';
+        if (button) {
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+            button.disabled = true;
+        }
+        
+        // Prepare payload - matches controller expectations
+        const payload = {
+            paper_id: paperId,
+            preference: bidData.preference,
+            comments: bidData.comments || '',
+            expertise_scores: bidData.expertise_scores || null
+        };
+        
+        console.log('Sending payload:', payload);
         
         fetch('{{ route("bids.store") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                paper_id: paperId,
-                ...bidData
-            })
+            body: JSON.stringify(payload)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 showNotification('Bid saved successfully!', 'success');
                 delete bidsToSave[paperId];
             } else {
-                showNotification('Error saving bid: ' + data.message, 'error');
+                showNotification('Error: ' + (data.message || 'Unknown error'), 'error');
             }
         })
         .catch(error => {
-            showNotification('Error saving bid', 'error');
+            console.error('Fetch error:', error);
+            showNotification('Error saving bid: ' + (error.message || 'Network error'), 'error');
+        })
+        .finally(() => {
+            if (button) {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+            isSaving = false;
         });
     }
     
     // Save all bids
-    document.getElementById('saveBids').addEventListener('click', function() {
-        if (Object.keys(bidsToSave).length === 0) {
-            alert('No changes to save.');
-            return;
-        }
-        
-        const bidsArray = Object.entries(bidsToSave).map(([paperId, data]) => ({
-            paper_id: paperId,
-            ...data
-        }));
-        
-        fetch('{{ route("bids.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ bids: bidsArray })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification('All bids saved successfully!', 'success');
-                bidsToSave = {};
-            } else {
-                showNotification('Error saving bids: ' + data.message, 'error');
+    const saveAllBtn = document.getElementById('saveBids');
+    if (saveAllBtn) {
+        saveAllBtn.addEventListener('click', function() {
+            console.log('Save All Bids clicked');
+            console.log('Bids to save:', bidsToSave);
+            
+            const pendingBids = Object.keys(bidsToSave);
+            if (pendingBids.length === 0) {
+                showNotification('No changes to save.', 'warning');
+                return;
             }
-        })
-        .catch(error => {
-            showNotification('Error saving bids', 'error');
+            
+            if (isSaving) {
+                showNotification('Please wait, saving in progress...', 'warning');
+                return;
+            }
+            
+            // Validate all bids have preference selected
+            let hasInvalid = false;
+            for (const [paperId, data] of Object.entries(bidsToSave)) {
+                if (!data.preference) {
+                    showNotification(`Paper ${paperId} has no interest level selected.`, 'error');
+                    hasInvalid = true;
+                    break;
+                }
+            }
+            
+            if (hasInvalid) return;
+            
+            isSaving = true;
+            
+            // Format bids array as expected by controller
+            const bidsArray = Object.entries(bidsToSave).map(([paperId, data]) => ({
+                paper_id: parseInt(paperId),
+                preference: data.preference,
+                comments: data.comments || '',
+                expertise_scores: data.expertise_scores || null
+            }));
+            
+            console.log('Sending bids:', bidsArray);
+            
+            saveAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+            saveAllBtn.disabled = true;
+            
+            fetch('{{ route("bids.store") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ bids: bidsArray })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Saved ${data.count || bidsArray.length} bids successfully!`, 'success');
+                    bidsToSave = {};
+                } else {
+                    showNotification('Error: ' + (data.message || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error saving bids: ' + (error.message || 'Network error'), 'error');
+            })
+            .finally(() => {
+                saveAllBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Save All Bids';
+                saveAllBtn.disabled = false;
+                isSaving = false;
+            });
         });
-    });
+    }
     
-    // Filter papers
-    document.getElementById('topicFilter').addEventListener('change', function() {
-        filterPapers();
-    });
-    
-    document.getElementById('sortFilter').addEventListener('change', function() {
-        filterPapers();
-    });
-    
+    // Filter and sort functions
     function filterPapers() {
         const topic = document.getElementById('topicFilter').value;
         const sort = document.getElementById('sortFilter').value;
-        
-        // Implement filtering logic
         console.log('Filtering by:', { topic, sort });
-        // This would typically involve AJAX or page reload
+        // You can implement actual filtering logic here
     }
     
+    // Notification function
     function showNotification(message, type) {
-        // Create notification element
+        console.log('Notification:', type, message);
+        
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500'
+        };
+        
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium ${colors[type] || 'bg-blue-500'} z-50`;
         notification.textContent = message;
         notification.style.zIndex = '1000';
         
         document.body.appendChild(notification);
         
-        // Remove after 3 seconds
         setTimeout(() => {
-            notification.remove();
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s';
+            setTimeout(() => notification.remove(), 500);
         }, 3000);
     }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        initializeBids();
+        
+        // Add filter event listeners
+        const topicFilter = document.getElementById('topicFilter');
+        const sortFilter = document.getElementById('sortFilter');
+        
+        if (topicFilter) topicFilter.addEventListener('change', filterPapers);
+        if (sortFilter) sortFilter.addEventListener('change', filterPapers);
+        
+        // Test if buttons exist
+        const saveBtns = document.querySelectorAll('[onclick^="saveBid"]');
+        console.log('Found save buttons:', saveBtns.length);
+        
+        const saveAllBtn = document.getElementById('saveBids');
+        console.log('Save All Bids button:', saveAllBtn ? 'found' : 'not found');
+    });
 </script>
 <style>
 .line-clamp-3 {
@@ -352,5 +511,4 @@
     overflow: hidden;
 }
 </style>
-@endpush
 @endsection
