@@ -181,6 +181,135 @@ class ChairController extends Controller
     }
 
     /**
+     * View all conference registrations
+     */
+    public function registrations(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        
+        $registrations = ConferenceRegistration::when($request->filled('search'), function($query) use ($request) {
+                return $query->where('firstname', 'like', "%{$request->search}%")
+                    ->orWhere('lastname', 'like', "%{$request->search}%")
+                    ->orWhere('email', 'like', "%{$request->search}%")
+                    ->orWhere('institution', 'like', "%{$request->search}%");
+            })
+            ->when($request->filled('year'), function($query) use ($year) {
+                return $query->whereYear('created_at', $year);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('chair.registrations', compact('registrations', 'year'));
+    }
+
+    /**
+     * Export registrations to CSV
+     */
+    public function exportRegistrations()
+    {
+        $registrations = ConferenceRegistration::all();
+        
+        $data = $registrations->map(function($registration) {
+            return [
+                'ID' => $registration->id,
+                'Title' => $registration->title,
+                'First Name' => $registration->firstname,
+                'Last Name' => $registration->lastname,
+                'Email' => $registration->email,
+                'Phone' => $registration->phone_number,
+                'Institution' => $registration->institution,
+                'Gender' => $registration->gender,
+                'DATIAN Member' => $registration->is_datican_member ? 'Yes' : 'No',
+                'DATIAN Status' => $registration->datican_status,
+                'Presenting Paper' => $registration->is_presenting_paper ? 'Yes' : 'No',
+                'Registration Date' => $registration->created_at->format('Y-m-d H:i:s'),
+            ];
+        });
+        
+        return $this->toCsv($data, 'conference_registrations.csv');
+    }
+
+    /**
+     * Export papers to CSV
+     */
+    public function exportPapers()
+    {
+        $papers = Paper::with(['authors'])->get();
+        
+        $data = $papers->map(function($paper) {
+            return [
+                'ID' => $paper->anonymous_id,
+                'Title' => $paper->title,
+                'Status' => $paper->status,
+                'Decision' => $paper->decision,
+                'Authors' => $paper->author_list,
+                'Topic Area' => $paper->topic_area,
+                'Submission Type' => $paper->submission_type,
+                'Submission Date' => $paper->submitted_at?->format('Y-m-d H:i:s'),
+                'Review Count' => $paper->review_count,
+                'Average Score' => round($paper->average_score, 2),
+                'Keywords' => $paper->keywords,
+            ];
+        });
+        
+        return $this->toCsv($data, 'papers.csv');
+    }
+
+    /**
+     * Export reviews to CSV
+     */
+    public function exportReviews()
+    {
+        $reviews = ReviewAssignment::with(['paper', 'reviewer'])->get();
+        
+        $data = $reviews->map(function($review) {
+            return [
+                'Paper ID' => $review->paper->anonymous_id,
+                'Paper Title' => $review->paper->title,
+                'Reviewer Name' => $review->reviewer->first_name . ' ' . $review->reviewer->last_name,
+                'Reviewer Email' => $review->reviewer->email,
+                'Status' => $review->status,
+                'Overall Score' => $review->overall_score,
+                'Recommendation' => $review->recommendation,
+                'Confidence' => $review->confidence,
+                'Assigned Date' => $review->assigned_at?->format('Y-m-d H:i:s'),
+                'Submitted Date' => $review->submitted_at?->format('Y-m-d H:i:s'),
+                'Deadline' => $review->deadline?->format('Y-m-d H:i:s'),
+            ];
+        });
+        
+        return $this->toCsv($data, 'reviews.csv');
+    }
+
+    /**
+     * Helper method to convert data to CSV and download
+     */
+    private function toCsv($data, $filename)
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+        
+        $callback = function() use ($data) {
+            $handle = fopen('php://output', 'w');
+            
+            // Add headers if data exists
+            if ($data->isNotEmpty()) {
+                fputcsv($handle, array_keys($data->first()));
+                
+                foreach ($data as $row) {
+                    fputcsv($handle, array_values($row));
+                }
+            }
+            
+            fclose($handle);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
      * Manage reviews (for chairs)
      */
     public function reviews(Request $request)

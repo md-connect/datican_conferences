@@ -117,6 +117,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/chair/papers', [ChairController::class, 'papers'])->name('chair.papers');
         Route::get('/chair/reviews', [ChairController::class, 'reviews'])->name('chair.reviews');
         Route::get('/chair/reviewers', [ChairController::class, 'reviewers'])->name('chair.reviewers');
+
+        // ========== NEW: Conference Registrations Views ==========
+        Route::get('/chair/registrations', [ChairController::class, 'registrations'])->name('chair.registrations');
+        
+        // ========== NEW: Export Routes ==========
+        Route::get('/chair/export/registrations', [ChairController::class, 'exportRegistrations'])->name('chair.export.registrations');
+        Route::get('/chair/export/papers', [ChairController::class, 'exportPapers'])->name('chair.export.papers');
+        Route::get('/chair/export/reviews', [ChairController::class, 'exportReviews'])->name('chair.export.reviews');
+        
         
         // Paper Decisions
         Route::get('/papers/{paper}/decide', [ChairController::class, 'showDecisionForm'])->name('chair.papers.decision.form');

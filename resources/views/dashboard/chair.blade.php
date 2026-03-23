@@ -7,7 +7,7 @@
     <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Conference Chair Dashboard</h1>
         
-        <!-- Quick Stats - UPDATED with new stats -->
+        <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Conference Registrations -->
             <div class="bg-white rounded-xl shadow p-6">
@@ -20,10 +20,10 @@
                         <p class="text-sm text-gray-500">Conference Registrations</p>
                     </div>
                 </div>
-                <div class="mt-3 text-left">
-                    <!-- <a href="{{ route('admin.registrations') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                <div class="mt-3">
+                    <a href="{{ route('chair.registrations') }}" class="text-xs text-blue-600 hover:text-blue-800">
                         View all <i class="fas fa-arrow-right ml-1"></i>
-                    </a> -->
+                    </a>
                 </div>
             </div>
             
@@ -38,10 +38,10 @@
                         <p class="text-sm text-gray-500">Papers Submitted</p>
                     </div>
                 </div>
-                <div class="mt-3 text-left">
-                    <!-- <a href="{{ route('chair.papers') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                <div class="mt-3">
+                    <a href="{{ route('chair.papers') }}" class="text-xs text-blue-600 hover:text-blue-800">
                         View all <i class="fas fa-arrow-right ml-1"></i>
-                    </a> -->
+                    </a>
                 </div>
             </div>
             
@@ -56,6 +56,11 @@
                         <p class="text-sm text-gray-500">Reviews Completed</p>
                     </div>
                 </div>
+                <div class="mt-3">
+                    <a href="{{ route('chair.reviews') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                        View all <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
             </div>
             
             <!-- Total Users -->
@@ -69,10 +74,41 @@
                         <p class="text-sm text-gray-500">System Users</p>
                     </div>
                 </div>
+                <div class="mt-3">
+                    <a href="{{ route('users.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                        Manage users <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
             </div>
         </div>
         
-        <!-- Rest of your template remains the same -->
+        <!-- Export Actions -->
+        <div class="bg-white rounded-xl shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Export Data</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{{ route('chair.export.registrations') }}" 
+                   class="flex flex-col items-center justify-center p-6 bg-blue-50 rounded-lg hover:bg-blue-100 border border-blue-200 transition-all duration-300">
+                    <i class="fas fa-users text-3xl text-blue-600 mb-3"></i>
+                    <span class="font-medium text-blue-800">Export Registrations</span>
+                    <span class="text-sm text-blue-600 mt-1">Download as CSV</span>
+                </a>
+                
+                <a href="{{ route('chair.export.papers') }}" 
+                   class="flex flex-col items-center justify-center p-6 bg-green-50 rounded-lg hover:bg-green-100 border border-green-200 transition-all duration-300">
+                    <i class="fas fa-file-alt text-3xl text-green-600 mb-3"></i>
+                    <span class="font-medium text-green-800">Export Papers</span>
+                    <span class="text-sm text-green-600 mt-1">Download as CSV</span>
+                </a>
+                
+                <a href="{{ route('chair.export.reviews') }}" 
+                   class="flex flex-col items-center justify-center p-6 bg-purple-50 rounded-lg hover:bg-purple-100 border border-purple-200 transition-all duration-300">
+                    <i class="fas fa-clipboard-list text-3xl text-purple-600 mb-3"></i>
+                    <span class="font-medium text-purple-800">Export Reviews</span>
+                    <span class="text-sm text-purple-600 mt-1">Download as CSV</span>
+                </a>
+            </div>
+        </div>
+        
         <!-- Chair Actions -->
         <div class="bg-white rounded-xl shadow p-6 mb-8">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Chair Actions</h2>
@@ -107,7 +143,7 @@
             </div>
         </div>
         
-        <!-- Recent Activity (rest of the template remains unchanged) -->
+        <!-- Recent Activity -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Papers Needing Attention -->
             <div class="bg-white rounded-xl shadow">
@@ -160,7 +196,7 @@
                     <div class="px-6 py-4 hover:bg-gray-50">
                         <div class="flex justify-between items-start">
                             <div>
-                                                                <h3 class="font-medium text-gray-900">{{ $paper->anonymous_id }}</h3>
+                                <h3 class="font-medium text-gray-900">{{ $paper->anonymous_id }}</h3>
                                 <p class="text-sm text-gray-500 truncate">{{ Str::limit($paper->title, 60) }}</p>
                                 <div class="flex items-center space-x-3 mt-2">
                                     <span class="px-2 py-1 text-xs rounded-full 
@@ -324,49 +360,49 @@
             </div>
             
             <!-- Deadlines -->
-<div class="bg-white rounded-xl shadow">
-    <div class="px-6 py-4 border-b">
-        <h2 class="text-xl font-semibold text-gray-800">Important Deadlines</h2>
-    </div>
-    <div class="divide-y divide-gray-200">
-        @forelse($deadlines as $deadline)
-        <div class="px-6 py-4">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="font-medium text-gray-900">{{ $deadline->title }}</h3>
-                    <p class="text-sm text-gray-500 mt-1">{{ $deadline->description }}</p>
+            <div class="bg-white rounded-xl shadow">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-xl font-semibold text-gray-800">Important Deadlines</h2>
                 </div>
-                <div class="text-right">
-                    <div class="text-sm font-medium 
-                        @if($deadline->is_past) text-red-600
-                        @elseif($deadline->is_approaching) text-yellow-600
-                        @else text-green-600
-                        @endif">
-                        {{ $deadline->date->format('M d, Y') }}
+                <div class="divide-y divide-gray-200">
+                    @forelse($deadlines as $deadline)
+                    <div class="px-6 py-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-medium text-gray-900">{{ $deadline->title }}</h3>
+                                <p class="text-sm text-gray-500 mt-1">{{ $deadline->description }}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium 
+                                    @if($deadline->is_past) text-red-600
+                                    @elseif($deadline->is_approaching) text-yellow-600
+                                    @else text-green-600
+                                    @endif">
+                                    {{ $deadline->date->format('M d, Y') }}
+                                </div>
+                                @if(!$deadline->is_past)
+                                <div class="text-xs @if($deadline->is_approaching) text-yellow-600 @else text-green-600 @endif mt-1">
+                                    {{ $deadline->days_left }} days left
+                                </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                    @if(!$deadline->is_past)
-                    <div class="text-xs @if($deadline->is_approaching) text-yellow-600 @else text-green-600 @endif mt-1">
-                        {{ $deadline->days_left }} days left
+                    @empty
+                    <div class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-calendar-alt text-4xl mb-4"></i>
+                        <p>No deadlines set.</p>
                     </div>
-                    @endif
+                    @endforelse
+                </div>
+                <div class="px-6 py-4 border-t">
+                    <a href="{{ route('settings.deadlines') }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
+                        <i class="fas fa-calendar-plus mr-2"></i>
+                        Manage Deadlines
+                    </a>
                 </div>
             </div>
-        </div>
-        @empty
-        <div class="px-6 py-8 text-center text-gray-500">
-            <i class="fas fa-calendar-alt text-4xl mb-4"></i>
-            <p>No deadlines set.</p>
-        </div>
-        @endforelse
-    </div>
-    <div class="px-6 py-4 border-t">
-        <a href="{{ route('settings.deadlines') }}" 
-           class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
-            <i class="fas fa-calendar-plus mr-2"></i>
-            Manage Deadlines
-        </a>
-    </div>
-</div>
         </div>
     </div>
 </div>
