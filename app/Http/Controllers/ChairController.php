@@ -226,7 +226,7 @@ class ChairController extends Controller
             ];
         });
         
-        return $this->toCsv($data, 'conference_registrations.csv');
+        return $this->toCsv($data, 'DATICAN_Conference_registrations_2026.csv');
     }
 
     /**
@@ -252,7 +252,7 @@ class ChairController extends Controller
             ];
         });
         
-        return $this->toCsv($data, 'papers.csv');
+        return $this->toCsv($data, 'DATICAN_Conference_papers_2026.csv');
     }
 
     /**
@@ -278,7 +278,7 @@ class ChairController extends Controller
             ];
         });
         
-        return $this->toCsv($data, 'reviews.csv');
+        return $this->toCsv($data, 'DATICAN_Conference_reviews_2026.csv');
     }
 
     /**
