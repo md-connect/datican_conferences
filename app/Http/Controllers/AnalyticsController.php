@@ -279,27 +279,28 @@ class AnalyticsController extends Controller
     private function exportPapers($year)
     {
         $papers = Paper::byYear($year)
-            ->with(['authors', 'reviews'])
+            ->with(['authors'])
+            ->orderBy('id')
             ->get()
-            ->map(function($paper) {
+            ->map(function($paper, $index) {
+                // Get authors with their institutions
+                $authorsWithInstitutions = $paper->authors->map(function($author) {
+                    return $author->title . ' ' . $author->first_name . ' ' . $author->last_name . ' (' . ($author->institution ?? 'N/A') . ')';
+                })->join('; ');
+                
                 return [
-                    'ID' => $paper->anonymous_id,
-                    'Title' => $paper->title,
-                    'Status' => $paper->status,
-                    'Decision' => $paper->decision,
+                    'SN' => $index + 1, // Sequential numbering
+                    'Paper ID' => $paper->anonymous_id,
                     'Authors' => $paper->author_list,
-                    'Topic Area' => $paper->topic_area,
-                    'Submission Type' => $paper->submission_type,
+                    'Authors Institutions' => $authorsWithInstitutions,
+                    'Paper title' => $paper->title,
+                    'Submission Type' => $paper->submission_type === 'abstract_only' ? 'Abstract Only' : 'Full Paper',
                     'Submission Date' => $paper->submitted_at?->format('Y-m-d H:i:s'),
-                    'Review Count' => $paper->review_count,
-                    'Average Score' => round($paper->average_score, 2),
-                    'Keywords' => $paper->keywords,
                 ];
             });
-            
-        return $this->toCsv($papers, "papers_{$year}.csv");
-    }
 
+        return $this->toCsv($papers, "DATICAN_Conference_papers_{$year}.csv");
+    }
     private function exportReviews($year)
     {
         $reviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {

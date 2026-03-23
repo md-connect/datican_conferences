@@ -75,6 +75,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Reviews
     Route::middleware(['auth'])->group(function () {
+        // Revision routes (add these)
+        Route::get('/papers/{paper}/revise', [PaperController::class, 'reviseForm'])->name('papers.revise-form');
+        Route::post('/papers/{paper}/revise', [PaperController::class, 'submitRevision'])->name('papers.submit-revision');
         // My Reviews
         Route::get('/reviews/my-reviews', [ReviewController::class, 'index'])->name('reviews.my');
         Route::get('/reviews/create', [ReviewController::class, 'create'])->name('reviews.create');

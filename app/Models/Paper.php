@@ -92,7 +92,7 @@ class Paper extends Model
                     $nextNumber = max($numbers) + 1;
                 }
 
-                $paper->anonymous_id = "DAT-{$year}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                $paper->anonymous_id = "{$year}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
             }
             
             // Set default version
