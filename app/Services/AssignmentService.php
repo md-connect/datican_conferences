@@ -136,7 +136,7 @@ class AssignmentService
             
             // Check current load
             $currentLoad = $reviewer->reviewAssignments
-                ->whereIn('status', ['pending', 'accepted'])
+                ->whereIn('status', ['pending', 'under_review', 'in_progress'])
                 ->count();
                 
             if ($currentLoad >= $this->config['max_papers_per_reviewer']) {
@@ -222,6 +222,20 @@ class AssignmentService
         $totalScore = 0;
         $matchedTopics = 0;
         
+        // If reviewer has no expertise, return low default
+        if ($reviewer->expertise->isEmpty()) {
+            return 0.2;
+        }
+        
+        // Level scores
+        $levelScores = [
+            'expert' => 5,
+            'proficient' => 4,
+            'familiar' => 3,
+            'basic' => 2,
+        ];
+        
+        // Match keywords with reviewer's expertise
         foreach ($keywords as $keyword) {
             $keyword = trim(strtolower($keyword));
             
@@ -231,43 +245,39 @@ class AssignmentService
                 if (str_contains($expertiseTopic, $keyword) || 
                     str_contains($keyword, $expertiseTopic)) {
                     
-                    $levelScores = [
-                        'expert' => 5,
-                        'proficient' => 4,
-                        'familiar' => 3,
-                        'basic' => 2,
-                    ];
-                    
                     $levelScore = $levelScores[$expertise->level] ?? 1;
-                    $totalScore += $levelScore * ($expertise->confidence / 5.0);
+                    $confidenceScore = $expertise->confidence / 5.0;
+                    
+                    $totalScore += $levelScore * $confidenceScore;
                     $matchedTopics++;
                     break;
                 }
             }
         }
         
-        // Also check main topic area
+        // Also match main topic area (weighted double)
         foreach ($reviewer->expertise as $expertise) {
-            if (str_contains(strtolower($expertise->topic), strtolower($topicArea))) {
-                $levelScores = [
-                    'expert' => 5,
-                    'proficient' => 4,
-                    'familiar' => 3,
-                    'basic' => 2,
-                ];
+            $expertiseTopic = strtolower($expertise->topic);
+            $paperTopic = strtolower($topicArea);
+            
+            if (str_contains($expertiseTopic, $paperTopic) || 
+                str_contains($paperTopic, $expertiseTopic)) {
                 
                 $levelScore = $levelScores[$expertise->level] ?? 1;
-                $totalScore += $levelScore * ($expertise->confidence / 5.0) * 2; // Weight topic area higher
+                $confidenceScore = $expertise->confidence / 5.0;
+                $totalScore += ($levelScore * $confidenceScore) * 2; // Double weight
                 $matchedTopics++;
                 break;
             }
         }
         
         if ($matchedTopics === 0) {
-            return 0.3; // Low default score
+            return 0.2; // Low default for no match
         }
         
-        return min($totalScore / ($matchedTopics * 5), 1.0); // Normalize to 0-1
+        // Normalize to 0-1 (max possible score per match is 5)
+        $maxPossibleScore = $matchedTopics * 5;
+        return min($totalScore / $maxPossibleScore, 1.0);
     }
 
     /**
@@ -281,6 +291,10 @@ class AssignmentService
             return 1.0; // Highest priority for reviewers with no load
         }
         
+        if ($currentLoad >= $maxLoad) {
+            return 0.0; // No priority for overloaded reviewers
+        }
+        
         // Exponential decay: reviewers with more load get lower scores
         return exp(-$currentLoad / ($maxLoad / 2));
     }
@@ -290,42 +304,67 @@ class AssignmentService
      */
     public function suggestReviewers(Paper $paper, int $limit = 10): Collection
     {
-        // Only get users who are reviewers
+        // Get all reviewers (users with is_reviewer = true)
         $reviewers = User::where('is_admin', false)
-            ->where('is_reviewer', true) // ADD THIS
+            ->where('is_reviewer', true)  // Make sure we only get reviewers
             ->with(['expertise', 'reviewAssignments' => function($q) use ($paper) {
                 $q->where('paper_id', $paper->id)
-                ->orWhere(function($query) {
-                    $query->whereIn('status', ['pending', 'accepted']);
-                });
+                    ->orWhere(function($query) {
+                        $query->whereIn('status', ['pending', 'under_review', 'in_progress']);
+                    });
             }])
             ->get();
-            
+        
         $this->reviewers = $reviewers;
         $candidates = $this->getCandidatesForPaper($paper);
         
-        // Make sure we have candidates
         if ($candidates->isEmpty()) {
             return collect();
         }
         
         return $candidates->sortByDesc('score')
             ->take($limit)
-            ->values() // Reset keys
+            ->values()
             ->map(function($candidate) {
+                $reviewer = $candidate['reviewer'];
+                
+                // Calculate match score percentage
+                $matchScore = round($candidate['score'] * 100);
+                
+                // Get expertise topics
+                $expertiseTopics = $reviewer->expertise->map(function($exp) {
+                    return [
+                        'name' => $exp->topic,
+                        'level' => $exp->level,
+                        'confidence' => $exp->confidence
+                    ];
+                });
+                
                 return [
-                    'reviewer' => [
-                        'id' => $candidate['reviewer']->id,
-                        'first_name' => $candidate['reviewer']->first_name,
-                        'last_name' => $candidate['reviewer']->last_name,
-                        'full_name' => $candidate['reviewer']->first_name . ' ' . $candidate['reviewer']->last_name, // ADD THIS
-                        'email' => $candidate['reviewer']->email,
-                    ],
-                    'bid_score' => round($candidate['bid_score'], 2),
-                    'expertise_score' => round($candidate['expertise_score'], 2),
-                    'load_score' => round($candidate['load_score'], 2),
-                    'total_score' => round($candidate['score'], 2),
-                    'current_load' => $candidate['current_load'],
+                    'id' => $reviewer->id,
+                    'first_name' => $reviewer->first_name,
+                    'last_name' => $reviewer->last_name,
+                    'full_name' => $reviewer->first_name . ' ' . $reviewer->last_name,
+                    'email' => $reviewer->email,
+                    'institution' => $reviewer->institution ?? 'Not specified',
+                    'assigned_count' => $candidate['current_load'],
+                    'match_score' => $matchScore,
+                    'bid_score' => round($candidate['bid_score'] * 100),
+                    'expertise_score' => round($candidate['expertise_score'] * 100),
+                    'load_score' => round($candidate['load_score'] * 100),
+                    'expertise' => $expertiseTopics,
+                    'expertise_levels' => $expertiseTopics->map(function($exp) {
+                        $levelLabels = [
+                            'expert' => 'Expert',
+                            'proficient' => 'Proficient',
+                            'familiar' => 'Familiar',
+                            'basic' => 'Basic'
+                        ];
+                        return [
+                            'topic' => $exp['name'],
+                            'level' => $levelLabels[$exp['level']] ?? $exp['level']
+                        ];
+                    }),
                 ];
             });
     }

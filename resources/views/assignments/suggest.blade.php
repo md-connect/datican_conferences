@@ -58,8 +58,9 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
+                        <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Affiliation</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Load</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match Score</th>
@@ -73,12 +74,23 @@
                             $firstName = is_object($reviewer) ? $reviewer->first_name : ($reviewer['first_name'] ?? '');
                             $lastName = is_object($reviewer) ? $reviewer->last_name : ($reviewer['last_name'] ?? '');
                             $email = is_object($reviewer) ? $reviewer->email : ($reviewer['email'] ?? '');
-                            $affiliation = is_object($reviewer) ? ($reviewer->affiliation ?? 'Not specified') : ($reviewer['affiliation'] ?? 'Not specified');
+                            $institution = is_object($reviewer) ? ($reviewer->institution ?? 'Not specified') : ($reviewer['institution'] ?? 'Not specified');
                             $assignedCount = is_object($reviewer) ? ($reviewer->assigned_count ?? 0) : ($reviewer['assigned_count'] ?? 0);
-                            $matchScore = is_object($reviewer) ? ($reviewer->match_score ?? rand(60, 95)) : ($reviewer['match_score'] ?? rand(60, 95));
+                            $matchScore = is_object($reviewer) ? ($reviewer->match_score ?? 0) : ($reviewer['match_score'] ?? 0);
                             $reviewerId = is_object($reviewer) ? $reviewer->id : ($reviewer['id'] ?? 0);
+                            
+                            // Get expertise list (array of topics with levels)
+                            $expertiseList = is_object($reviewer) ? 
+                                ($reviewer->expertise_levels ?? []) : 
+                                ($reviewer['expertise_levels'] ?? []);
+                            
+                            // Get bid, expertise, and load breakdown scores if available
+                            $bidScore = is_object($reviewer) ? ($reviewer->bid_score ?? null) : ($reviewer['bid_score'] ?? null);
+                            $expertiseScore = is_object($reviewer) ? ($reviewer->expertise_score ?? null) : ($reviewer['expertise_score'] ?? null);
+                            $loadScore = is_object($reviewer) ? ($reviewer->load_score ?? null) : ($reviewer['load_score'] ?? null);
                         @endphp
                         <tr class="hover:bg-gray-50">
+                            <!-- Reviewer Info -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -91,29 +103,37 @@
                                         <div class="text-sm text-gray-500">{{ $email }}</div>
                                     </div>
                                 </div>
-                              </td>
+                            </td>
+                            
+                            <!-- Institution -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $affiliation }}
-                              </td>
+                                {{ $institution }}
+                            </td>
+                            
+                            <!-- Expertise with Tooltip -->
                             <td class="px-6 py-4">
                                 <div class="flex flex-wrap gap-1">
-                                    @php
-                                        $expertise = is_object($reviewer) ? ($reviewer->expertise ?? collect([])) : ($reviewer['expertise'] ?? []);
-                                        if(is_array($expertise)) {
-                                            $expertise = collect($expertise);
-                                        }
-                                    @endphp
-                                    @foreach($expertise->take(3) as $exp)
-                                    @php
-                                        $expName = is_object($exp) ? $exp->name : ($exp['name'] ?? 'Unknown');
-                                    @endphp
-                                    <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">{{ $expName }}</span>
-                                    @endforeach
-                                    @if($expertise->count() > 3)
-                                    <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">+{{ $expertise->count() - 3 }}</span>
-                                    @endif
+                                    @forelse($expertiseList as $exp)
+                                        <div class="group relative">
+                                            <span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded cursor-help">
+                                                {{ $exp['topic'] }}
+                                            </span>
+                                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                                Level: {{ $exp['level'] }}
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <span class="text-xs text-gray-400">No expertise specified</span>
+                                    @endforelse
                                 </div>
-                              </td>
+                                @if(count($expertiseList) > 3)
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        +{{ count($expertiseList) - 3 }} more
+                                    </div>
+                                @endif
+                            </td>
+                            
+                            <!-- Current Load with Progress Bar -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
@@ -121,15 +141,34 @@
                                     </div>
                                     <span class="text-sm text-gray-600">{{ $assignedCount }} / 10</span>
                                 </div>
-                              </td>
+                            </td>
+                            
+                            <!-- Match Score with Breakdown Tooltip -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-center">
-                                    @php
-                                        $scoreColor = $matchScore >= 80 ? 'text-green-600' : ($matchScore >= 60 ? 'text-yellow-600' : 'text-red-600');
-                                    @endphp
-                                    <span class="text-lg font-bold {{ $scoreColor }}">{{ $matchScore }}%</span>
+                                <div class="group relative">
+                                    <div class="text-center">
+                                        @php
+                                            $scoreColor = $matchScore >= 80 ? 'text-green-600' : ($matchScore >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                        @endphp
+                                        <span class="text-lg font-bold {{ $scoreColor }}">{{ $matchScore }}%</span>
+                                    </div>
+                                    
+                                    <!-- Tooltip with score breakdown -->
+                                    @if($bidScore || $expertiseScore || $loadScore)
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                        <div class="space-y-1">
+                                            <div class="font-semibold mb-1">Score Breakdown</div>
+                                            <div>Bid: {{ $bidScore ?? 'N/A' }}%</div>
+                                            <div>Expertise: {{ $expertiseScore ?? 'N/A' }}%</div>
+                                            <div>Load: {{ $loadScore ?? 'N/A' }}%</div>
+                                            <div class="border-t border-gray-600 mt-1 pt-1 font-semibold">Total: {{ $matchScore }}%</div>
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
-                              </td>
+                            </td>
+                            
+                            <!-- Actions -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <form method="POST" action="{{ route('assignments.manual') }}" class="inline">
                                     @csrf
@@ -138,13 +177,13 @@
                                     <input type="hidden" name="year" value="{{ $year }}">
                                     <input type="hidden" name="tab" value="{{ $tab }}">
                                     <button type="submit" 
-                                            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm"
+                                            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm transition duration-150"
                                             onclick="return confirm('Assign this reviewer to the paper?')">
                                         <i class="fas fa-user-plus mr-1"></i> Assign
                                     </button>
                                 </form>
-                              </td>
-                         </tr>
+                            </td>
+                        </tr>
                         @endforeach
                     </tbody>
                 </table>
