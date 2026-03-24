@@ -435,8 +435,8 @@
                                 <a href="{{ route('call-for-papers') }}" class="flex items-center p-4 bg-accent bg-opacity-10 rounded-lg hover:bg-accent hover:bg-opacity-20 transition duration-300 border border-accent border-opacity-20">
                                     <i class="fas fa-paper-plane text-accent text-xl mr-3"></i>
                                     <div>
-                                        <h4 class="font-semibold text-gray-800">Submit Paper</h4>
-                                        <p class="text-sm text-gray-600">Call for Papers</p>
+                                        <h4 class="font-semibold text-gray-800">Submit Abstract</h4>
+                                        <p class="text-sm text-gray-600">Call for Abstracts</p>
                                     </div>
                                 </a>
                                 
