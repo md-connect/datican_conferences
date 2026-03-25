@@ -32,79 +32,117 @@
                 </div>
                 
                 <!-- Committee Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                    
-                    <!-- Committee Chair -->
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                        <div class="bg-gradient-to-r from-primary to-secondary px-6 py-4">
-                            <h3 class="text-xl font-bold text-white flex items-center">
-                                <i class="fas fa-chalkboard-user mr-2"></i>
-                                Committee Chair
-                            </h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="flex items-start space-x-4">
-                                <div class="flex-shrink-0">
-                                    <div class="w-20 h-20 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
-                                        <i class="fas fa-user-tie text-3xl text-primary"></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-lg font-bold text-gray-800">Prof. Adewale Opeoluwa Ogunde</h4>
-                                    <p class="text-gray-600 mb-2">Redeemer's University, Ede, Osun State, Nigeria</p>
-                                    <span class="inline-block px-3 py-1 bg-primary bg-opacity-10 text-primary text-sm font-medium rounded-full">Chair</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Committee Co-Chair -->
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                        <div class="bg-gradient-to-r from-primary to-secondary px-6 py-4">
-                            <h3 class="text-xl font-bold text-white flex items-center">
-                                <i class="fas fa-users mr-2"></i>
-                                Committee Co-Chair
-                            </h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="flex items-start space-x-4">
-                                <div class="flex-shrink-0">
-                                    <div class="w-20 h-20 bg-primary bg-opacity-10 rounded-full flex items-center justify-center">
-                                        <i class="fas fa-user-graduate text-3xl text-primary"></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-lg font-bold text-gray-800">Prof. Bolanle Oladejo</h4>
-                                    <p class="text-gray-600 mb-2">University of Ibadan, Ibadan, Oyo State, Nigeria</p>
-                                    <span class="inline-block px-3 py-1 bg-primary bg-opacity-10 text-primary text-sm font-medium rounded-full">Co-Chair</span>
-                                </div>
-                            </div>
-                        </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+    
+    <!-- Committee Chair -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+        <div class="bg-gradient-to-r from-primary to-secondary px-5 py-3">
+            <h3 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-chalkboard-user mr-2 text-sm"></i>
+                LOC Chairman
+            </h3>
+        </div>
+        <div class="p-5 flex-1">
+            <div class="flex flex-col items-center text-center">
+                <div class="flex-shrink-0 mb-4">
+                    <div class="w-24 h-24 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto">
+                        <i class="fas fa-user-tie text-3xl text-primary"></i>
                     </div>
                 </div>
+                <div>
+                    <h4 class="text-lg font-bold text-gray-800 mb-1">Prof. Adewale Opeoluwa Ogunde</h4>
+                    <p class="text-gray-600 text-sm mb-2">Redeemer's University</p>
+                    <span class="inline-block px-3 py-1 bg-primary bg-opacity-10 text-primary text-xs font-medium rounded-full break-all">
+                        ogundea@run.edu.ng
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Committee Co-Chair -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+        <div class="bg-gradient-to-r from-primary to-secondary px-5 py-3">
+            <h3 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-users mr-2 text-sm"></i>
+                LOC Co-Chair
+            </h3>
+        </div>
+        <div class="p-5 flex-1">
+            <div class="flex flex-col items-center text-center">
+                <div class="flex-shrink-0 mb-4">
+                    <div class="w-24 h-24 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto">
+                        <i class="fas fa-user-graduate text-3xl text-primary"></i>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold text-gray-800 mb-1">Prof. Bolanle Oladejo</h4>
+                    <p class="text-gray-600 text-sm mb-2">University of Ibadan</p>
+                    <span class="inline-block px-3 py-1 bg-primary bg-opacity-10 text-primary text-xs font-medium rounded-full break-all">
+                        oladejobola2002@gmail.com
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Committee Secretary -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+        <div class="bg-gradient-to-r from-primary to-secondary px-5 py-3">
+            <h3 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-file-alt mr-2 text-sm"></i>
+                LOC Secretary
+            </h3>
+        </div>
+        <div class="p-5 flex-1">
+            <div class="flex flex-col items-center text-center">
+                <div class="flex-shrink-0 mb-4">
+                    <div class="w-24 h-24 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto">
+                        <i class="fas fa-user-graduate text-3xl text-primary"></i>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold text-gray-800 mb-1">Tijani Rukayat</h4>
+                    <p class="text-gray-600 text-sm mb-2">Lagos State University</p>
+                    <span class="inline-block px-3 py-1 bg-primary bg-opacity-10 text-primary text-xs font-medium rounded-full break-all">
+                        tounadekunle.tijani@gmail.com
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add CSS for email wrapping if needed -->
+<style>
+    .break-all {
+        word-break: break-all;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+</style>
                 
                 <!-- Committee Members -->
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div class="bg-gradient-to-r from-primary to-secondary px-6 py-4">
                         <h3 class="text-xl font-bold text-white flex items-center">
                             <i class="fas fa-user-friends mr-2"></i>
-                            Committee Members
+                            LOC Members
                         </h3>
                     </div>
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @php
                                 $members = [
-                                    ['name' => 'Mrs. TIJANI, Rukayat', 'role' => 'Secretary', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Mr. John Akintayo', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Dr. Sotonwa', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Dr. Adedoyin', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Dr. Elijah', 'role' => 'Member', 'institution' => 'Redeemer\'s University, Ede, Osun State, Nigeria'],
-                                    ['name' => 'Dr. Olowookere', 'role' => 'Member', 'institution' => 'Redeemer\'s University, Ede, Osun State, Nigeria'],
-                                    ['name' => 'Mr. Mauton Asokere', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Mr. Paul Wheto', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Mr. Monday Oke', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
-                                    ['name' => 'Mrs. Sefiyah', 'role' => 'Member', 'institution' => 'Lagos State University, Ojo, Lagos Nigeria'],
+                                    ['name' => 'John Akintayo', 'email' => 'oluwafemi.j.akintayo@gmail.com', 'institution' => 'Lagos State University'],
+                                    ['name' => 'Dr. Kehinde Sotonwa ', 'email' => 'kehindesotonwa8@gmail.com', 'institution' => 'Lagos State University'],
+                                    ['name' => 'Dr. Mary Adedoyin', 'email' => 'mary.adedoyin@lasu.edu.ng', 'institution' => 'Lagos State University'],
+                                    ['name' => 'Dr. Adenike Adekoge-Elijah', 'email' => 'adegoke-elijaha@run.edu.ng', 'institution' => 'Redeemer\'s University'],
+                                    ['name' => 'Dr. Toluwase Olowookere', 'email' => 'olowookereta@run.edu.ng', 'institution' => 'Redeemer\'s University'],
+                                    ['name' => 'Mauton Asokere', 'email' => 'mmasokere@gmail.com', 'institution' => 'Lagos State University'],
+                                    ['name' => 'Paul Wheto', 'email' => 'whetopaul@gmail.com', 'institution' => 'Lagos State University'],
+                                    ['name' => 'Monday Oke', 'email' => 'mondayoke93@gmail.com', 'institution' => 'Lagos State University'],
+                                    ['name' => 'Sefiyah Salami-Ohida', 'email' => 'sefiyahsalami@gmail.com', 'institution' => 'Lagos State University'],
                                 ];
                             @endphp
                             
@@ -116,7 +154,7 @@
                                 <div>
                                     <h4 class="font-semibold text-gray-800">{{ $member['name'] }}</h4>
                                     <p class="text-sm text-gray-500">{{ $member['institution'] }}</p>
-                                    <span class="inline-block text-xs text-primary font-medium mt-1">{{ $member['role'] }}</span>
+                                    <span class="inline-block text-xs text-primary font-medium mt-1">{{ $member['email'] }}</span>
                                 </div>
                             </div>
                             @endforeach
