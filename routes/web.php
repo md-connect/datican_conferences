@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChairController; 
+use App\Http\Controllers\Auth\ForgotPasswordController;
 
 // Authentication Routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -27,6 +28,12 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Password Change Routes 
 Route::get('/profile/change-password', [\App\Http\Controllers\Auth\ChangePasswordController::class, 'showChangeForm'])->name('password.change');
 Route::post('/profile/change-password', [\App\Http\Controllers\Auth\ChangePasswordController::class, 'change'])->name('password.update');
+// Password Reset Routes
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.forgot');
+Route::post('/forgot-password/validate', [ForgotPasswordController::class, 'validateUser'])->name('password.validate');
+Route::get('/reset-password', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset.form');
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])->name('password.reset');
+Route::get('/password-changed', [ForgotPasswordController::class, 'showConfirmation'])->name('password.confirmation');
 
 // Registration Routes
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
