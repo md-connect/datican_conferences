@@ -16,8 +16,8 @@ class AssignmentService
     private $reviewers;
     private $assignments = [];
     private $config = [
-        'min_reviews_per_paper' => 3,
-        'max_reviews_per_paper' => 5,
+        'min_reviews_per_paper' => 1,
+        'max_reviews_per_paper' => 3,
         'max_papers_per_reviewer' => 10,
         'min_papers_per_reviewer' => 0,
         'weight_bid' => 0.4,

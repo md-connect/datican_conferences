@@ -15,11 +15,19 @@ class ReviewAssignment extends Model
         'overall_score', 'scores', 'comments_author', 'comments_chair', 'confidence',
         'summary', 'strengths', 'weaknesses', 'suggestions', 'recommendation',
         'started_at', 'submitted_at', 'due_date', 'is_anonymous',
-        // NEW FIELDS
+        // Revision fields
         'revision_suggestions',
         'is_revision_review',
         'original_review_id',
         'paper_version',
+        // NEW SCORING CRITERIA FIELDS
+        'criteria_relevance',
+        'criteria_originality',
+        'criteria_quality',
+        'criteria_impact',
+        'criteria_clarity',
+        'criteria_contribution',
+        'total_score',
     ];
 
     protected $casts = [
@@ -30,13 +38,20 @@ class ReviewAssignment extends Model
         'due_date' => 'datetime',
         'scores' => 'array',
         'is_anonymous' => 'boolean',
-        // NEW CASTS
+        // Revision casts
         'is_revision_review' => 'boolean',
         'paper_version' => 'integer',
-
+        // NEW SCORING CRITERIA CASTS
+        'criteria_relevance' => 'integer',
+        'criteria_originality' => 'integer',
+        'criteria_quality' => 'integer',
+        'criteria_impact' => 'integer',
+        'criteria_clarity' => 'integer',
+        'criteria_contribution' => 'integer',
+        'total_score' => 'integer',
     ];
 
-    protected $appends = ['recommendation_text', 'is_overdue'];
+    protected $appends = ['recommendation_text', 'is_overdue', 'score_percentage', 'score_badge_class'];
 
     /**
      * Relationships
@@ -69,7 +84,7 @@ class ReviewAssignment extends Model
         return $query->where('status', 'accepted');
     }
 
-    public function scopeUnderReview($query) // ADD THIS
+    public function scopeUnderReview($query)
     {
         return $query->where('status', 'under_review');
     }
@@ -92,12 +107,12 @@ class ReviewAssignment extends Model
     public function scopeOverdue($query)
     {
         return $query->where('deadline', '<', now())
-                     ->whereIn('status', ['pending', 'under_review', 'in_progress']); // UPDATED
+                     ->whereIn('status', ['pending', 'under_review', 'in_progress']);
     }
 
     public function scopeActive($query)
     {
-        return $query->whereIn('status', ['pending', 'under_review', 'in_progress']); // UPDATED
+        return $query->whereIn('status', ['pending', 'under_review', 'in_progress']);
     }
 
     /**
@@ -111,7 +126,7 @@ class ReviewAssignment extends Model
     {
         return $this->deadline && 
                $this->deadline < now() && 
-               in_array($this->status, ['pending', 'under_review', 'in_progress']); // UPDATED
+               in_array($this->status, ['pending', 'under_review', 'in_progress']);
     }
 
     /**
@@ -140,7 +155,7 @@ class ReviewAssignment extends Model
         $statusColors = [
             'pending' => 'bg-yellow-100 text-yellow-800',
             'accepted' => 'bg-blue-100 text-blue-800',
-            'under_review' => 'bg-blue-100 text-blue-800', // ADD THIS
+            'under_review' => 'bg-blue-100 text-blue-800',
             'in_progress' => 'bg-indigo-100 text-indigo-800',
             'completed' => 'bg-green-100 text-green-800',
             'declined' => 'bg-red-100 text-red-800',
@@ -206,6 +221,107 @@ class ReviewAssignment extends Model
         }
     }
 
+    // NEW METHODS FOR SCORING CRITERIA
+    
+    /**
+     * Get formatted criteria scores as array
+     */
+    public function getCriteriaScoresAttribute(): array
+    {
+        return [
+            'relevance' => $this->criteria_relevance,
+            'originality' => $this->criteria_originality,
+            'quality' => $this->criteria_quality,
+            'impact' => $this->criteria_impact,
+            'clarity' => $this->criteria_clarity,
+            'contribution' => $this->criteria_contribution,
+            'total' => $this->total_score,
+        ];
+    }
+    
+    /**
+     * Get the total score percentage (0-100)
+     */
+    public function getScorePercentageAttribute(): int
+    {
+        return $this->total_score ? round(($this->total_score / 100) * 100) : 0;
+    }
+    
+    /**
+     * Get score badge class based on total score
+     */
+    public function getScoreBadgeClassAttribute(): string
+    {
+        if (!$this->total_score) return 'bg-gray-100 text-gray-800';
+        
+        if ($this->total_score >= 80) return 'bg-green-100 text-green-800';
+        if ($this->total_score >= 60) return 'bg-yellow-100 text-yellow-800';
+        return 'bg-red-100 text-red-800';
+    }
+    
+    /**
+     * Get score description based on total score
+     */
+    public function getScoreDescriptionAttribute(): string
+    {
+        if (!$this->total_score) return 'Not rated';
+        
+        if ($this->total_score >= 90) return 'Excellent';
+        if ($this->total_score >= 80) return 'Very Good';
+        if ($this->total_score >= 70) return 'Good';
+        if ($this->total_score >= 60) return 'Satisfactory';
+        if ($this->total_score >= 50) return 'Below Average';
+        return 'Poor';
+    }
+    
+    /**
+     * Get individual criterion rating text
+     */
+    public function getRelevanceRatingAttribute(): string
+    {
+        return $this->getCriterionRating($this->criteria_relevance, 20);
+    }
+    
+    public function getOriginalityRatingAttribute(): string
+    {
+        return $this->getCriterionRating($this->criteria_originality, 20);
+    }
+    
+    public function getQualityRatingAttribute(): string
+    {
+        return $this->getCriterionRating($this->criteria_quality, 15);
+    }
+    
+    public function getImpactRatingAttribute(): string
+    {
+        return $this->getCriterionRating($this->criteria_impact, 15);
+    }
+    
+    public function getClarityRatingAttribute(): string
+    {
+        return $this->getCriterionRating($this->criteria_clarity, 10);
+    }
+    
+    public function getContributionRatingAttribute(): string
+    {
+        return $this->getCriterionRating($this->criteria_contribution, 10);
+    }
+    
+    /**
+     * Helper method to get rating text for a criterion
+     */
+    private function getCriterionRating($score, $max): string
+    {
+        if (!$score) return 'Not rated';
+        
+        $percentage = ($score / $max) * 100;
+        
+        if ($percentage >= 85) return 'Excellent';
+        if ($percentage >= 70) return 'Good';
+        if ($percentage >= 50) return 'Satisfactory';
+        return 'Needs Improvement';
+    }
+
     /**
      * Check if review can be edited
      */
@@ -240,7 +356,7 @@ class ReviewAssignment extends Model
     public function getCanSubmitAttribute(): bool
     {
         return $this->reviewer_id === auth()->id() && 
-               in_array($this->status, ['under_review', 'in_progress']); // UPDATED
+               in_array($this->status, ['under_review', 'in_progress']);
     }
 
     /**
@@ -253,12 +369,12 @@ class ReviewAssignment extends Model
     }
 
     /**
-     * Accept assignment - UPDATED to use 'under_review'
+     * Accept assignment
      */
     public function accept(): void
     {
         $this->update([
-            'status' => 'under_review', // CHANGED from 'accepted'
+            'status' => 'under_review',
             'started_at' => now()
         ]);
     }
@@ -272,11 +388,11 @@ class ReviewAssignment extends Model
     }
 
     /**
-     * Start review (when reviewer first opens edit page) - UPDATED
+     * Start review
      */
     public function startReview(): void
     {
-        if ($this->status === 'under_review') { // CHANGED from 'accepted'
+        if ($this->status === 'under_review') {
             $this->update(['status' => 'in_progress']);
         }
     }

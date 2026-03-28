@@ -129,10 +129,13 @@ class ReviewController extends Controller
 
         if (!$isDraft) {
             $rules += [
-                'overall_score' => 'required|integer|min:1|max:5',
-                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject,minor_revisions,major_revisions',
-                'comments_author' => 'required|string|min:50',
-                'revision_suggestions' => 'nullable|required_if:recommendation,minor_revisions,major_revisions|string|max:2000',
+                // NEW SCORING CRITERIA ONLY
+                'criteria_relevance' => 'required|integer|min:0|max:20',
+                'criteria_originality' => 'required|integer|min:0|max:20',
+                'criteria_quality' => 'required|integer|min:0|max:15',
+                'criteria_impact' => 'required|integer|min:0|max:15',
+                'criteria_clarity' => 'required|integer|min:0|max:10',
+                'criteria_contribution' => 'required|integer|min:0|max:10',
             ];
         }
 
@@ -146,37 +149,42 @@ class ReviewController extends Controller
         // Get the paper
         $paper = Paper::find($request->paper_id);
         
+        // Calculate total score
+        $totalScore = 0;
+        if (!$isDraft) {
+            $totalScore = ($request->criteria_relevance ?? 0) + 
+                        ($request->criteria_originality ?? 0) + 
+                        ($request->criteria_quality ?? 0) + 
+                        ($request->criteria_impact ?? 0) + 
+                        ($request->criteria_clarity ?? 0) + 
+                        ($request->criteria_contribution ?? 0);
+        }
+        
         // Prepare update data
         $updateData = [];
         
-        if ($request->has('overall_score')) {
-            $updateData['overall_score'] = $request->overall_score;
+        // NEW CRITERIA FIELDS
+        if ($request->has('criteria_relevance')) {
+            $updateData['criteria_relevance'] = $request->criteria_relevance;
+        }
+        if ($request->has('criteria_originality')) {
+            $updateData['criteria_originality'] = $request->criteria_originality;
+        }
+        if ($request->has('criteria_quality')) {
+            $updateData['criteria_quality'] = $request->criteria_quality;
+        }
+        if ($request->has('criteria_impact')) {
+            $updateData['criteria_impact'] = $request->criteria_impact;
+        }
+        if ($request->has('criteria_clarity')) {
+            $updateData['criteria_clarity'] = $request->criteria_clarity;
+        }
+        if ($request->has('criteria_contribution')) {
+            $updateData['criteria_contribution'] = $request->criteria_contribution;
         }
         
-        if ($request->has('recommendation')) {
-            $updateData['recommendation'] = $request->recommendation;
-        }
-        
-        if ($request->has('comments_author')) {
-            $updateData['comments_author'] = $request->comments_author;
-        }
-        
-        $optionalFields = ['comments_chair', 'strengths', 'weaknesses', 'suggestions', 'summary', 'confidence', 'revision_suggestions'];
-        foreach ($optionalFields as $field) {
-            if ($request->has($field)) {
-                $updateData[$field] = $request->$field;
-            }
-        }
-        
-        if ($request->has('scores')) {
-            $updateData['scores'] = $request->scores ? json_encode($request->scores) : null;
-        }
-        
-        // Add revision tracking
-        if ($request->is_revision_review) {
-            $updateData['is_revision_review'] = true;
-            $updateData['original_review_id'] = $request->original_review_id;
-            $updateData['paper_version'] = $paper->version ?? 1;
+        if (!$isDraft) {
+            $updateData['total_score'] = $totalScore;
         }
         
         // Determine if it's a draft or final submission
@@ -188,22 +196,10 @@ class ReviewController extends Controller
             $updateData['status'] = 'completed';
             $updateData['submitted_at'] = now();
             
-            // Check if this review recommends revisions
-            if (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
-                $paper->updateRevisionRecommendationStatus();
-            }
-            
             // Check if this completes all reviews for the paper
             $paper->checkAllReviewsCompleted();
             
             $message = 'Review submitted successfully!';
-            
-            // Add revision-specific message
-            if ($request->is_revision_review) {
-                $message = 'Revision review submitted successfully!';
-            } elseif (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
-                $message = 'Review submitted with revision recommendations. The chair will review these suggestions.';
-            }
         }
         
         // Update the review assignment
@@ -320,16 +316,6 @@ class ReviewController extends Controller
         // Determine if it's a draft based on which button was clicked
         $isDraft = $request->has('save_draft') && $request->save_draft == '1';
 
-        // Log for debugging
-        \Log::info('Update request', [
-            'review_id' => $review->id,
-            'has_save_draft' => $request->has('save_draft'),
-            'save_draft_value' => $request->input('save_draft'),
-            'has_submit' => $request->has('submit_review'),
-            'isDraft' => $isDraft,
-            'all_input' => $request->all()
-        ]);
-
         $rules = [
             'is_revision_review' => 'nullable|boolean',
             'original_review_id' => 'nullable|exists:review_assignments,id',
@@ -337,10 +323,13 @@ class ReviewController extends Controller
 
         if (!$isDraft) {
             $rules += [
-                'overall_score' => 'required|integer|min:1|max:5',
-                'recommendation' => 'required|in:strong_accept,accept,weak_accept,borderline,weak_reject,reject,strong_reject,minor_revisions,major_revisions',
-                'comments_author' => 'required|string|min:50',
-                'revision_suggestions' => 'nullable|required_if:recommendation,minor_revisions,major_revisions|string|max:2000',
+                // NEW SCORING CRITERIA ONLY
+                'criteria_relevance' => 'required|integer|min:0|max:20',
+                'criteria_originality' => 'required|integer|min:0|max:20',
+                'criteria_quality' => 'required|integer|min:0|max:15',
+                'criteria_impact' => 'required|integer|min:0|max:15',
+                'criteria_clarity' => 'required|integer|min:0|max:10',
+                'criteria_contribution' => 'required|integer|min:0|max:10',
             ];
         }
 
@@ -348,40 +337,42 @@ class ReviewController extends Controller
         
         $paper = Paper::find($review->paper_id);
         
-        // Prepare update data - only include fields that were actually submitted
+        // Calculate total score
+        $totalScore = 0;
+        if (!$isDraft) {
+            $totalScore = ($request->criteria_relevance ?? 0) + 
+                        ($request->criteria_originality ?? 0) + 
+                        ($request->criteria_quality ?? 0) + 
+                        ($request->criteria_impact ?? 0) + 
+                        ($request->criteria_clarity ?? 0) + 
+                        ($request->criteria_contribution ?? 0);
+        }
+        
+        // Prepare update data
         $updateData = [];
         
-        // Only include score fields if they were submitted (for drafts, they might be empty)
-        if ($request->has('overall_score')) {
-            $updateData['overall_score'] = $request->overall_score;
+        // NEW CRITERIA FIELDS
+        if ($request->has('criteria_relevance')) {
+            $updateData['criteria_relevance'] = $request->criteria_relevance;
+        }
+        if ($request->has('criteria_originality')) {
+            $updateData['criteria_originality'] = $request->criteria_originality;
+        }
+        if ($request->has('criteria_quality')) {
+            $updateData['criteria_quality'] = $request->criteria_quality;
+        }
+        if ($request->has('criteria_impact')) {
+            $updateData['criteria_impact'] = $request->criteria_impact;
+        }
+        if ($request->has('criteria_clarity')) {
+            $updateData['criteria_clarity'] = $request->criteria_clarity;
+        }
+        if ($request->has('criteria_contribution')) {
+            $updateData['criteria_contribution'] = $request->criteria_contribution;
         }
         
-        if ($request->has('recommendation')) {
-            $updateData['recommendation'] = $request->recommendation;
-        }
-        
-        if ($request->has('comments_author')) {
-            $updateData['comments_author'] = $request->comments_author;
-        }
-        
-        // Always include these fields if present (they can be empty for drafts)
-        $optionalFields = ['comments_chair', 'strengths', 'weaknesses', 'suggestions', 'summary', 'confidence', 'revision_suggestions'];
-        foreach ($optionalFields as $field) {
-            if ($request->has($field)) {
-                $updateData[$field] = $request->$field;
-            }
-        }
-        
-        // Handle scores JSON
-        if ($request->has('scores')) {
-            $updateData['scores'] = $request->scores ? json_encode($request->scores) : null;
-        }
-        
-        // Add revision tracking
-        if ($request->is_revision_review) {
-            $updateData['is_revision_review'] = true;
-            $updateData['original_review_id'] = $request->original_review_id;
-            $updateData['paper_version'] = $paper->version ?? 1;
+        if (!$isDraft) {
+            $updateData['total_score'] = $totalScore;
         }
         
         // Determine if it's a draft or final submission based on the button clicked
@@ -393,22 +384,10 @@ class ReviewController extends Controller
             $updateData['status'] = 'completed';
             $updateData['submitted_at'] = now();
             
-            // Check if this review recommends revisions
-            if (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
-                $paper->updateRevisionRecommendationStatus();
-            }
-            
             // Check if this completes all reviews for the paper
             $paper->checkAllReviewsCompleted();
             
             $message = 'Review submitted successfully!';
-            
-            // Add revision-specific message
-            if ($request->is_revision_review) {
-                $message = 'Revision review submitted successfully!';
-            } elseif (in_array($request->recommendation, ['minor_revisions', 'major_revisions'])) {
-                $message = 'Review submitted with revision recommendations. The chair will review these suggestions.';
-            }
         }
         
         // Update the review assignment

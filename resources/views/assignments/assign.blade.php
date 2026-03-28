@@ -51,7 +51,7 @@
                                         @if(isset($suggestion['reviewer']['first_name']) && isset($suggestion['reviewer']['last_name']))
                                             {{ strtoupper(substr($suggestion['reviewer']['first_name'], 0, 1) . substr($suggestion['reviewer']['last_name'], 0, 1)) }}
                                         @else
-                                            {{ strtoupper(substr($suggestion['reviewer']['full_name'] ?? '', 0, 2)) }}
+                                            {{ strtoupper(substr($suggestion['reviewer']['full_name'] ?? '', 0, 1)) }}
                                         @endif
                                     </span>
                                 </div>
