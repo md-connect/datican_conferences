@@ -101,7 +101,7 @@
                     Submit your research to DATICAN Conference 2026. All submissions will undergo peer review.
                 </p>
                 <a href="{{ route('papers.create') }}" 
-                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                   class="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-700">
                     <i class="fas fa-plus mr-2"></i> Submit New Abstract
                 </a>
             </div>
