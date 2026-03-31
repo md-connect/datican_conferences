@@ -56,6 +56,51 @@
                                 </div>
                             </div>
                             
+                            <!-- FREE CONFERENCE SECTION - MOVED HERE -->
+                            <div class="mb-8 relative overflow-hidden rounded-xl border-2 border-primary">
+                                <div class="bg-primary bg-opacity-5 p-8">
+                                    
+                                    <div class="relative z-10 text-center">
+                                        
+                                        <div class="inline-block bg-primary text-white px-6 py-3 rounded-full mb-6">
+                                            <span class="font-bold text-xl">CONFERENCE IS FREE!</span>
+                                        </div>
+                                        
+                                        <p class="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
+                                            Zero cost to attend, present, and publish.
+                                        </p>
+                                        
+                                        <div class="flex flex-wrap justify-center gap-4 mt-4">
+                                            <div class="flex items-center space-x-2 bg-primary bg-opacity-10 rounded-lg px-4 py-2">
+                                                <i class="fas fa-check-circle text-primary"></i>
+                                                <span class="text-gray-700">Free Registration</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2 bg-primary bg-opacity-10 rounded-lg px-4 py-2">
+                                                <i class="fas fa-check-circle text-primary"></i>
+                                                <span class="text-gray-700">Free Presentation</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2 bg-primary bg-opacity-10 rounded-lg px-4 py-2">
+                                                <i class="fas fa-check-circle text-primary"></i>
+                                                <span class="text-gray-700">Free Publication</span>
+                                            </div>
+                                            <div class="flex items-center space-x-2 bg-primary bg-opacity-10 rounded-lg px-4 py-2">
+                                                <i class="fas fa-check-circle text-primary"></i>
+                                                <span class="text-gray-700">Free Certificate</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-6">
+                                            <a href="{{ route('register') }}" 
+                                               class="inline-flex items-center px-6 py-3 bg-accent text-white font-semibold rounded-lg hover:bg-red-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+                                                Claim Your Free Spot Now!
+                                                <i class="fas fa-arrow-right ml-2"></i>
+                                            </a>
+                                        </div>
+                                       
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Submission Guidelines -->
                             <div class="mb-8">
                                 <h2 class="text-2xl font-bold text-primary mb-6">Submission Guidelines</h2>
