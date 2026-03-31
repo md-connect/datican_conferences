@@ -96,13 +96,13 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <!-- Paper Submission -->
             <div class="bg-white rounded-xl shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Submit a Paper</h3>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Submit an Abstract</h3>
                 <p class="text-gray-600 mb-4">
                     Submit your research to DATICAN Conference 2026. All submissions will undergo peer review.
                 </p>
                 <a href="{{ route('papers.create') }}" 
                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-                    <i class="fas fa-plus mr-2"></i> Submit New Paper
+                    <i class="fas fa-plus mr-2"></i> Submit New Abstract
                 </a>
             </div>
             
@@ -187,7 +187,7 @@
                         <i class="fas fa-file-alt text-blue-600"></i>
                     </div>
                     <div class="ml-4">
-                        <h4 class="font-medium text-gray-900">Call for Papers</h4>
+                        <h4 class="font-medium text-gray-900">Call for Abstracts</h4>
                         <p class="text-sm text-gray-500">Submission guidelines and topics</p>
                     </div>
                 </div>

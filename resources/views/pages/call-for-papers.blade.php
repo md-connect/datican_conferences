@@ -56,7 +56,7 @@
                                 </div>
                             </div>
                             
-                            <!-- FREE CONFERENCE SECTION - MOVED HERE -->
+                            <!-- FREE CONFERENCE SECTION -->
                             <div class="mb-8 relative overflow-hidden rounded-xl border-2 border-primary">
                                 <div class="bg-primary bg-opacity-5 p-8">
                                     
