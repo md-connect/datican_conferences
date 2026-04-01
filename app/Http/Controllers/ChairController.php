@@ -232,7 +232,7 @@ class ChairController extends Controller
     /**
      * Export papers to CSV
      */
-    public function exportPapers()
+     public function exportPapers()
     {
         $papers = Paper::with(['authors'])->get();
         

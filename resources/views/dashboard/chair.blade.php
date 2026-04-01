@@ -93,7 +93,7 @@
                     <span class="text-sm text-blue-600 mt-1">Download as CSV</span>
                 </a>
                 
-                <a href="{{ route('chair.export.papers') }}" 
+                <a href="{{ route('analytics.export', 'papers') }}" 
                    class="flex flex-col items-center justify-center p-6 bg-green-50 rounded-lg hover:bg-green-100 border border-green-200 transition-all duration-300">
                     <i class="fas fa-file-alt text-3xl text-green-600 mb-3"></i>
                     <span class="font-medium text-green-800">Export Papers</span>

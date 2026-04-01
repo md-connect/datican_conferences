@@ -277,30 +277,48 @@ class AnalyticsController extends Controller
     }
 
     private function exportPapers($year)
-    {
-        $papers = Paper::byYear($year)
-            ->with(['authors'])
-            ->orderBy('id')
-            ->get()
-            ->map(function($paper, $index) {
-                // Get authors with their institutions
-                $authorsWithInstitutions = $paper->authors->map(function($author) {
-                    return $author->title . ' ' . $author->first_name . ' ' . $author->last_name . ' (' . ($author->institution ?? 'N/A') . ')';
-                })->join('; ');
-                
-                return [
-                    'SN' => $index + 1, // Sequential numbering
-                    'Paper ID' => $paper->anonymous_id,
-                    'Authors' => $paper->author_list,
-                    'Authors Institutions' => $authorsWithInstitutions,
-                    'Paper title' => $paper->title,
-                    'Submission Type' => $paper->submission_type === 'abstract_only' ? 'Abstract Only' : 'Full Paper',
-                    'Submission Date' => $paper->submitted_at?->format('Y-m-d H:i:s'),
-                ];
-            });
+{
+    $papers = Paper::byYear($year)
+        ->with(['authors'])
+        ->orderBy('id')
+        ->get()
+        ->map(function($paper, $index) {
+            // Split authors into first author and co-authors
+            $authors = $paper->authors->sortBy('pivot.author_order');
+            $firstAuthor = $authors->first();
+            $coAuthors = $authors->slice(1);
+            
+            // First author with institution
+            $firstAuthorName = $firstAuthor ? 
+                ($firstAuthor->title ? $firstAuthor->title . ' ' : '') . 
+                $firstAuthor->first_name . ' ' . $firstAuthor->last_name : 'N/A';
+            $firstAuthorInstitution = $firstAuthor ? ($firstAuthor->institution ?? 'N/A') : 'N/A';
+            
+            // Co-authors with their institutions
+            $coAuthorsNames = $coAuthors->map(function($author) {
+                return ($author->title ? $author->title . ' ' : '') . 
+                       $author->first_name . ' ' . $author->last_name;
+            })->join(', ');
+            
+            $coAuthorsInstitutions = $coAuthors->map(function($author) {
+                return $author->institution ?? 'N/A';
+            })->join('; ');
+            
+            return [
+                'SN' => $index + 1,
+                'Paper ID' => $paper->anonymous_id,
+                'Paper title' => $paper->title,
+                'Submission Type' => $paper->submission_type === 'abstract_only' ? 'Abstract Only' : 'Full Paper',
+                'Author' => $firstAuthorName,
+                'Author\'s Institution' => $firstAuthorInstitution,
+                'Co-Authors' => $coAuthorsNames ?: 'None',
+                'Co-Authors\' Institution' => $coAuthorsInstitutions ?: 'None',
+                'Submission Date' => $paper->submitted_at?->format('Y-m-d H:i:s'),
+            ];
+        });
 
-        return $this->toCsv($papers, "DATICAN_Conference_papers_{$year}.csv");
-    }
+    return $this->toCsv($papers, "DATICAN_Conference_papers_{$year}.csv");
+}
     private function exportReviews($year)
     {
         $reviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
