@@ -56,11 +56,11 @@
                                         <div class="font-medium text-gray-900">{{ $suggestion['full_name'] ?? 'Unknown Reviewer' }}</div>
                                         <div class="text-sm text-gray-500">{{ $suggestion['email'] ?? '' }}</div>
                                         <div class="flex items-center gap-2 mt-1">
-                                            <span class="text-xs px-2 py-1 rounded-full 
+                                            <!-- <span class="text-xs px-2 py-1 rounded-full 
                                                 {{ ($suggestion['match_score'] ?? 0) >= 80 ? 'bg-green-100 text-green-800' : 
                                                 (($suggestion['match_score'] ?? 0) >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
                                                 Score: {{ number_format($suggestion['match_score'] ?? 0, 0) }}%
-                                            </span>
+                                            </span> -->
                                             <span class="text-xs px-2 py-1 bg-gray-100 rounded-full">
                                                 Load: {{ $suggestion['assigned_count'] ?? 0 }}/10
                                             </span>
