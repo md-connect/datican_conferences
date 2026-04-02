@@ -17,7 +17,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-600">Title</p>
-                    <p class="font-medium">{{ Str::limit($paper->title, 50) }}</p>
+                    <p class="font-medium">{{ $paper->title }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-600">Topic Area</p>
