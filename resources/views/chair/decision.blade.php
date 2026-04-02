@@ -104,8 +104,8 @@
                                     'originality' => ['label' => 'Originality & Innovation', 'max' => 20],
                                     'quality' => ['label' => 'Technical/Academic Quality', 'max' => 15],
                                     'impact' => ['label' => 'Practical Impact & Applicability', 'max' => 15],
-                                    'clarity' => ['label' => 'Clarity & Organization', 'max' => 10],
-                                    'contribution' => ['label' => 'Contribution to Knowledge', 'max' => 10],
+                                    'clarity' => ['label' => 'Clarity & Organization', 'max' => 15],
+                                    'contribution' => ['label' => 'Contribution to Knowledge', 'max' => 15],
                                 ];
                             @endphp
                             
@@ -239,11 +239,11 @@
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Clarity:</span>
-                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/10</span>
+                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/15</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Contribution:</span>
-                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/10</span>
+                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/15</span>
                                     </div>
                                 </div>
                             </div>

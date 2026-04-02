@@ -203,7 +203,7 @@
                                id="criteria_clarity"
                                value="{{ old('criteria_clarity', $review->criteria_clarity ?? '') }}"
                                min="0" 
-                               max="10" 
+                               max="15" 
                                step="1"
                                required
                                class="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
@@ -232,7 +232,7 @@
                                id="criteria_contribution"
                                value="{{ old('criteria_contribution', $review->criteria_contribution ?? '') }}"
                                min="0" 
-                               max="10" 
+                               max="15" 
                                step="1"
                                required
                                class="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"

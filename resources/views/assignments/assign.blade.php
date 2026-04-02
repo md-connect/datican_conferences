@@ -44,7 +44,7 @@
                     
                     <div class="space-y-3 max-h-96 overflow-y-auto">
                         @forelse($suggestedReviewers as $suggestion)
-                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50" data-full-name="{{ $suggestion['full_name'] ?? '' }}">
                             <div class="flex-1">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
@@ -53,14 +53,9 @@
                                         </span>
                                     </div>
                                     <div>
-                                        <div class="font-medium text-gray-900">{{ $suggestion['full_name'] ?? 'Unknown Reviewer' }}</div>
+                                        <div class="font-medium text-gray-900 reviewer-name">{{ $suggestion['full_name'] ?? 'Unknown Reviewer' }}</div>
                                         <div class="text-sm text-gray-500">{{ $suggestion['email'] ?? '' }}</div>
                                         <div class="flex items-center gap-2 mt-1">
-                                            <!-- <span class="text-xs px-2 py-1 rounded-full 
-                                                {{ ($suggestion['match_score'] ?? 0) >= 80 ? 'bg-green-100 text-green-800' : 
-                                                (($suggestion['match_score'] ?? 0) >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                Score: {{ number_format($suggestion['match_score'] ?? 0, 0) }}%
-                                            </span> -->
                                             <span class="text-xs px-2 py-1 bg-gray-100 rounded-full">
                                                 Load: {{ $suggestion['assigned_count'] ?? 0 }}/10
                                             </span>
@@ -88,6 +83,7 @@
                                     name="reviewer_ids[]" 
                                     value="{{ $suggestion['id'] ?? 0 }}" 
                                     id="reviewer_{{ $suggestion['id'] ?? 0 }}"
+                                    data-reviewer-name="{{ $suggestion['full_name'] ?? '' }}"
                                     class="rounded text-blue-600 w-5 h-5">
                             </div>
                         </div>
@@ -113,7 +109,8 @@
                         @forelse($reviewers as $reviewer)
                         <div class="reviewer-item flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50" 
                              data-name="{{ strtolower($reviewer->full_name) }}"
-                             data-email="{{ strtolower($reviewer->email) }}">
+                             data-email="{{ strtolower($reviewer->email) }}"
+                             data-full-name="{{ $reviewer->full_name }}">
                             <div class="flex items-center">
                                 <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
                                     <span class="text-sm font-medium text-blue-700">
@@ -121,7 +118,7 @@
                                     </span>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-gray-900">{{ $reviewer->full_name }}</div>
+                                    <div class="font-medium text-gray-900 reviewer-name">{{ $reviewer->full_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reviewer->email }}</div>
                                     <div class="text-xs text-gray-500 mt-1">
                                         @php
@@ -140,7 +137,8 @@
                                    name="reviewer_ids[]" 
                                    value="{{ $reviewer->id }}" 
                                    id="manual_reviewer_{{ $reviewer->id }}"
-                                   class="rounded text-blue-600">
+                                   data-reviewer-name="{{ $reviewer->full_name }}"
+                                   class="rounded text-blue-600 w-5 h-5 reviewer-checkbox">
                         </div>
                         @empty
                         <p class="text-gray-500 text-center p-4">No reviewers found. Make sure users are marked as reviewers.</p>
@@ -190,11 +188,18 @@
         });
     });
     
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
     // Update selected reviewers display
     function updateSelectedReviewers() {
         const selectedCheckboxes = document.querySelectorAll('input[name="reviewer_ids[]"]:checked');
         const container = document.getElementById('selectedReviewers');
-        const noSelectionText = document.getElementById('noSelectionText');
         
         container.innerHTML = '';
         
@@ -205,17 +210,28 @@
         
         selectedCheckboxes.forEach(checkbox => {
             const reviewerId = checkbox.value;
-            const reviewerItem = checkbox.closest('.flex.items-center');
-            const reviewerName = reviewerItem?.querySelector('.font-medium')?.textContent || `Reviewer ${reviewerId}`;
+            let reviewerName = checkbox.dataset.reviewerName || '';
+            
+            // If data attribute is empty, try to find from parent
+            if (!reviewerName) {
+                const reviewerItem = checkbox.closest('.flex.items-center, .reviewer-item, [data-full-name]');
+                if (reviewerItem) {
+                    reviewerName = reviewerItem.dataset.fullName || '';
+                }
+                if (!reviewerName) {
+                    const nameElement = reviewerItem?.querySelector('.reviewer-name, .font-medium.text-gray-900');
+                    reviewerName = nameElement ? nameElement.textContent.trim() : `Reviewer ${reviewerId}`;
+                }
+            }
             
             const div = document.createElement('div');
             div.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100';
             div.innerHTML = `
                 <div class="flex items-center">
                     <div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center mr-3">
-                        <span class="text-xs font-medium text-blue-800">R</span>
+                        <i class="fas fa-user text-xs text-blue-700"></i>
                     </div>
-                    <span class="font-medium text-gray-900">${reviewerName}</span>
+                    <span class="font-medium text-gray-900">${escapeHtml(reviewerName)}</span>
                 </div>
                 <button type="button" onclick="uncheckReviewer(${reviewerId})" 
                         class="text-red-600 hover:text-red-800">

@@ -134,8 +134,8 @@ class ReviewController extends Controller
                 'criteria_originality' => 'required|integer|min:0|max:20',
                 'criteria_quality' => 'required|integer|min:0|max:15',
                 'criteria_impact' => 'required|integer|min:0|max:15',
-                'criteria_clarity' => 'required|integer|min:0|max:10',
-                'criteria_contribution' => 'required|integer|min:0|max:10',
+                'criteria_clarity' => 'required|integer|min:0|max:15',
+                'criteria_contribution' => 'required|integer|min:0|max:15',
             ];
         }
 
@@ -328,8 +328,8 @@ class ReviewController extends Controller
                 'criteria_originality' => 'required|integer|min:0|max:20',
                 'criteria_quality' => 'required|integer|min:0|max:15',
                 'criteria_impact' => 'required|integer|min:0|max:15',
-                'criteria_clarity' => 'required|integer|min:0|max:10',
-                'criteria_contribution' => 'required|integer|min:0|max:10',
+                'criteria_clarity' => 'required|integer|min:0|max:15',
+                'criteria_contribution' => 'required|integer|min:0|max:15',
             ];
         }
 
