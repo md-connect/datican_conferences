@@ -215,7 +215,7 @@ class ReviewController extends Controller
     public function show(ReviewAssignment $review)
     {
         // Check authorization
-        if ($review->reviewer_id !== Auth::id() && !Auth::user()->is_admin) {
+        if ($review->reviewer_id !== Auth::id() && !Auth::user()->is_admin && !Auth::user()->is_chair) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -472,26 +472,31 @@ class ReviewController extends Controller
      */
     private function checkPaperReviewStatus(Paper $paper)
     {
+        // Get all assignments that are not declined
         $totalAssignments = ReviewAssignment::where('paper_id', $paper->id)
             ->where('status', '!=', 'declined')
             ->count();
         
+        // Get completed assignments
         $completedAssignments = ReviewAssignment::where('paper_id', $paper->id)
             ->where('status', 'completed')
             ->count();
         
-        // If all assigned reviews are completed, update paper status
+        // Check if all assigned reviews are completed
         if ($totalAssignments > 0 && $totalAssignments === $completedAssignments) {
-            // Only update if paper is under review
+            // If paper is under review and both reviews are completed, update paper status
             if ($paper->status === 'under_review') {
-                // You might want to notify the chair that all reviews are complete
                 Log::info('All reviews completed for paper', [
                     'paper_id' => $paper->id,
-                    'paper_title' => $paper->title
+                    'paper_title' => $paper->title,
+                    'total_reviews' => $totalAssignments
                 ]);
                 
-                // Optionally, you can update a flag on the paper
-                $paper->update(['all_reviews_completed' => true]);
+                // Update paper status to indicate all reviews are complete
+                $paper->update([
+                    'all_reviews_completed' => true,
+                    'status' => 'reviewed' // Optional: set to reviewed status
+                ]);
             }
         }
     }

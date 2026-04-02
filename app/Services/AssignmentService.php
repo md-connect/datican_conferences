@@ -16,8 +16,8 @@ class AssignmentService
     private $reviewers;
     private $assignments = [];
     private $config = [
-        'min_reviews_per_paper' => 1,
-        'max_reviews_per_paper' => 3,
+        'min_reviews_per_paper' => 2,
+        'max_reviews_per_paper' => 2,
         'max_papers_per_reviewer' => 10,
         'min_papers_per_reviewer' => 0,
         'weight_bid' => 0.4,
@@ -32,14 +32,21 @@ class AssignmentService
     {
         $this->config = array_merge($this->config, $config);
         
-        // Load papers that need assignments
+        // Load papers that need assignments (papers with less than 2 active reviews)
         $this->papers = Paper::where('conference_year', $conferenceYear)
             ->whereIn('status', ['submitted', 'under_review'])
+            ->where(function($query) {
+                $query->whereDoesntHave('reviews')
+                    ->orWhereHas('reviews', function($q) {
+                        $q->whereIn('status', ['pending', 'under_review', 'in_progress'])
+                        ->havingRaw('COUNT(*) < 2');
+                    });
+            })
             ->with(['bids', 'authors', 'reviews.reviewer'])
             ->get();
             
         // Load potential reviewers
-        $this->reviewers = User::where('is_admin', false)
+        $this->reviewers = User::where('is_reviewer', true)
             ->with(['expertise', 'reviewAssignments' => function($q) use ($conferenceYear) {
                 $q->whereHas('paper', function($q2) use ($conferenceYear) {
                     $q2->where('conference_year', $conferenceYear);
@@ -51,7 +58,7 @@ class AssignmentService
         ReviewAssignment::where('status', 'pending')
             ->whereHas('paper', function($q) use ($conferenceYear) {
                 $q->where('conference_year', $conferenceYear)
-                  ->whereIn('status', ['submitted', 'under_review']);
+                ->whereIn('status', ['submitted', 'under_review']);
             })
             ->delete();
 

@@ -322,6 +322,67 @@ class ReviewAssignment extends Model
         return 'Needs Improvement';
     }
 
+    // NEW METHODS FOR PEER REVIEW (2 REVIEWERS PER PAPER)
+    
+    /**
+     * Check if this is the second review for the paper
+     */
+    public function isSecondReview(): bool
+    {
+        $completedReviews = ReviewAssignment::where('paper_id', $this->paper_id)
+            ->where('status', 'completed')
+            ->count();
+        
+        return $completedReviews >= 1;
+    }
+    
+    /**
+     * Check if all reviews for the paper are completed (max 2)
+     */
+    public function allReviewsCompleted(): bool
+    {
+        $totalAssignments = ReviewAssignment::where('paper_id', $this->paper_id)
+            ->where('status', '!=', 'declined')
+            ->count();
+        
+        $completedAssignments = ReviewAssignment::where('paper_id', $this->paper_id)
+            ->where('status', 'completed')
+            ->count();
+        
+        // For peer review with max 2 reviewers
+        return $completedAssignments >= 2 && $completedAssignments == $totalAssignments;
+    }
+    
+    /**
+     * Get the review number for this assignment (1st or 2nd reviewer)
+     */
+    public function getReviewNumberAttribute(): int
+    {
+        $completedCount = ReviewAssignment::where('paper_id', $this->paper_id)
+            ->where('status', 'completed')
+            ->where('id', '<=', $this->id)
+            ->count();
+        
+        return $completedCount;
+    }
+    
+    /**
+     * Get the average score of both reviewers for the paper
+     */
+    public static function getAverageScoreForPaper($paperId)
+    {
+        $completedReviews = self::where('paper_id', $paperId)
+            ->where('status', 'completed')
+            ->get();
+        
+        if ($completedReviews->isEmpty()) {
+            return null;
+        }
+        
+        $totalScore = $completedReviews->sum('total_score');
+        return round($totalScore / $completedReviews->count(), 2);
+    }
+    
     /**
      * Check if review can be edited
      */

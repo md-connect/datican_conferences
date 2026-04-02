@@ -124,7 +124,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['chair'])->group(function () {
         // Chair Dashboard
         Route::get('/chair/dashboard', [ChairController::class, 'dashboard'])->name('chair.dashboard');
-        
+        Route::get('/chair/export/peer/{type}', [ChairController::class, 'exportPeerReview'])->name('chair.export.peer');
         // Chair Management Pages
         Route::get('/chair/papers', [ChairController::class, 'papers'])->name('chair.papers');
         Route::get('/chair/reviews', [ChairController::class, 'reviews'])->name('chair.reviews');

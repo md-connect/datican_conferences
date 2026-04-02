@@ -282,6 +282,65 @@ class ChairController extends Controller
     }
 
     /**
+ * Export peer review comparison data
+ */
+public function exportPeerReview($type)
+{
+    $papers = Paper::with(['reviewAssignments' => function($query) {
+        $query->where('status', 'completed')->orderBy('id');
+    }, 'reviewAssignments.reviewer'])->get();
+    
+    $data = $papers->filter(function($paper) {
+        return $paper->reviewAssignments->count() >= 2;
+    })->map(function($paper) {
+        $reviews = $paper->reviewAssignments->sortBy('id');
+        $review1 = $reviews->first();
+        $review2 = $reviews->last();
+        
+        // Calculate reviewer 1 total
+        $review1Total = ($review1->criteria_relevance ?? 0) + 
+                        ($review1->criteria_originality ?? 0) + 
+                        ($review1->criteria_quality ?? 0) + 
+                        ($review1->criteria_impact ?? 0) + 
+                        ($review1->criteria_clarity ?? 0) + 
+                        ($review1->criteria_contribution ?? 0);
+        
+        // Calculate reviewer 2 total
+        $review2Total = ($review2->criteria_relevance ?? 0) + 
+                        ($review2->criteria_originality ?? 0) + 
+                        ($review2->criteria_quality ?? 0) + 
+                        ($review2->criteria_impact ?? 0) + 
+                        ($review2->criteria_clarity ?? 0) + 
+                        ($review2->criteria_contribution ?? 0);
+        
+        return [
+            'Paper ID' => $paper->anonymous_id,
+            'Paper Title' => $paper->title,
+            'Reviewer 1' => $review1->reviewer->first_name . ' ' . $review1->reviewer->last_name,
+            'Reviewer 1 - Relevance (20)' => $review1->criteria_relevance ?? 'N/A',
+            'Reviewer 1 - Originality (20)' => $review1->criteria_originality ?? 'N/A',
+            'Reviewer 1 - Quality (15)' => $review1->criteria_quality ?? 'N/A',
+            'Reviewer 1 - Impact (15)' => $review1->criteria_impact ?? 'N/A',
+            'Reviewer 1 - Clarity (10)' => $review1->criteria_clarity ?? 'N/A',
+            'Reviewer 1 - Contribution (10)' => $review1->criteria_contribution ?? 'N/A',
+            'Reviewer 1 - Total' => $review1Total,
+            'Reviewer 2' => $review2->reviewer->first_name . ' ' . $review2->reviewer->last_name,
+            'Reviewer 2 - Relevance (20)' => $review2->criteria_relevance ?? 'N/A',
+            'Reviewer 2 - Originality (20)' => $review2->criteria_originality ?? 'N/A',
+            'Reviewer 2 - Quality (15)' => $review2->criteria_quality ?? 'N/A',
+            'Reviewer 2 - Impact (15)' => $review2->criteria_impact ?? 'N/A',
+            'Reviewer 2 - Clarity (10)' => $review2->criteria_clarity ?? 'N/A',
+            'Reviewer 2 - Contribution (10)' => $review2->criteria_contribution ?? 'N/A',
+            'Reviewer 2 - Total' => $review2Total,
+            'Score Difference' => abs($review1Total - $review2Total),
+            'Average Total Score' => round(($review1Total + $review2Total) / 2, 1),
+        ];
+    });
+    
+    return $this->toCsv($data, 'DATICAN_2026_Conference_peer_review_comparison.csv');
+}
+
+    /**
      * Helper method to convert data to CSV and download
      */
     private function toCsv($data, $filename)

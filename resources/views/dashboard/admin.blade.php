@@ -22,7 +22,7 @@
         </div>
         
         <!-- Quick Stats - Combined -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <!-- Conference Stats -->
             <div class="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
                 <div class="flex items-center justify-between">
@@ -57,13 +57,13 @@
                 </a>
             </div>
             
-            <!-- Reviewer Stats -->
+            <!-- Reviews Completed -->
             <div class="bg-white rounded-xl shadow p-6 border-l-4 border-purple-500">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500">Reviews Completed</p>
-                        <p class="text-3xl font-bold text-gray-800 mt-2">{{ number_format(\App\Models\ReviewAssignment::count()) }}</p>
-                        <p class="text-xs text-gray-500 mt-1">All reviews</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2">{{ number_format(\App\Models\ReviewAssignment::where('status', 'completed')->count()) }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Completed reviews</p>
                     </div>
                     <div class="bg-purple-100 p-3 rounded-full">
                         <i class="fas fa-clipboard-check text-purple-600 text-2xl"></i>
@@ -71,6 +71,30 @@
                 </div>
                 <a href="{{ route('analytics.index') }}" class="mt-4 inline-flex items-center text-sm text-purple-600 hover:text-purple-800">
                     Analytics <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            
+            <!-- Peer Review Stats (NEW) -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-indigo-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Both Reviews Done</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2">
+                            @php
+                                $bothReviewsDone = \App\Models\Paper::whereHas('reviewAssignments', function($q) {
+                                    $q->where('status', 'completed');
+                                }, '>=', 2)->count();
+                            @endphp
+                            {{ $bothReviewsDone }}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Papers with 2 reviews</p>
+                    </div>
+                    <div class="bg-indigo-100 p-3 rounded-full">
+                        <i class="fas fa-users text-indigo-600 text-2xl"></i>
+                    </div>
+                </div>
+                <a href="{{ route('chair.papers') }}?status=reviewed" class="mt-4 inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800">
+                    View all <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
             
@@ -93,7 +117,7 @@
         </div>
         
         <!-- Quick Links -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <a href="{{ route('assignments.index') }}" 
                class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
                 <div class="flex items-center">
@@ -102,7 +126,7 @@
                     </div>
                     <div>
                         <p class="font-semibold text-gray-900">Paper Assignments</p>
-                        <p class="text-sm text-gray-500">Manage reviewer assignments</p>
+                        <p class="text-sm text-gray-500">Assign 2 reviewers per paper</p>
                     </div>
                 </div>
             </a>
@@ -129,6 +153,19 @@
                     <div>
                         <p class="font-semibold text-gray-900">Analytics</p>
                         <p class="text-sm text-gray-500">View system statistics</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="{{ route('chair.reviewers') }}" 
+               class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                        <i class="fas fa-users-cog text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Manage Reviewers</p>
+                        <p class="text-sm text-gray-500">Reviewer performance</p>
                     </div>
                 </div>
             </a>
@@ -208,7 +245,7 @@
             <div class="bg-white rounded-xl shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">Paper Management</h3>
-                    <p class="text-sm text-gray-500 mt-1">Manage paper submissions and reviews</p>
+                    <p class="text-sm text-gray-500 mt-1">Manage paper submissions and peer reviews (2 reviewers per paper)</p>
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
@@ -218,7 +255,7 @@
                                 <i class="fas fa-tasks text-blue-600 mr-3"></i>
                                 <div>
                                     <span class="font-medium text-gray-700">Reviewer Assignments</span>
-                                    <p class="text-sm text-gray-500">Assign and manage reviewers</p>
+                                    <p class="text-sm text-gray-500">Assign 2 reviewers per paper</p>
                                 </div>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
@@ -256,6 +293,7 @@
                             'under_review' => \App\Models\Paper::where('status', 'under_review')->count(),
                             'accepted' => \App\Models\Paper::where('status', 'accepted')->count(),
                             'rejected' => \App\Models\Paper::where('status', 'rejected')->count(),
+                            'needs_revision' => \App\Models\Paper::where('status', 'needs_revision')->count(),
                         ];
                     @endphp
                     <div class="mt-6 pt-6 border-t border-gray-200">
@@ -276,6 +314,14 @@
                             <div class="text-center p-3 bg-red-50 rounded-lg">
                                 <p class="text-xl font-bold text-red-700">{{ $paperStats['rejected'] }}</p>
                                 <p class="text-xs text-red-600">Rejected</p>
+                            </div>
+                            <div class="text-center p-3 bg-orange-50 rounded-lg">
+                                <p class="text-xl font-bold text-orange-700">{{ $paperStats['needs_revision'] }}</p>
+                                <p class="text-xs text-orange-600">Needs Revision</p>
+                            </div>
+                            <div class="text-center p-3 bg-indigo-50 rounded-lg">
+                                <p class="text-xl font-bold text-indigo-700">{{ $bothReviewsDone }}</p>
+                                <p class="text-xs text-indigo-600">Both Reviews Done</p>
                             </div>
                         </div>
                     </div>
@@ -298,7 +344,7 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
-                            <tr>
+                            客户
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -325,10 +371,10 @@
                                             <div class="text-xs text-gray-500">{{ $registration->email }}</div>
                                         </div>
                                     </div>
-                                </td>
+                                 </tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ Str::limit($registration->institution, 25) }}</div>
-                                </td>
+                                 </tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-wrap gap-1">
                                         @if($registration->is_presenting_paper)
@@ -342,26 +388,24 @@
                                         </span>
                                         @endif
                                     </div>
-                                </td>
+                                 </tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $registration->created_at->format('M d') }}
                                     <div class="text-xs text-gray-400">{{ $registration->created_at->diffForHumans() }}</div>
-                                </td>
-                            </tr>
+                                 </tr>
                             @empty
                             <tr>
                                 <td colspan="4" class="px-6 py-8 text-center text-gray-500">
                                     <i class="fas fa-users-slash text-3xl mb-3 text-gray-300"></i>
                                     <p>No registrations yet</p>
-                                </td>
-                            </tr>
+                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
             
-            <!-- Recent Papers -->
+            <!-- Recent Papers with Review Status -->
             <div class="bg-white rounded-xl shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -374,16 +418,17 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
-                            <tr>
+                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviews</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @php
-                                $recentPapers = \App\Models\Paper::with('authors')->latest()->take(5)->get();
+                                $recentPapers = \App\Models\Paper::with(['authors', 'reviewAssignments'])->latest()->take(5)->get();
                             @endphp
                             @forelse($recentPapers as $paper)
                             <tr class="hover:bg-gray-50">
@@ -397,33 +442,48 @@
                                             @endif
                                         @endif
                                     </div>
-                                </td>
+                                 </tr>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900">{{ Str::limit($paper->title, 40) }}</div>
                                     <div class="text-xs text-gray-500">{{ $paper->topic_area }}</div>
-                                </td>
+                                 </tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $completedReviews = $paper->reviewAssignments->where('status', 'completed')->count();
+                                        $totalNeeded = 2;
+                                        $progressColor = $completedReviews == 0 ? 'bg-red-100 text-red-800' : 
+                                                       ($completedReviews == 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800');
+                                    @endphp
+                                    <div class="text-center">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $progressColor }}">
+                                            {{ $completedReviews }}/{{ $totalNeeded }}
+                                        </span>
+                                        @if($completedReviews == 2)
+                                        <div class="text-xs text-green-600 mt-1">Both done</div>
+                                        @endif
+                                    </div>
+                                 </tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs rounded-full 
                                         @if($paper->status == 'submitted') bg-blue-100 text-blue-800
                                         @elseif($paper->status == 'under_review') bg-yellow-100 text-yellow-800
                                         @elseif($paper->status == 'accepted') bg-green-100 text-green-800
                                         @elseif($paper->status == 'rejected') bg-red-100 text-red-800
+                                        @elseif($paper->status == 'needs_revision') bg-orange-100 text-orange-800
                                         @endif">
                                         {{ ucfirst(str_replace('_', ' ', $paper->status)) }}
                                     </span>
-                                </td>
+                                 </tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $paper->created_at->format('M d') }}
                                     <div class="text-xs text-gray-400">{{ $paper->created_at->diffForHumans() }}</div>
-                                </td>
-                            </tr>
+                                 </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                                     <i class="fas fa-file-alt text-3xl mb-3 text-gray-300"></i>
                                     <p>No papers submitted yet</p>
-                                </td>
-                            </tr>
+                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -434,7 +494,7 @@
         <!-- Export Options -->
         <div class="bg-white rounded-xl shadow p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Export Data</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <a href="{{ route('admin.export.registrations') }}" 
                    class="flex flex-col items-center justify-center p-6 bg-blue-50 rounded-lg hover:bg-blue-100 border border-blue-200">
                     <i class="fas fa-users text-3xl text-blue-600 mb-3"></i>
@@ -454,6 +514,13 @@
                     <i class="fas fa-clipboard-check text-3xl text-purple-600 mb-3"></i>
                     <span class="font-medium text-purple-800">Export Reviews</span>
                     <span class="text-sm text-purple-600 mt-1">All completed reviews</span>
+                </a>
+                
+                <a href="{{ route('chair.export.reviews') }}" 
+                   class="flex flex-col items-center justify-center p-6 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-200">
+                    <i class="fas fa-chart-line text-3xl text-indigo-600 mb-3"></i>
+                    <span class="font-medium text-indigo-800">Export Peer Review</span>
+                    <span class="text-sm text-indigo-600 mt-1">Reviewer comparison data</span>
                 </a>
             </div>
         </div>

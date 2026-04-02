@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-5xl mx-auto">
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
@@ -58,6 +58,7 @@
                             <span class="px-3 py-1 text-xs font-medium rounded-full 
                                 @if($paper->status == 'submitted') bg-blue-100 text-blue-800
                                 @elseif($paper->status == 'under_review') bg-yellow-100 text-yellow-800
+                                @elseif($paper->status == 'reviewed') bg-purple-100 text-purple-800
                                 @elseif($paper->status == 'accepted') bg-green-100 text-green-800
                                 @elseif($paper->status == 'rejected') bg-red-100 text-red-800
                                 @elseif($paper->status == 'needs_revision') bg-yellow-100 text-yellow-800
@@ -70,111 +71,262 @@
             </div>
         </div>
         
-        <!-- Reviews Summary -->
+        <!-- Reviews Summary with Scoring Criteria -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-6">Reviews Summary</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Peer Reviews Summary</h3>
+            <p class="text-sm text-gray-600 mb-6">Both reviewers have evaluated the paper based on 6 criteria (Total: 100 points)</p>
             
-            @if($paper->reviewAssignments->where('status', 'completed')->count() > 0)
-            <div class="space-y-6">
-                @foreach($paper->reviewAssignments->where('status', 'completed') as $review)
-                <div class="border rounded-lg p-4">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="font-medium text-gray-900">Reviewer {{ $loop->iteration }}</p>
-                            <p class="text-sm text-gray-500">{{ $review->reviewer->full_name }}</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-bold {{ $review->overall_score >= 4 ? 'text-green-600' : ($review->overall_score >= 3 ? 'text-yellow-600' : 'text-red-600') }}">
-                                {{ $review->overall_score }}/5
-                            </div>
-                            <div class="text-sm text-gray-500">
-                                {{ ucfirst(str_replace('_', ' ', $review->recommendation)) }}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    @if($review->summary)
-                    <div class="mt-3">
-                        <p class="text-sm font-medium text-gray-700 mb-1">Summary</p>
-                        <p class="text-sm text-gray-600">{{ Str::limit($review->summary, 200) }}</p>
-                    </div>
-                    @endif
-                    
-                    <!-- Show revision suggestions if present -->
-                    @if($review->revision_suggestions)
-                    <div class="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400">
-                        <p class="text-sm font-medium text-yellow-800 mb-1">Revision Suggestions</p>
-                        <p class="text-sm text-yellow-700">{{ $review->revision_suggestions }}</p>
-                    </div>
-                    @endif
-                    
-                    <div class="mt-3 flex space-x-3">
-                        <a href="{{ route('reviews.show', $review) }}" 
-                        class="text-sm text-blue-600 hover:text-blue-800">
-                            View Full Review
-                        </a>
-                        
-                        <!-- Show original review link if this is a revision -->
-                        @if($review->original_review_id)
-                        <span class="text-sm text-gray-400">|</span>
-                        <a href="{{ route('reviews.show', $review->original_review_id) }}" 
-                        class="text-sm text-green-600 hover:text-green-800">
-                            View Original Review
-                        </a>
-                        @endif
-                    </div>
+            @php
+                $completedReviews = $paper->reviewAssignments->where('status', 'completed');
+                $reviewCount = $completedReviews->count();
+            @endphp
+            
+            @if($reviewCount > 0)
+                <!-- Reviewers Comparison Table -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criteria</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Max</th>
+                                @foreach($completedReviews as $review)
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Reviewer {{ $loop->iteration }}
+                                </th>
+                                @endforeach
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">Average</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @php
+                                $criteria = [
+                                    'relevance' => ['label' => 'Relevance to Conference Theme', 'max' => 20],
+                                    'originality' => ['label' => 'Originality & Innovation', 'max' => 20],
+                                    'quality' => ['label' => 'Technical/Academic Quality', 'max' => 15],
+                                    'impact' => ['label' => 'Practical Impact & Applicability', 'max' => 15],
+                                    'clarity' => ['label' => 'Clarity & Organization', 'max' => 10],
+                                    'contribution' => ['label' => 'Contribution to Knowledge', 'max' => 10],
+                                ];
+                            @endphp
+                            
+                            @foreach($criteria as $key => $criterion)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                    {{ $criterion['label'] }}
+                                </td>
+                                <td class="px-4 py-3 text-center text-sm text-gray-500">
+                                    {{ $criterion['max'] }}
+                                </td>
+                                @foreach($completedReviews as $review)
+                                <td class="px-4 py-3 text-center">
+                                    @php
+                                        $score = $review->{'criteria_' . $key};
+                                        $percentage = $score ? round(($score / $criterion['max']) * 100) : 0;
+                                        $color = $percentage >= 80 ? 'text-green-600' : ($percentage >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                    @endphp
+                                    <span class="text-sm font-semibold {{ $color }}">
+                                        {{ $score ?? 'N/A' }}
+                                    </span>
+                                    <span class="text-xs text-gray-400">/{{ $criterion['max'] }}</span>
+                                </td>
+                                @endforeach
+                                <td class="px-4 py-3 text-center bg-gray-50">
+                                    @php
+                                        $scores = [];
+                                        foreach($completedReviews as $review) {
+                                            if($review->{'criteria_' . $key}) {
+                                                $scores[] = $review->{'criteria_' . $key};
+                                            }
+                                        }
+                                        $avgScore = !empty($scores) ? round(array_sum($scores) / count($scores), 1) : 0;
+                                        $avgPercentage = $avgScore ? round(($avgScore / $criterion['max']) * 100) : 0;
+                                        $avgColor = $avgPercentage >= 80 ? 'text-green-600' : ($avgPercentage >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                    @endphp
+                                    <span class="text-sm font-bold {{ $avgColor }}">{{ $avgScore }}</span>
+                                    <span class="text-xs text-gray-400">/{{ $criterion['max'] }}</span>
+                                </td>
+                            </tr>
+                            @endforeach
+                            
+                            <!-- Total Row -->
+                            <tr class="bg-gray-100 font-semibold">
+                                <td class="px-4 py-3 text-sm font-bold text-gray-900">TOTAL SCORE</td>
+                                <td class="px-4 py-3 text-center text-sm font-bold">100</td>
+                                @foreach($completedReviews as $review)
+                                <td class="px-4 py-3 text-center">
+                                    @php
+                                        $reviewTotal = ($review->criteria_relevance ?? 0) + 
+                                                       ($review->criteria_originality ?? 0) + 
+                                                       ($review->criteria_quality ?? 0) + 
+                                                       ($review->criteria_impact ?? 0) + 
+                                                       ($review->criteria_clarity ?? 0) + 
+                                                       ($review->criteria_contribution ?? 0);
+                                        $totalColor = $reviewTotal >= 80 ? 'text-green-600' : ($reviewTotal >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                    @endphp
+                                    <span class="text-lg font-bold {{ $totalColor }}">{{ $reviewTotal }}</span>
+                                    <span class="text-xs text-gray-400">/100</span>
+                                </td>
+                                @endforeach
+                                <td class="px-4 py-3 text-center bg-gray-100">
+                                    @php
+                                        $allTotals = [];
+                                        foreach($completedReviews as $review) {
+                                            $allTotals[] = ($review->criteria_relevance ?? 0) + 
+                                                          ($review->criteria_originality ?? 0) + 
+                                                          ($review->criteria_quality ?? 0) + 
+                                                          ($review->criteria_impact ?? 0) + 
+                                                          ($review->criteria_clarity ?? 0) + 
+                                                          ($review->criteria_contribution ?? 0);
+                                        }
+                                        $overallAvg = !empty($allTotals) ? round(array_sum($allTotals) / count($allTotals), 1) : 0;
+                                        $overallColor = $overallAvg >= 80 ? 'text-green-600' : ($overallAvg >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                    @endphp
+                                    <span class="text-lg font-bold {{ $overallColor }}">{{ $overallAvg }}</span>
+                                    <span class="text-xs text-gray-400">/100</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                @endforeach
                 
-                <!-- Revision Recommendations Summary -->
-                @if($paper->has_revision_recommendations)
-                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div class="flex items-start">
-                        <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
-                        <div>
-                            <p class="font-medium text-blue-800">Revision Recommendations Detected</p>
-                            <p class="text-sm text-blue-600 mt-1">
-                                {{ $paper->revision_recommendation_count }} out of {{ $paper->reviewAssignments->where('status', 'completed')->count() }} 
-                                reviewers have recommended revisions.
-                            </p>
-                            @if($paper->revision_recommendations_list->count() > 0)
-                            <div class="mt-2 text-sm text-blue-700">
-                                <strong>Common suggestions:</strong>
-                                <ul class="list-disc list-inside mt-1">
-                                    @foreach($paper->revision_recommendations_list->take(3) as $suggestion)
-                                    <li>{{ Str::limit($suggestion, 100) }}</li>
-                                    @endforeach
-                                </ul>
+                <!-- Individual Review Details -->
+                <div class="mt-8">
+                    <h4 class="text-md font-semibold text-gray-800 mb-4">Individual Review Details</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        @foreach($completedReviews as $review)
+                        <div class="border rounded-lg p-5 {{ $loop->iteration == 1 ? 'border-blue-200 bg-blue-50' : 'border-purple-200 bg-purple-50' }}">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded-full 
+                                        {{ $loop->iteration == 1 ? 'bg-blue-200 text-blue-800' : 'bg-purple-200 text-purple-800' }}">
+                                        Reviewer {{ $loop->iteration }}
+                                    </span>
+                                    <p class="text-sm text-gray-600 mt-2">{{ $review->reviewer->full_name }}</p>
+                                </div>
+                                @php
+                                    $reviewerTotal = ($review->criteria_relevance ?? 0) + 
+                                                     ($review->criteria_originality ?? 0) + 
+                                                     ($review->criteria_quality ?? 0) + 
+                                                     ($review->criteria_impact ?? 0) + 
+                                                     ($review->criteria_clarity ?? 0) + 
+                                                     ($review->criteria_contribution ?? 0);
+                                    $reviewerColor = $reviewerTotal >= 80 ? 'text-green-600' : ($reviewerTotal >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                @endphp
+                                <div class="text-right">
+                                    <span class="text-2xl font-bold {{ $reviewerColor }}">{{ $reviewerTotal }}</span>
+                                    <span class="text-sm text-gray-500">/100</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Score Breakdown -->
+                            <div class="space-y-2 mb-4">
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Relevance:</span>
+                                        <span class="font-medium">{{ $review->criteria_relevance ?? 0 }}/20</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Originality:</span>
+                                        <span class="font-medium">{{ $review->criteria_originality ?? 0 }}/20</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Quality:</span>
+                                        <span class="font-medium">{{ $review->criteria_quality ?? 0 }}/15</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Impact:</span>
+                                        <span class="font-medium">{{ $review->criteria_impact ?? 0 }}/15</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Clarity:</span>
+                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/10</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Contribution:</span>
+                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/10</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Recommendation -->
+                            @if($review->recommendation)
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <p class="text-sm font-medium text-gray-700">Recommendation:</p>
+                                <p class="text-sm {{ 
+                                    $review->recommendation == 'strong_accept' || $review->recommendation == 'accept' ? 'text-green-600' : 
+                                    ($review->recommendation == 'weak_reject' || $review->recommendation == 'reject' || $review->recommendation == 'strong_reject' ? 'text-red-600' : 'text-yellow-600') 
+                                }}">
+                                    {{ ucfirst(str_replace('_', ' ', $review->recommendation)) }}
+                                </p>
                             </div>
                             @endif
-                        </div>
-                    </div>
-                </div>
-                @endif
-                
-                <!-- Average Score -->
-                <div class="bg-gray-50 rounded-lg p-4 mt-6">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-medium text-gray-900">Overall Average Score</p>
-                            <p class="text-sm text-gray-500">Based on {{ $paper->reviewAssignments->where('status', 'completed')->count() }} completed reviews</p>
-                        </div>
-                        <div class="text-right">
-                            @php
-                                $avgScore = $paper->reviewAssignments->where('status', 'completed')->avg('overall_score');
-                            @endphp
-                            <div class="text-3xl font-bold {{ $avgScore >= 4 ? 'text-green-600' : ($avgScore >= 3 ? 'text-yellow-600' : 'text-red-600') }}">
-                                {{ number_format($avgScore, 1) }}/5
+                            
+                            <!-- Comments Summary -->
+                            @if($review->comments_author)
+                            <div class="mt-3">
+                                <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
+                                <p class="text-sm text-gray-600 line-clamp-3">{{ Str::limit($review->comments_author, 150) }}</p>
+                            </div>
+                            @endif
+                            
+                            <div class="mt-3">
+                                <a href="{{ route('reviews.show', $review) }}" 
+                                   class="text-sm text-blue-600 hover:text-blue-800">
+                                    View Full Review <i class="fas fa-arrow-right ml-1"></i>
+                                </a>
                             </div>
                         </div>
+                        @endforeach
                     </div>
                 </div>
-            </div>
+                
+                <!-- Overall Summary -->
+                <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Number of Reviews</p>
+                            <p class="text-2xl font-bold text-blue-600">{{ $reviewCount }}/2</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Average Total Score</p>
+                            <p class="text-2xl font-bold {{ $overallAvg >= 80 ? 'text-green-600' : ($overallAvg >= 60 ? 'text-yellow-600' : 'text-red-600') }}">
+                                {{ $overallAvg }}%
+                            </p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Reviewer Agreement</p>
+                            @php
+                                $scores = [];
+                                foreach($completedReviews as $review) {
+                                    $scores[] = ($review->criteria_relevance ?? 0) + 
+                                                 ($review->criteria_originality ?? 0) + 
+                                                 ($review->criteria_quality ?? 0) + 
+                                                 ($review->criteria_impact ?? 0) + 
+                                                 ($review->criteria_clarity ?? 0) + 
+                                                 ($review->criteria_contribution ?? 0);
+                                }
+                                $agreement = count($scores) == 2 ? abs($scores[0] - $scores[1]) : 0;
+                                $agreementStatus = $agreement <= 10 ? 'High' : ($agreement <= 20 ? 'Moderate' : 'Low');
+                            @endphp
+                            <p class="text-2xl font-bold {{ $agreement <= 10 ? 'text-green-600' : ($agreement <= 20 ? 'text-yellow-600' : 'text-red-600') }}">
+                                {{ $agreementStatus }}
+                            </p>
+                            <p class="text-xs text-gray-500">Difference: {{ $agreement }} pts</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600">Review Status</p>
+                            <p class="text-2xl font-bold text-purple-600">
+                                {{ $reviewCount == 2 ? 'Complete' : 'In Progress' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
             @else
             <div class="text-center py-8 text-gray-500">
                 <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
                 <p>No completed reviews available for decision.</p>
-                <p class="text-sm mt-2">Wait for reviewers to complete their reviews.</p>
+                <p class="text-sm mt-2">Wait for both reviewers to complete their reviews.</p>
             </div>
             @endif
         </div>
@@ -230,12 +382,13 @@
         
         <!-- Decision Form -->
         @php
-            $totalAssignments = $paper->reviewAssignments->count();
+            $totalAssignments = $paper->reviewAssignments->where('status', '!=', 'declined')->count();
             $completedAssignments = $paper->reviewAssignments->where('status', 'completed')->count();
             $allReviewsCompleted = ($totalAssignments > 0) && ($completedAssignments === $totalAssignments);
+            $hasBothReviews = ($completedAssignments >= 2);
         @endphp
 
-        @if($allReviewsCompleted)
+        @if($allReviewsCompleted && $hasBothReviews)
         <div class="bg-white rounded-xl shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-6">Make Decision</h3>
             
@@ -301,7 +454,7 @@
                     <!-- Decision Notes -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Decision Notes (Optional)
+                            Decision Notes
                         </label>
                         <textarea name="decision_notes" 
                                 rows="4"
@@ -325,9 +478,9 @@
             <i class="fas fa-clock text-3xl text-yellow-600 mb-4"></i>
             <h3 class="text-lg font-medium text-yellow-800 mb-2">Waiting for Reviews</h3>
             <p class="text-yellow-700 mb-4">
-                This paper has {{ $completedAssignments }}/{{ $totalAssignments }} completed reviews.
+                This paper has {{ $completedAssignments }}/2 completed reviews.
                 <br>
-                Wait for all assigned reviewers to complete their reviews before making a decision.
+                Wait for both reviewers to complete their reviews before making a decision.
             </p>
             
             @if($totalAssignments === 0)
@@ -412,7 +565,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // For revise decision, ensure deadline is set
             if (selectedDecision.value === 'revise') {
-                // Make sure field is enabled so its value is submitted
                 revisionDeadlineInput.disabled = false;
                 
                 if (!revisionDeadlineInput.value) {
@@ -423,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Log that we're allowing submission
             console.log('Form submission allowed');
             return true;
         });
@@ -446,5 +597,14 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 });
 </script>
+
+<style>
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
 
 @endsection
