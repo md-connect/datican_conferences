@@ -40,43 +40,56 @@
                 <!-- Suggested Reviewers -->
                 <div class="bg-white rounded-xl shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Suggested Reviewers</h3>
-                    <p class="text-sm text-gray-600 mb-4">Based on expertise matching and availability</p>
+                    <p class="text-sm text-gray-600 mb-4">Based on expertise matching and availability (100-point scale)</p>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
                         @forelse($suggestedReviewers as $suggestion)
                         <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                                    <span class="text-sm font-medium text-blue-700">
-                                        @if(isset($suggestion['reviewer']['first_name']) && isset($suggestion['reviewer']['last_name']))
-                                            {{ strtoupper(substr($suggestion['reviewer']['first_name'], 0, 1) . substr($suggestion['reviewer']['last_name'], 0, 1)) }}
-                                        @else
-                                            {{ strtoupper(substr($suggestion['reviewer']['full_name'] ?? '', 0, 1)) }}
-                                        @endif
-                                    </span>
-                                </div>
-                                <div>
-                                    <div class="font-medium text-gray-900">
-                                        @if(isset($suggestion['reviewer']['full_name']))
-                                            {{ $suggestion['reviewer']['full_name'] }}
-                                        @elseif(isset($suggestion['reviewer']['first_name']) && isset($suggestion['reviewer']['last_name']))
-                                            {{ $suggestion['reviewer']['first_name'] }} {{ $suggestion['reviewer']['last_name'] }}
-                                        @else
-                                            Unknown Reviewer
-                                        @endif
+                            <div class="flex-1">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                        <span class="text-sm font-medium text-blue-700">
+                                            {{ strtoupper(substr($suggestion['first_name'] ?? '', 0, 1) . substr($suggestion['last_name'] ?? '', 0, 1)) }}
+                                        </span>
                                     </div>
-                                    <div class="text-sm text-gray-500">{{ $suggestion['reviewer']['email'] ?? '' }}</div>
-                                    <div class="flex items-center mt-1">
-                                        <span class="text-xs px-2 py-1 bg-gray-100 rounded mr-2">Score: {{ number_format($suggestion['total_score'] ?? 0, 2) }}</span>
-                                        <span class="text-xs px-2 py-1 bg-gray-100 rounded">Load: {{ $suggestion['current_load'] ?? 0 }}</span>
+                                    <div>
+                                        <div class="font-medium text-gray-900">{{ $suggestion['full_name'] ?? 'Unknown Reviewer' }}</div>
+                                        <div class="text-sm text-gray-500">{{ $suggestion['email'] ?? '' }}</div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-xs px-2 py-1 rounded-full 
+                                                {{ ($suggestion['match_score'] ?? 0) >= 80 ? 'bg-green-100 text-green-800' : 
+                                                (($suggestion['match_score'] ?? 0) >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+                                                Score: {{ number_format($suggestion['match_score'] ?? 0, 0) }}%
+                                            </span>
+                                            <span class="text-xs px-2 py-1 bg-gray-100 rounded-full">
+                                                Load: {{ $suggestion['assigned_count'] ?? 0 }}/10
+                                            </span>
+                                            @if(isset($suggestion['expertise_score']))
+                                            <span class="text-xs px-2 py-1 bg-purple-100 rounded-full">
+                                                Expertise: {{ $suggestion['expertise_score'] ?? 0 }}%
+                                            </span>
+                                            @endif
+                                        </div>
+                                        @if(isset($suggestion['expertise']) && count($suggestion['expertise']) > 0)
+                                        <div class="flex flex-wrap gap-1 mt-2">
+                                            @foreach($suggestion['expertise']->take(2) as $exp)
+                                            <span class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">{{ $exp['name'] }}</span>
+                                            @endforeach
+                                            @if(count($suggestion['expertise']) > 2)
+                                            <span class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">+{{ count($suggestion['expertise']) - 2 }}</span>
+                                            @endif
+                                        </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
-                            <input type="checkbox" 
-                                   name="reviewer_ids[]" 
-                                   value="{{ $suggestion['reviewer']['id'] ?? 0 }}" 
-                                   id="reviewer_{{ $suggestion['reviewer']['id'] ?? 0 }}"
-                                   class="rounded text-blue-600">
+                            <div class="ml-3">
+                                <input type="checkbox" 
+                                    name="reviewer_ids[]" 
+                                    value="{{ $suggestion['id'] ?? 0 }}" 
+                                    id="reviewer_{{ $suggestion['id'] ?? 0 }}"
+                                    class="rounded text-blue-600 w-5 h-5">
+                            </div>
                         </div>
                         @empty
                         <p class="text-gray-500 text-center p-4">No suggestions available. Use manual selection below.</p>
