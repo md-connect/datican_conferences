@@ -312,8 +312,7 @@ class AssignmentService
     public function suggestReviewers(Paper $paper, int $limit = 10): Collection
     {
         // Get all reviewers (users with is_reviewer = true)
-        $reviewers = User::where('is_admin', false)
-            ->where('is_reviewer', true)  // Make sure we only get reviewers
+        $reviewers = User::where('is_reviewer', true)  // Make sure we only get reviewers
             ->with(['expertise', 'reviewAssignments' => function($q) use ($paper) {
                 $q->where('paper_id', $paper->id)
                     ->orWhere(function($query) {

@@ -202,8 +202,7 @@ class AssignmentController extends Controller
         $suggestedReviewers = $this->assignmentService->suggestReviewers($paper, 10);
         
         // Get all available reviewers - ONLY users marked as reviewers
-        $reviewers = User::where('is_admin', false)
-            ->where('is_reviewer', true)
+        $reviewers = User::where('is_reviewer', true)
             ->where('id', '!=', Auth::id())
             ->with(['expertise', 'reviewAssignments' => function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
