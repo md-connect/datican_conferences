@@ -25,7 +25,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-600">Current Assignments</p>
-                    <p class="font-medium">{{ $paper->reviews->whereIn('status', ['pending', 'accepted'])->count() }}/3 reviewers</p>
+                    <p class="font-medium">{{ $paper->reviews->whereIn('status', ['pending', 'accepted'])->count() }}/2 reviewers</p>
                 </div>
             </div>
         </div>
