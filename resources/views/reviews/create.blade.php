@@ -187,7 +187,7 @@
                         </div>
                     </div>
                     
-                    <!-- 5. Clarity & Organization (10) -->
+                    <!-- 5. Clarity & Organization (15) -->
                     <div class="border-b pb-6">
                         <div class="flex justify-between items-start mb-3">
                             <div>
@@ -196,7 +196,7 @@
                                 </label>
                                 <p class="text-sm text-gray-500">Structure, writing quality, and presentation</p>
                             </div>
-                            <span class="text-sm font-semibold text-gray-600">Max: 10</span>
+                            <span class="text-sm font-semibold text-gray-600">Max: 15</span>
                         </div>
                         <input type="number" 
                                name="criteria_clarity" 
@@ -209,14 +209,14 @@
                                class="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                                onchange="updateTotalScore()">
                         <div class="mt-2 text-xs text-gray-500 space-y-1">
-                            <p>• <strong>8-10:</strong> Very clear and well-structured</p>
-                            <p>• <strong>5-7:</strong> Generally clear</p>
-                            <p>• <strong>2-4:</strong> Somewhat unclear</p>
-                            <p>• <strong>0-1:</strong> Poorly organized</p>
+                            <p>• <strong>12-15:</strong> Very clear and well-structured</p>
+                            <p>• <strong>8-11:</strong> Generally clear</p>
+                            <p>• <strong>4-7:</strong> Somewhat unclear</p>
+                            <p>• <strong>0-3:</strong> Poorly organized</p>
                         </div>
                     </div>
                     
-                    <!-- 6. Contribution to Knowledge (10) -->
+                    <!-- 6. Contribution to Knowledge (15) -->
                     <div class="pb-2">
                         <div class="flex justify-between items-start mb-3">
                             <div>
@@ -225,7 +225,7 @@
                                 </label>
                                 <p class="text-sm text-gray-500">Advances the field and adds new insights</p>
                             </div>
-                            <span class="text-sm font-semibold text-gray-600">Max: 10</span>
+                            <span class="text-sm font-semibold text-gray-600">Max: 15</span>
                         </div>
                         <input type="number" 
                                name="criteria_contribution" 
@@ -238,10 +238,10 @@
                                class="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                                onchange="updateTotalScore()">
                         <div class="mt-2 text-xs text-gray-500 space-y-1">
-                            <p>• <strong>8-10:</strong> Excellent contribution</p>
-                            <p>• <strong>5-7:</strong> Moderate contribution</p>
-                            <p>• <strong>2-4:</strong> Fair contribution</p>
-                            <p>• <strong>0-1:</strong> Very weak contribution</p>
+                            <p>• <strong>12-15:</strong> Excellent contribution</p>
+                            <p>• <strong>8-11:</strong> Moderate contribution</p>
+                            <p>• <strong>4-7:</strong> Fair contribution</p>
+                            <p>• <strong>0-3:</strong> Very weak contribution</p>
                         </div>
                     </div>
                 </div>
