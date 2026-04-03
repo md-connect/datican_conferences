@@ -129,6 +129,13 @@
                     <span class="font-medium text-indigo-800">Export Peer Review</span>
                     <span class="text-sm text-indigo-600 mt-1">Both reviewers comparison</span>
                 </a>
+
+                <a href="{{ route('assignments.all') }}" 
+                    class="flex flex-col items-center justify-center p-6 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-200">
+                    <i class="fas fa-list-alt text-3xl text-indigo-600 mb-3"></i>
+                    <span class="font-medium text-indigo-800">All Assignments</span>
+                    <span class="text-sm text-indigo-600 mt-1">View & Export</span>
+                </a>
             </div>
         </div>
         

@@ -130,6 +130,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/chair/reviews', [ChairController::class, 'reviews'])->name('chair.reviews');
         Route::get('/chair/reviewers', [ChairController::class, 'reviewers'])->name('chair.reviewers');
 
+        // View all assignments
+        Route::get('/assignments/all', [AssignmentController::class, 'allAssignments'])->name('assignments.all');
+        
+        // Export all assignments
+        Route::get('/assignments/export', [AssignmentController::class, 'exportAssignments'])->name('assignments.export');
+        
+        Route::post('/assignments/{assignment}/remind', [AssignmentController::class, 'sendReminder'])->name('assignments.remind');
         // ========== NEW: Conference Registrations Views ==========
         Route::get('/chair/registrations', [ChairController::class, 'registrations'])->name('chair.registrations');
         

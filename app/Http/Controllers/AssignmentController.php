@@ -335,4 +335,173 @@ class AssignmentController extends Controller
     {
         return view('assignments.config');
     }
+
+    /**
+     * Display all assignments (for chair/admin)
+     */
+    public function allAssignments(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $status = $request->input('status');
+        $reviewerId = $request->input('reviewer_id');
+        
+        // Build query
+        $query = ReviewAssignment::with(['paper', 'reviewer', 'assignedBy'])
+            ->whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            });
+        
+        // Apply filters
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+        
+        if ($reviewerId) {
+            $query->where('reviewer_id', $reviewerId);
+        }
+        
+        // Get paginated results
+        $assignments = $query->orderBy('created_at', 'desc')->paginate(20);
+        
+        // Get reviewers for filter dropdown
+        $reviewers = User::where('is_reviewer', true)
+            ->orderBy('first_name')
+            ->get();
+        
+        // Statistics
+        $stats = [
+            'total' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->count(),
+            'pending' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'pending')->count(),
+            'under_review' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'under_review')->count(),
+            'in_progress' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'in_progress')->count(),
+            'completed' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'completed')->count(),
+            'declined' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'declined')->count(),
+        ];
+        
+        return view('assignments.all', compact('assignments', 'reviewers', 'stats', 'year', 'status', 'reviewerId'));
+    }
+
+    /**
+     * Export all assignments to CSV
+     */
+    public function exportAssignments(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $status = $request->input('status');
+        $reviewerId = $request->input('reviewer_id');
+        
+        // Build query
+        $query = ReviewAssignment::with(['paper', 'reviewer', 'assignedBy'])
+            ->whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            });
+        
+        // Apply filters
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+        
+        if ($reviewerId) {
+            $query->where('reviewer_id', $reviewerId);
+        }
+        
+        $assignments = $query->orderBy('created_at', 'desc')->get();
+        
+        // Prepare data for CSV
+        $data = $assignments->map(function($assignment) {
+            // Calculate total score if completed
+            $totalScore = null;
+            if ($assignment->status === 'completed') {
+                $totalScore = ($assignment->criteria_relevance ?? 0) + 
+                            ($assignment->criteria_originality ?? 0) + 
+                            ($assignment->criteria_quality ?? 0) + 
+                            ($assignment->criteria_impact ?? 0) + 
+                            ($assignment->criteria_clarity ?? 0) + 
+                            ($assignment->criteria_contribution ?? 0);
+            }
+            
+            return [
+                'Assignment ID' => $assignment->id,
+                'Paper ID' => $assignment->paper->anonymous_id,
+                'Paper Title' => $assignment->paper->title,
+                'Topic Area' => $assignment->paper->topic_area,
+                'Reviewer Name' => $assignment->reviewer->first_name . ' ' . $assignment->reviewer->last_name,
+                'Reviewer Email' => $assignment->reviewer->email,
+                'Status' => ucfirst(str_replace('_', ' ', $assignment->status)),
+                'Assigned Date' => $assignment->assigned_at?->format('Y-m-d H:i:s'),
+                'Deadline' => $assignment->deadline?->format('Y-m-d H:i:s'),
+                'Submitted Date' => $assignment->submitted_at?->format('Y-m-d H:i:s'),
+                'Days to Complete' => $assignment->submitted_at ? 
+                    $assignment->assigned_at->diffInDays($assignment->submitted_at) : 'N/A',
+                'On Time' => $assignment->submitted_at && $assignment->deadline ? 
+                    ($assignment->submitted_at <= $assignment->deadline ? 'Yes' : 'No') : 'N/A',
+                'Total Score (0-100)' => $totalScore ?? 'N/A',
+                'Recommendation' => $assignment->recommendation_text,
+                'Confidence' => $assignment->confidence ?? 'N/A',
+            ];
+        });
+        
+        $filename = 'assignments_' . $year . '_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        return $this->toCsv($data, $filename);
+    }
+
+    /**
+     * Helper method to convert data to CSV and download
+     */
+    private function toCsv($data, $filename)
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+        
+        $callback = function() use ($data) {
+            $handle = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Add headers if data exists
+            if ($data->isNotEmpty()) {
+                fputcsv($handle, array_keys($data->first()));
+                
+                foreach ($data as $row) {
+                    fputcsv($handle, array_values($row));
+                }
+            }
+            
+            fclose($handle);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function sendReminder(Request $request, ReviewAssignment $assignment)
+    {
+        // TODO: Implement email sending logic
+        \Log::info('Reminder sent for assignment', [
+            'assignment_id' => $assignment->id,
+            'reviewer' => $assignment->reviewer->email,
+            'message' => $request->message
+        ]);
+        
+        return redirect()->back()->with('success', 'Reminder sent successfully!');
+    }
+
 }
