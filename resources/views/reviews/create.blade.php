@@ -54,6 +54,11 @@
                     </span>
                 </div>
             </div>
+
+            <div class="mt-4">
+                <p class="text-sm text-gray-600">Abstract</p>
+                <p class="font-medium">{{ $paper->abstract }}</p>
+            </div>
         </div>
         
         <!-- Review Form -->
@@ -64,6 +69,70 @@
             @endif
             
             <input type="hidden" name="paper_id" value="{{ $paper->id }}">
+            
+            <!-- Detailed Comments Section -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Detailed Comments</h3>
+                <p class="text-sm text-gray-600 mb-6">Provide detailed feedback for the authors</p>
+                
+                <div class="space-y-6">
+                    <!-- Comments for Authors -->
+                    <div>
+                        <label for="comments_author" class="block text-sm font-medium text-gray-700 mb-2">
+                            Comments for Authors *
+                        </label>
+                        <textarea id="comments_author" name="comments_author" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Provide constructive feedback for the authors..."
+                                  required>{{ isset($review) ? $review->comments_author : '' }}</textarea>
+                        <div class="flex justify-between items-center mt-1">
+                            <p class="text-sm text-gray-500">Be constructive and specific. This feedback will be sent to the authors.</p>
+                            <div id="author-chars" class="text-sm text-gray-500"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Strengths -->
+                    <div>
+                        <label for="strengths" class="block text-sm font-medium text-gray-700 mb-2">
+                            Strengths
+                        </label>
+                        <textarea id="strengths" name="strengths" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="What are the main strengths of this paper?">{{ isset($review) ? $review->strengths : '' }}</textarea>
+                    </div>
+                    
+                    <!-- Weaknesses -->
+                    <div>
+                        <label for="weaknesses" class="block text-sm font-medium text-gray-700 mb-2">
+                            Weaknesses and Areas for Improvement
+                        </label>
+                        <textarea id="weaknesses" name="weaknesses" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="What are the main weaknesses or limitations?">{{ isset($review) ? $review->weaknesses : '' }}</textarea>
+                    </div>
+                    
+                    <!-- Suggestions -->
+                    <div>
+                        <label for="suggestions" class="block text-sm font-medium text-gray-700 mb-2">
+                            Suggestions for Improvement
+                        </label>
+                        <textarea id="suggestions" name="suggestions" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Specific suggestions to improve the paper...">{{ isset($review) ? $review->suggestions : '' }}</textarea>
+                    </div>
+                    
+                    <!-- Confidential Comments for Chairs -->
+                    <div>
+                        <label for="comments_chair" class="block text-sm font-medium text-gray-700 mb-2">
+                            Confidential Comments for Chairs
+                        </label>
+                        <textarea id="comments_chair" name="comments_chair" rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Any confidential comments for program chairs (authors won't see this)...">{{ isset($review) ? $review->comments_chair : '' }}</textarea>
+                        <p class="mt-1 text-sm text-gray-500">These comments are confidential and will only be seen by program chairs.</p>
+                    </div>
+                </div>
+            </div>
             
             <!-- Scoring Criteria Section -->
             <div class="bg-white rounded-xl shadow-md p-6">
@@ -211,8 +280,8 @@
                         <div class="mt-2 text-xs text-gray-500 space-y-1">
                             <p>• <strong>12-15:</strong> Very clear and well-structured</p>
                             <p>• <strong>8-11:</strong> Generally clear</p>
-                            <p>• <strong>4-7:</strong> Somewhat unclear</p>
-                            <p>• <strong>0-3:</strong> Poorly organized</p>
+                            <p>• <strong>5-7:</strong> Somewhat unclear</p>
+                            <p>• <strong>0-4:</strong> Poorly organized</p>
                         </div>
                     </div>
                     
@@ -240,8 +309,8 @@
                         <div class="mt-2 text-xs text-gray-500 space-y-1">
                             <p>• <strong>12-15:</strong> Excellent contribution</p>
                             <p>• <strong>8-11:</strong> Moderate contribution</p>
-                            <p>• <strong>4-7:</strong> Fair contribution</p>
-                            <p>• <strong>0-3:</strong> Very weak contribution</p>
+                            <p>• <strong>5-7:</strong> Fair contribution</p>
+                            <p>• <strong>0-4:</strong> Very weak contribution</p>
                         </div>
                     </div>
                 </div>
@@ -266,25 +335,9 @@
                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                         Back to My Reviews
                     </a>
-                    @if($review->exists)
-                    <a href="{{ route('papers.show', $paper) }}" 
-                       target="_blank"
-                       class="ml-4 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                        View Paper
-                    </a>
-                    @endif
                 </div>
                 
                 <div class="space-x-4">
-                    @if($review->exists && $review->status !== 'completed')
-                    <button type="submit" 
-                            name="save_draft" 
-                            value="1"
-                            class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
-                        <i class="fas fa-save mr-2"></i>Save as Draft
-                    </button>
-                    @endif
-                    
                     <button type="submit" 
                             name="submit_review" 
                             value="1"
@@ -331,6 +384,20 @@
 </div>
 
 <script>
+    // Character counter for comments_author
+    const authorTextarea = document.getElementById('comments_author');
+    const authorCharsDiv = document.getElementById('author-chars');
+    
+    function updateCharacterCount() {
+        const length = authorTextarea.value.length;
+        authorCharsDiv.innerHTML = `Characters: <span class="font-medium ${length < 50 ? 'text-red-600' : 'text-green-600'}">${length}</span>`;
+    }
+    
+    if (authorTextarea && authorCharsDiv) {
+        authorTextarea.addEventListener('input', updateCharacterCount);
+        updateCharacterCount(); // Initial call
+    }
+    
     // Total score calculation
     function updateTotalScore() {
         const relevance = parseInt(document.getElementById('criteria_relevance').value) || 0;
@@ -382,7 +449,8 @@
                 return true;
             }
             
-            // Validate for final submission - only check criteria
+            // Validate for final submission
+            const commentsAuthor = document.getElementById('comments_author').value;
             const relevance = document.getElementById('criteria_relevance').value;
             const originality = document.getElementById('criteria_originality').value;
             const quality = document.getElementById('criteria_quality').value;
@@ -391,6 +459,9 @@
             const contribution = document.getElementById('criteria_contribution').value;
             
             let errors = [];
+            
+            // Validate comments for authors
+            
             
             // Validate each criterion
             if (relevance === '') errors.push('Please enter a score for Relevance to Conference Theme.');

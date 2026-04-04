@@ -129,13 +129,21 @@ class ReviewController extends Controller
 
         if (!$isDraft) {
             $rules += [
-                // NEW SCORING CRITERIA ONLY
+                // Detailed Comments (Required)
+                'comments_author' => 'required|string|min:50',
+                'strengths' => 'nullable|string',
+                'weaknesses' => 'nullable|string',
+                'suggestions' => 'nullable|string',
+                'revision_suggestions' => 'nullable|string|max:2000',
+                'comments_chair' => 'nullable|string',
+                
+                // Scoring Criteria
                 'criteria_relevance' => 'required|integer|min:0|max:20',
                 'criteria_originality' => 'required|integer|min:0|max:20',
                 'criteria_quality' => 'required|integer|min:0|max:15',
                 'criteria_impact' => 'required|integer|min:0|max:15',
-                'criteria_clarity' => 'required|integer|min:0|max:15',
-                'criteria_contribution' => 'required|integer|min:0|max:15',
+                'criteria_clarity' => 'required|integer|min:0|max:10',
+                'criteria_contribution' => 'required|integer|min:0|max:10',
             ];
         }
 
@@ -163,7 +171,27 @@ class ReviewController extends Controller
         // Prepare update data
         $updateData = [];
         
-        // NEW CRITERIA FIELDS
+        // DETAILED COMMENTS FIELDS
+        if ($request->has('comments_author')) {
+            $updateData['comments_author'] = $request->comments_author;
+        }
+        if ($request->has('strengths')) {
+            $updateData['strengths'] = $request->strengths;
+        }
+        if ($request->has('weaknesses')) {
+            $updateData['weaknesses'] = $request->weaknesses;
+        }
+        if ($request->has('suggestions')) {
+            $updateData['suggestions'] = $request->suggestions;
+        }
+        if ($request->has('revision_suggestions')) {
+            $updateData['revision_suggestions'] = $request->revision_suggestions;
+        }
+        if ($request->has('comments_chair')) {
+            $updateData['comments_chair'] = $request->comments_chair;
+        }
+        
+        // SCORING CRITERIA FIELDS
         if ($request->has('criteria_relevance')) {
             $updateData['criteria_relevance'] = $request->criteria_relevance;
         }
@@ -187,6 +215,13 @@ class ReviewController extends Controller
             $updateData['total_score'] = $totalScore;
         }
         
+        // Add revision tracking
+        if ($request->is_revision_review) {
+            $updateData['is_revision_review'] = true;
+            $updateData['original_review_id'] = $request->original_review_id;
+            $updateData['paper_version'] = $paper->version ?? 1;
+        }
+        
         // Determine if it's a draft or final submission
         if ($isDraft) {
             $updateData['status'] = 'in_progress';
@@ -200,6 +235,13 @@ class ReviewController extends Controller
             $paper->checkAllReviewsCompleted();
             
             $message = 'Review submitted successfully!';
+            
+            // Add revision-specific message
+            if ($request->is_revision_review) {
+                $message = 'Revision review submitted successfully!';
+            } elseif (!empty($request->revision_suggestions)) {
+                $message = 'Review submitted with revision suggestions. The chair will review these suggestions.';
+            }
         }
         
         // Update the review assignment
@@ -316,6 +358,16 @@ class ReviewController extends Controller
         // Determine if it's a draft based on which button was clicked
         $isDraft = $request->has('save_draft') && $request->save_draft == '1';
 
+        // Log for debugging
+        \Log::info('Update request', [
+            'review_id' => $review->id,
+            'has_save_draft' => $request->has('save_draft'),
+            'save_draft_value' => $request->input('save_draft'),
+            'has_submit' => $request->has('submit_review'),
+            'isDraft' => $isDraft,
+            'all_input' => $request->all()
+        ]);
+
         $rules = [
             'is_revision_review' => 'nullable|boolean',
             'original_review_id' => 'nullable|exists:review_assignments,id',
@@ -323,13 +375,21 @@ class ReviewController extends Controller
 
         if (!$isDraft) {
             $rules += [
-                // NEW SCORING CRITERIA ONLY
+                // Detailed Comments (Required)
+                'comments_author' => 'required|string',
+                'strengths' => 'nullable|string',
+                'weaknesses' => 'nullable|string',
+                'suggestions' => 'nullable|string',
+                'revision_suggestions' => 'nullable|string|max:2000',
+                'comments_chair' => 'nullable|string',
+                
+                // Scoring Criteria
                 'criteria_relevance' => 'required|integer|min:0|max:20',
                 'criteria_originality' => 'required|integer|min:0|max:20',
                 'criteria_quality' => 'required|integer|min:0|max:15',
                 'criteria_impact' => 'required|integer|min:0|max:15',
-                'criteria_clarity' => 'required|integer|min:0|max:15',
-                'criteria_contribution' => 'required|integer|min:0|max:15',
+                'criteria_clarity' => 'required|integer|min:0|max:10',
+                'criteria_contribution' => 'required|integer|min:0|max:10',
             ];
         }
 
@@ -351,7 +411,27 @@ class ReviewController extends Controller
         // Prepare update data
         $updateData = [];
         
-        // NEW CRITERIA FIELDS
+        // DETAILED COMMENTS FIELDS
+        if ($request->has('comments_author')) {
+            $updateData['comments_author'] = $request->comments_author;
+        }
+        if ($request->has('strengths')) {
+            $updateData['strengths'] = $request->strengths;
+        }
+        if ($request->has('weaknesses')) {
+            $updateData['weaknesses'] = $request->weaknesses;
+        }
+        if ($request->has('suggestions')) {
+            $updateData['suggestions'] = $request->suggestions;
+        }
+        if ($request->has('revision_suggestions')) {
+            $updateData['revision_suggestions'] = $request->revision_suggestions;
+        }
+        if ($request->has('comments_chair')) {
+            $updateData['comments_chair'] = $request->comments_chair;
+        }
+        
+        // SCORING CRITERIA FIELDS
         if ($request->has('criteria_relevance')) {
             $updateData['criteria_relevance'] = $request->criteria_relevance;
         }
@@ -375,6 +455,13 @@ class ReviewController extends Controller
             $updateData['total_score'] = $totalScore;
         }
         
+        // Add revision tracking
+        if ($request->is_revision_review) {
+            $updateData['is_revision_review'] = true;
+            $updateData['original_review_id'] = $request->original_review_id;
+            $updateData['paper_version'] = $paper->version ?? 1;
+        }
+        
         // Determine if it's a draft or final submission based on the button clicked
         if ($isDraft) {
             $updateData['status'] = 'in_progress';
@@ -388,6 +475,13 @@ class ReviewController extends Controller
             $paper->checkAllReviewsCompleted();
             
             $message = 'Review submitted successfully!';
+            
+            // Add revision-specific message
+            if ($request->is_revision_review) {
+                $message = 'Revision review submitted successfully!';
+            } elseif (!empty($request->revision_suggestions)) {
+                $message = 'Review updated with revision suggestions. The chair will review these suggestions.';
+            }
         }
         
         // Update the review assignment
@@ -495,7 +589,7 @@ class ReviewController extends Controller
                 // Update paper status to indicate all reviews are complete
                 $paper->update([
                     'all_reviews_completed' => true,
-                    'status' => 'reviewed' // Optional: set to reviewed status
+                    'status' => 'reviewed'
                 ]);
             }
         }

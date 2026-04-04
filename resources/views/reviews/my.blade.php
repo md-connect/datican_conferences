@@ -168,7 +168,7 @@
                                                 <i class="fas fa-times mr-1"></i> Decline
                                             </button>
                                         </form>
-                                    @elseif($review->status === 'under_review') <!-- CHANGED from 'accepted' -->
+                                    @elseif($review->status === 'under_review') 
                                         <a href="{{ route('reviews.edit', $review) }}" 
                                         class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 hover-lift transition duration-300 flex items-center">
                                             <i class="fas fa-play mr-1"></i> Start Review

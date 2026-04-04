@@ -334,29 +334,29 @@
         @endif
 
         @if($paper->decision == 'revise' && $paper->revision_deadline)
-<div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-    <div class="flex items-center">
-        <i class="fas fa-calendar-exclamation text-yellow-600 mr-3"></i>
-        <div>
-            <p class="font-medium text-yellow-800">Revision Required</p>
-            <p class="text-sm text-yellow-700">
-                Authors must submit revised version by: 
-                <span class="font-bold">{{ $paper->revision_deadline->format('F d, Y') }}</span>
-            </p>
-            @if($paper->revision_deadline->isPast())
-            <p class="text-sm text-red-600 mt-1">
-                <i class="fas fa-exclamation-triangle mr-1"></i>
-                Revision deadline has passed
-            </p>
-            @else
-            <p class="text-sm text-green-600 mt-1">
-                {{ $paper->revision_deadline->diffForHumans() }} remaining
-            </p>
-            @endif
+        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="flex items-center">
+                <i class="fas fa-calendar-exclamation text-yellow-600 mr-3"></i>
+                <div>
+                    <p class="font-medium text-yellow-800">Revision Required</p>
+                    <p class="text-sm text-yellow-700">
+                        Authors must submit revised version by: 
+                        <span class="font-bold">{{ $paper->revision_deadline->format('F d, Y') }}</span>
+                    </p>
+                    @if($paper->revision_deadline->isPast())
+                    <p class="text-sm text-red-600 mt-1">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Revision deadline has passed
+                    </p>
+                    @else
+                    <p class="text-sm text-green-600 mt-1">
+                        {{ $paper->revision_deadline->diffForHumans() }} remaining
+                    </p>
+                    @endif
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-@endif
+        @endif
 
         <!-- Admin Actions (Only for admins) -->
         @if(auth()->user()->is_admin)

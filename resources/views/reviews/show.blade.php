@@ -222,62 +222,62 @@
                     @endif
                 </div>
                 
-                <!-- Clarity & Organization (10) -->
+                <!-- Clarity & Organization (15) -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <div>
                             <span class="font-medium text-gray-800">5. Clarity & Organization</span>
-                            <span class="text-sm text-gray-500 ml-2">(10 points max)</span>
+                            <span class="text-sm text-gray-500 ml-2">(15 points max)</span>
                         </div>
                         <span class="text-lg font-bold 
-                            {{ ($review->criteria_clarity ?? 0) >= 8 ? 'text-green-600' : 
-                               (($review->criteria_clarity ?? 0) >= 5 ? 'text-yellow-600' : 'text-red-600') }}">
-                            {{ $review->criteria_clarity ?? 'N/A' }}/10
+                            {{ ($review->criteria_clarity ?? 0) >= 12 ? 'text-green-600' : 
+                               (($review->criteria_clarity ?? 0) >= 8 ? 'text-yellow-600' : 'text-red-600') }}">
+                            {{ $review->criteria_clarity ?? 'N/A' }}/15
                         </span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="h-2 rounded-full 
-                            {{ ($review->criteria_clarity ?? 0) >= 8 ? 'bg-green-600' : 
-                               (($review->criteria_clarity ?? 0) >= 5 ? 'bg-yellow-600' : 'bg-red-600') }}" 
-                            style="width: {{ (($review->criteria_clarity ?? 0) / 10) * 100 }}%">
+                            {{ ($review->criteria_clarity ?? 0) >= 12 ? 'bg-green-600' : 
+                               (($review->criteria_clarity ?? 0) >= 8 ? 'bg-yellow-600' : 'bg-red-600') }}" 
+                            style="width: {{ (($review->criteria_clarity ?? 0) / 15) * 100 }}%">
                         </div>
                     </div>
                     @if($review->criteria_clarity)
                     <p class="text-xs text-gray-500 mt-1">
-                        @if($review->criteria_clarity >= 8) Very clear and well-structured
-                        @elseif($review->criteria_clarity >= 5) Generally clear
-                        @elseif($review->criteria_clarity >= 2) Somewhat unclear
+                        @if($review->criteria_clarity >= 12) Very clear and well-structured
+                        @elseif($review->criteria_clarity >= 8) Generally clear
+                        @elseif($review->criteria_clarity >= 5) Somewhat unclear
                         @else Poorly organized
                         @endif
                     </p>
                     @endif
                 </div>
                 
-                <!-- Contribution to Knowledge (10) -->
+                <!-- Contribution to Knowledge (15) -->
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <div>
                             <span class="font-medium text-gray-800">6. Contribution to Knowledge</span>
-                            <span class="text-sm text-gray-500 ml-2">(10 points max)</span>
+                            <span class="text-sm text-gray-500 ml-2">(15 points max)</span>
                         </div>
                         <span class="text-lg font-bold 
-                            {{ ($review->criteria_contribution ?? 0) >= 8 ? 'text-green-600' : 
-                               (($review->criteria_contribution ?? 0) >= 5 ? 'text-yellow-600' : 'text-red-600') }}">
-                            {{ $review->criteria_contribution ?? 'N/A' }}/10
+                            {{ ($review->criteria_contribution ?? 0) >= 12 ? 'text-green-600' : 
+                               (($review->criteria_contribution ?? 0) >= 8 ? 'text-yellow-600' : 'text-red-600') }}">
+                            {{ $review->criteria_contribution ?? 'N/A' }}/15
                         </span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="h-2 rounded-full 
-                            {{ ($review->criteria_contribution ?? 0) >= 8 ? 'bg-green-600' : 
-                               (($review->criteria_contribution ?? 0) >= 5 ? 'bg-yellow-600' : 'bg-red-600') }}" 
-                            style="width: {{ (($review->criteria_contribution ?? 0) / 10) * 100 }}%">
+                            {{ ($review->criteria_contribution ?? 0) >= 12 ? 'bg-green-600' : 
+                               (($review->criteria_contribution ?? 0) >= 8 ? 'bg-yellow-600' : 'bg-red-600') }}" 
+                            style="width: {{ (($review->criteria_contribution ?? 0) / 15) * 100 }}%">
                         </div>
                     </div>
                     @if($review->criteria_contribution)
                     <p class="text-xs text-gray-500 mt-1">
-                        @if($review->criteria_contribution >= 8) Excellent contribution
-                        @elseif($review->criteria_contribution >= 5) Moderate contribution
-                        @elseif($review->criteria_contribution >= 2) Fair contribution
+                        @if($review->criteria_contribution >= 12) Excellent contribution
+                        @elseif($review->criteria_contribution >= 8) Moderate contribution
+                        @elseif($review->criteria_contribution >= 5) Fair contribution
                         @else Very weak contribution
                         @endif
                     </p>
