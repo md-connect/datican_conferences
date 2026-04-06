@@ -40,6 +40,8 @@
                             <option value="under_review" {{ request('status') == 'under_review' ? 'selected' : '' }}>Under Review</option>
                             <option value="reviewed" {{ request('status') == 'reviewed' ? 'selected' : '' }}>Reviewed</option>
                             <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>Accepted</option>
+                            <option value="accept_with_minor_revision" {{ request('status') == 'accept_with_minor_revision' ? 'selected' : '' }}>Minor Revision</option>
+                            <option value="accept_with_major_revision" {{ request('status') == 'accept_with_major_revision' ? 'selected' : '' }}>Major Revision</option>
                             <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                             <option value="camera_ready" {{ request('status') == 'camera_ready' ? 'selected' : '' }}>Camera Ready</option>
                         </select>
@@ -86,6 +88,7 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
+                        <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SN</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author(s)</th>
@@ -151,24 +154,32 @@
                                         'under_review' => 'bg-yellow-100 text-yellow-800',
                                         'reviewed' => 'bg-purple-100 text-purple-800',
                                         'accepted' => 'bg-green-100 text-green-800',
+                                        'accept_with_minor_revision' => 'bg-yellow-100 text-yellow-800',
+                                        'accept_with_major_revision' => 'bg-orange-100 text-orange-800',
                                         'rejected' => 'bg-red-100 text-red-800',
                                         'camera_ready' => 'bg-emerald-100 text-emerald-800',
+                                        'needs_revision' => 'bg-yellow-100 text-yellow-800',
                                     ];
                                     $colorClass = $statusColors[$paper->status] ?? 'bg-gray-100 text-gray-800';
+                                    $statusDisplay = match($paper->status) {
+                                        'accept_with_minor_revision' => 'Minor Revision',
+                                        'accept_with_major_revision' => 'Major Revision',
+                                        default => ucfirst(str_replace('_', ' ', $paper->status))
+                                    };
                                 @endphp
                                 <span class="px-2 py-1 text-xs font-medium rounded-full {{ $colorClass }}">
-                                    {{ ucfirst(str_replace('_', ' ', $paper->status)) }}
+                                    {{ $statusDisplay }}
                                 </span>
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
                                 @php
                                     $completedReviews = $paper->reviewAssignments->where('status', 'completed');
-                                    $avgScore = $completedReviews->avg('overall_score');
+                                    $avgScore = $completedReviews->avg('total_score');
                                 @endphp
                                 <div class="text-sm text-center">
                                     <span class="font-medium">{{ $completedReviews->count() }}/{{ $paper->reviewAssignments->count() }}</span>
                                     @if($avgScore)
-                                    <div class="text-xs text-gray-500">Avg: {{ number_format($avgScore, 1) }}/5</div>
+                                    <div class="text-xs text-gray-500">Avg: {{ number_format($avgScore, 0) }}/100</div>
                                     @endif
                                 </div>
                             </td>
@@ -179,7 +190,7 @@
                                        title="View Paper">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    @if($paper->status == 'under_review' && $completedReviews->count() >= 3)
+                                    @if(in_array($paper->status, ['under_review', 'reviewed']) && $completedReviews->count() >= 2)
                                     <a href="{{ route('chair.papers.decision.form', $paper) }}" 
                                        class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200"
                                        title="Make Decision">
@@ -220,7 +231,7 @@
         </div>
         
         <!-- Quick Stats -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-6 gap-6">
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="text-center">
                     <i class="fas fa-file-alt text-3xl text-blue-600 mb-3"></i>
@@ -251,21 +262,31 @@
             
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="text-center">
-                    <i class="fas fa-times-circle text-3xl text-red-600 mb-3"></i>
+                    <i class="fas fa-edit text-3xl text-yellow-600 mb-3"></i>
                     <p class="text-2xl font-bold text-gray-900">
-                        {{ $papers->where('status', 'rejected')->count() }}
+                        {{ $papers->where('status', 'accept_with_minor_revision')->count() }}
                     </p>
-                    <p class="text-sm text-gray-500">Rejected</p>
+                    <p class="text-sm text-gray-500">Minor Revision</p>
                 </div>
             </div>
             
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="text-center">
-                    <i class="fas fa-file-powerpoint text-3xl text-orange-600 mb-3"></i>
+                    <i class="fas fa-redo-alt text-3xl text-orange-600 mb-3"></i>
                     <p class="text-2xl font-bold text-gray-900">
-                        {{ $papers->where('submission_type', 'abstract_only')->count() }}
+                        {{ $papers->where('status', 'accept_with_major_revision')->count() }}
                     </p>
-                    <p class="text-sm text-gray-500">Abstract Only</p>
+                    <p class="text-sm text-gray-500">Major Revision</p>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="text-center">
+                    <i class="fas fa-times-circle text-3xl text-red-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {{ $papers->where('status', 'rejected')->count() }}
+                    </p>
+                    <p class="text-sm text-gray-500">Rejected</p>
                 </div>
             </div>
         </div>

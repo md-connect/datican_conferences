@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-5xl mx-auto">
         <!-- Paper Info -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <div class="flex justify-between items-start mb-6">
@@ -49,14 +49,23 @@
             
             <!-- Paper Status Badge -->
             <div class="mb-6">
-                <span class="px-3 py-1 text-sm rounded-full 
-                    @if($paper->status == 'accepted') bg-green-100 text-green-800
-                    @elseif($paper->status == 'rejected') bg-red-100 text-red-800
-                    @elseif($paper->status == 'under_review') bg-yellow-100 text-yellow-800
-                    @elseif($paper->status == 'submitted') bg-blue-100 text-blue-800
-                    @elseif($paper->status == 'camera_ready') bg-purple-100 text-purple-800
-                    @else bg-gray-100 text-gray-800 @endif">
-                    {{ ucfirst(str_replace('_', ' ', $paper->status)) }}
+                @php
+                    $statusColors = [
+                        'accepted' => 'bg-green-100 text-green-800',
+                        'rejected' => 'bg-red-100 text-red-800',
+                        'under_review' => 'bg-yellow-100 text-yellow-800',
+                        'submitted' => 'bg-blue-100 text-blue-800',
+                        'camera_ready' => 'bg-purple-100 text-purple-800',
+                        'needs_revision' => 'bg-yellow-100 text-yellow-800',
+                        'reviewed' => 'bg-indigo-100 text-indigo-800',
+                    ];
+                    $statusDisplay = match($paper->status) {
+                        'needs_revision' => 'Needs Revision',
+                        default => ucfirst(str_replace('_', ' ', $paper->status))
+                    };
+                @endphp
+                <span class="px-3 py-1 text-sm rounded-full {{ $statusColors[$paper->status] ?? 'bg-gray-100 text-gray-800' }}">
+                    {{ $statusDisplay }}
                 </span>
             </div>
             
@@ -107,13 +116,15 @@
         <!-- Reviews Section (Only for authors, chairs, and admins) -->
         @if(auth()->user()->is_admin || auth()->user()->is_chair || $paper->authors()->where('users.id', auth()->id())->exists())
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <h2 class="text-xl font-semibold text-gray-800 mb-6">Reviews Summary</h2>
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Peer Reviews Summary</h2>
+                <p class="text-sm text-gray-600 mb-6">Each paper is reviewed by 2 reviewers (Total: 100 points)</p>
                 
                 @php
                     $completedReviews = $paper->reviewAssignments->where('status', 'completed');
+                    $reviewCount = $completedReviews->count();
                 @endphp
                 
-                @if($completedReviews->count() > 0)
+                @if($reviewCount > 0)
                     <!-- Overall Average Score -->
                     @php
                         $totalScores = [];
@@ -132,7 +143,7 @@
                         <div class="flex justify-between items-center">
                             <div>
                                 <span class="font-semibold text-gray-800">Average Score</span>
-                                <p class="text-sm text-gray-500">Based on {{ $completedReviews->count() }} review(s)</p>
+                                <p class="text-sm text-gray-500">Based on {{ $reviewCount }} review(s)</p>
                             </div>
                             <div class="text-right">
                                 <span class="text-3xl font-bold 
@@ -150,121 +161,177 @@
                         </div>
                     </div>
                     
-                    @foreach($completedReviews as $review)
-                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span class="text-sm font-medium text-gray-700">
-                                    Review by {{ $review->reviewer->full_name }}
-                                </span>
-                                <div class="flex items-center mt-1">
-                                    @php
-                                        $reviewTotal = ($review->criteria_relevance ?? 0) + 
-                                                      ($review->criteria_originality ?? 0) + 
-                                                      ($review->criteria_quality ?? 0) + 
-                                                      ($review->criteria_impact ?? 0) + 
-                                                      ($review->criteria_clarity ?? 0) + 
-                                                      ($review->criteria_contribution ?? 0);
-                                    @endphp
-                                    <span class="text-sm font-bold mr-4
-                                        {{ $reviewTotal >= 80 ? 'text-green-600' : ($reviewTotal >= 60 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        Score: {{ $reviewTotal }}/100
+                    <!-- Individual Reviews - Two Columns -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        @foreach($completedReviews as $index => $review)
+                        <div class="border rounded-lg p-4 {{ $index == 0 ? 'border-blue-200 bg-blue-50' : 'border-purple-200 bg-purple-50' }}">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded-full 
+                                        {{ $index == 0 ? 'bg-blue-200 text-blue-800' : 'bg-purple-200 text-purple-800' }}">
+                                        Reviewer {{ $index + 1 }}
                                     </span>
-                                    @if($review->confidence)
-                                    <span class="text-sm text-gray-500">
-                                        Confidence: {{ ucfirst($review->confidence) }}
-                                    </span>
-                                    @endif
+                                    <p class="text-sm text-gray-600 mt-2">{{ $review->reviewer->full_name }}</p>
+                                </div>
+                                @php
+                                    $reviewTotal = ($review->criteria_relevance ?? 0) + 
+                                                  ($review->criteria_originality ?? 0) + 
+                                                  ($review->criteria_quality ?? 0) + 
+                                                  ($review->criteria_impact ?? 0) + 
+                                                  ($review->criteria_clarity ?? 0) + 
+                                                  ($review->criteria_contribution ?? 0);
+                                    $reviewerColor = $reviewTotal >= 80 ? 'text-green-600' : ($reviewTotal >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                @endphp
+                                <div class="text-right">
+                                    <span class="text-2xl font-bold {{ $reviewerColor }}">{{ $reviewTotal }}</span>
+                                    <span class="text-sm text-gray-500">/100</span>
                                 </div>
                             </div>
-                            <div>
-                                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                    {{ $review->recommendation_text }}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <!-- Scoring Criteria Breakdown -->
-                        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Scoring Breakdown</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                                <div>
-                                    <span class="text-gray-500">Relevance:</span>
-                                    <span class="font-medium {{ ($review->criteria_relevance ?? 0) >= 17 ? 'text-green-600' : (($review->criteria_relevance ?? 0) >= 11 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $review->criteria_relevance ?? 'N/A' }}/20
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500">Originality:</span>
-                                    <span class="font-medium {{ ($review->criteria_originality ?? 0) >= 16 ? 'text-green-600' : (($review->criteria_originality ?? 0) >= 11 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $review->criteria_originality ?? 'N/A' }}/20
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500">Quality:</span>
-                                    <span class="font-medium {{ ($review->criteria_quality ?? 0) >= 12 ? 'text-green-600' : (($review->criteria_quality ?? 0) >= 8 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $review->criteria_quality ?? 'N/A' }}/15
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500">Impact:</span>
-                                    <span class="font-medium {{ ($review->criteria_impact ?? 0) >= 12 ? 'text-green-600' : (($review->criteria_impact ?? 0) >= 8 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $review->criteria_impact ?? 'N/A' }}/15
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500">Clarity:</span>
-                                    <span class="font-medium {{ ($review->criteria_clarity ?? 0) >= 8 ? 'text-green-600' : (($review->criteria_clarity ?? 0) >= 5 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $review->criteria_clarity ?? 'N/A' }}/10
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-500">Contribution:</span>
-                                    <span class="font-medium {{ ($review->criteria_contribution ?? 0) >= 8 ? 'text-green-600' : (($review->criteria_contribution ?? 0) >= 5 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $review->criteria_contribution ?? 'N/A' }}/10
-                                    </span>
+                            
+                            <!-- Score Breakdown -->
+                            <div class="space-y-2 mb-4">
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Relevance:</span>
+                                        <span class="font-medium">{{ $review->criteria_relevance ?? 0 }}/20</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Originality:</span>
+                                        <span class="font-medium">{{ $review->criteria_originality ?? 0 }}/20</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Quality:</span>
+                                        <span class="font-medium">{{ $review->criteria_quality ?? 0 }}/15</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Impact:</span>
+                                        <span class="font-medium">{{ $review->criteria_impact ?? 0 }}/15</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Clarity:</span>
+                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/10</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Contribution:</span>
+                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/10</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        @if($review->comments_author)
-                        <div class="mb-3">
-                            <h4 class="font-medium text-gray-700 mb-2">Feedback for Authors</h4>
-                            <div class="bg-gray-50 rounded p-3">
-                                <p class="text-gray-700">{{ $review->comments_author }}</p>
+                            
+                            <!-- Recommendation -->
+                            <!-- @if($review->recommendation)
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <p class="text-sm font-medium text-gray-700">Reviewer Recommendation:</p>
+                                <p class="text-sm {{ 
+                                    $review->recommendation == 'accept_without_revision' ? 'text-green-600' : 
+                                    ($review->recommendation == 'accept_with_minor_revision' ? 'text-yellow-600' : 
+                                    ($review->recommendation == 'accept_with_major_revision' ? 'text-orange-600' : 'text-red-600')) 
+                                }}">
+                                    {{ ucfirst(str_replace('_', ' ', $review->recommendation)) }}
+                                </p>
                             </div>
+                            @endif -->
+                            <!-- Strengths -->
+                            @if($review->strengths)
+                            <div class="mt-3">
+                                <p class="text-sm font-medium text-gray-700">Strengths:</p>
+                                <p class="text-sm text-gray-600">{{ Str::limit($review->strengths, 150) }}</p>
+                            </div>
+                            @endif
+                            
+                            <!-- Weaknesses -->
+                            @if($review->weaknesses)
+                            <div class="mt-3">
+                                <p class="text-sm font-medium text-gray-700">Weaknesses:</p>
+                                <p class="text-sm text-gray-600">{{ Str::limit($review->weaknesses, 150) }}</p>
+                            </div>
+                            @endif
+                            
+                            <!-- Comments to Authors -->
+                            @if($review->comments_author)
+                            <div class="mt-3">
+                                <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
+                                <div class="bg-white rounded p-2 mt-1">
+                                    <p class="text-sm text-gray-600">{{ Str::limit($review->comments_author, 200) }}</p>
+                                </div>
+                            </div>
+                            @endif
+                            
+                            @if(auth()->user()->is_admin || auth()->user()->is_chair || auth()->user()->id == $review->reviewer_id)
+                                <div class="mt-3">
+                                    <a href="{{ route('reviews.show', $review) }}" 
+                                    class="text-sm text-primary-600 hover:text-primary-800">
+                                        View Full Review <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            @endif
                         </div>
-                        @endif
-                        
-                        @if($review->strengths)
-                        <div class="mb-3">
-                            <h4 class="font-medium text-gray-700 mb-2">Strengths</h4>
-                            <p class="text-gray-700">{{ $review->strengths }}</p>
-                        </div>
-                        @endif
-                        
-                        @if($review->weaknesses)
-                        <div class="mb-3">
-                            <h4 class="font-medium text-gray-700 mb-2">Areas for Improvement</h4>
-                            <p class="text-gray-700">{{ $review->weaknesses }}</p>
-                        </div>
-                        @endif
-                        
-                        @if($review->suggestions)
-                        <div>
-                            <h4 class="font-medium text-gray-700 mb-2">Suggestions</h4>
-                            <p class="text-gray-700">{{ $review->suggestions }}</p>
-                        </div>
-                        @endif
-                        
-                        @if($review->revision_suggestions)
-                        <div class="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400">
-                            <h4 class="font-medium text-yellow-800 mb-1">Revision Suggestions</h4>
-                            <p class="text-sm text-yellow-700">{{ $review->revision_suggestions }}</p>
-                        </div>
-                        @endif
+                        @endforeach
                     </div>
-                    @endforeach
+
+                    
+                    <!-- Review Summary Stats -->
+                    <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600">Number of Reviews</p>
+                                <p class="text-2xl font-bold text-blue-600">{{ $reviewCount }}/2</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600">Average Total Score</p>
+                                <p class="text-2xl font-bold {{ $avgTotalScore >= 80 ? 'text-green-600' : ($avgTotalScore >= 60 ? 'text-yellow-600' : 'text-red-600') }}">
+                                    {{ $avgTotalScore }}%
+                                </p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600">Reviewer Agreement</p>
+                                @php
+                                    $scores = [];
+                                    foreach($completedReviews as $review) {
+                                        $scores[] = ($review->criteria_relevance ?? 0) + 
+                                                     ($review->criteria_originality ?? 0) + 
+                                                     ($review->criteria_quality ?? 0) + 
+                                                     ($review->criteria_impact ?? 0) + 
+                                                     ($review->criteria_clarity ?? 0) + 
+                                                     ($review->criteria_contribution ?? 0);
+                                    }
+                                    $agreement = count($scores) == 2 ? abs($scores[0] - $scores[1]) : 0;
+                                    $agreementStatus = $agreement <= 10 ? 'High' : ($agreement <= 20 ? 'Moderate' : 'Low');
+                                @endphp
+                                <p class="text-2xl font-bold {{ $agreement <= 10 ? 'text-green-600' : ($agreement <= 20 ? 'text-yellow-600' : 'text-red-600') }}">
+                                    {{ $agreementStatus }}
+                                </p>
+                                <p class="text-xs text-gray-500">Difference: {{ $agreement }} pts</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600">Review Status</p>
+                                <p class="text-2xl font-bold text-purple-600">
+                                    {{ $reviewCount == 2 ? 'Complete' : 'In Progress' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chair Decision -->
+                        @if($review->chair_decision)
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-sm font-medium text-gray-700">Chair's Decision:</p>
+                            <p class="text-sm font-semibold {{ 
+                                $review->chair_decision == 'accept' ? 'text-green-600' : 
+                                ($review->chair_decision == 'accept_with_minor_revision' ? 'text-yellow-600' : 
+                                ($review->chair_decision == 'accept_with_major_revision' ? 'text-orange-600' : 'text-red-600')) 
+                            }}">
+                                {{ ucfirst(str_replace('_', ' ', $review->chair_decision)) }}
+                            </p>
+                            @if($review->chair_decision_notes)
+                            <div class="mt-2">
+                                <p class="text-sm font-medium text-gray-700">Decision Notes:</p>
+                                <p class="text-sm text-gray-600">{{ Str::limit($review->chair_decision_notes, 200) }}</p>
+                            </div>
+                            @endif
+                        </div>
+                        @endif
+                    
                 @else
                     <div class="text-center py-8 text-gray-500">
                         <i class="fas fa-clipboard-list text-4xl mb-4"></i>
@@ -277,263 +344,9 @@
             </div>
         @endif
 
-        <!-- Review Form Section (ONLY for reviewers assigned to this paper) -->
-        @if(auth()->user()->is_reviewer && $paper->reviewAssignments()->where('reviewer_id', auth()->id())->exists())
-            @php
-                $userReview = $paper->reviewAssignments()->where('reviewer_id', auth()->id())->first();
-                $canReview = $userReview && $userReview->status !== 'completed';
-            @endphp
-            
-            @if($canReview)
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-6">Submit Your Review</h2>
-                
-                <form action="{{ route('reviews.store') }}" method="POST" class="space-y-8">
-                    @csrf
-                    <input type="hidden" name="paper_id" value="{{ $paper->id }}">
-                    
-                    <!-- Scoring Criteria Section -->
-                    <div class="bg-gray-50 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Scoring Criteria (0-100 points)</h3>
-                        
-                        <div class="space-y-6">
-                            <!-- Relevance (20) -->
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="font-medium text-gray-700">1. Relevance to Conference Theme</label>
-                                    <span class="text-sm text-gray-500">Max: 20</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="range" name="criteria_relevance" min="0" max="20" value="0" 
-                                           class="flex-1" oninput="this.nextElementSibling.value = this.value">
-                                    <input type="number" name="criteria_relevance" class="w-20 px-2 py-1 border rounded text-center" 
-                                           value="0" min="0" max="20" oninput="this.previousElementSibling.value = this.value">
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="text-green-600">17-20:</span> Uses medical images and data science | 
-                                    <span class="text-yellow-600">11-16:</span> Non-images but medical and data science | 
-                                    <span class="text-red-600">0-10:</span> Medical but no data science OR data science without medicine
-                                </div>
-                            </div>
-                            
-                            <!-- Originality (20) -->
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="font-medium text-gray-700">2. Originality & Innovation</label>
-                                    <span class="text-sm text-gray-500">Max: 20</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="range" name="criteria_originality" min="0" max="20" value="0" 
-                                           class="flex-1" oninput="this.nextElementSibling.value = this.value">
-                                    <input type="number" name="criteria_originality" class="w-20 px-2 py-1 border rounded text-center" 
-                                           value="0" min="0" max="20" oninput="this.previousElementSibling.value = this.value">
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="text-green-600">16-20:</span> Highly original | 
-                                    <span class="text-yellow-600">11-15:</span> Some originality | 
-                                    <span class="text-red-600">0-10:</span> Limited or no originality
-                                </div>
-                            </div>
-                            
-                            <!-- Quality (15) -->
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="font-medium text-gray-700">3. Technical/Academic Quality</label>
-                                    <span class="text-sm text-gray-500">Max: 15</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="range" name="criteria_quality" min="0" max="15" value="0" 
-                                           class="flex-1" oninput="this.nextElementSibling.value = this.value">
-                                    <input type="number" name="criteria_quality" class="w-20 px-2 py-1 border rounded text-center" 
-                                           value="0" min="0" max="15" oninput="this.previousElementSibling.value = this.value">
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="text-green-600">12-15:</span> Excellent rigor and depth | 
-                                    <span class="text-yellow-600">8-11:</span> Good quality | 
-                                    <span class="text-red-600">0-7:</span> Fair or weak quality
-                                </div>
-                            </div>
-                            
-                            <!-- Impact (15) -->
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="font-medium text-gray-700">4. Practical Impact & Applicability</label>
-                                    <span class="text-sm text-gray-500">Max: 15</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="range" name="criteria_impact" min="0" max="15" value="0" 
-                                           class="flex-1" oninput="this.nextElementSibling.value = this.value">
-                                    <input type="number" name="criteria_impact" class="w-20 px-2 py-1 border rounded text-center" 
-                                           value="0" min="0" max="15" oninput="this.previousElementSibling.value = this.value">
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="text-green-600">12-15:</span> Highly impactful | 
-                                    <span class="text-yellow-600">8-11:</span> Moderately useful | 
-                                    <span class="text-red-600">0-7:</span> Limited or no impact
-                                </div>
-                            </div>
-                            
-                            <!-- Clarity (10) -->
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="font-medium text-gray-700">5. Clarity & Organization</label>
-                                    <span class="text-sm text-gray-500">Max: 10</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="range" name="criteria_clarity" min="0" max="10" value="0" 
-                                           class="flex-1" oninput="this.nextElementSibling.value = this.value">
-                                    <input type="number" name="criteria_clarity" class="w-20 px-2 py-1 border rounded text-center" 
-                                           value="0" min="0" max="10" oninput="this.previousElementSibling.value = this.value">
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="text-green-600">8-10:</span> Very clear and well-structured | 
-                                    <span class="text-yellow-600">5-7:</span> Generally clear | 
-                                    <span class="text-red-600">0-4:</span> Unclear or poorly organized
-                                </div>
-                            </div>
-                            
-                            <!-- Contribution (10) -->
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="font-medium text-gray-700">6. Contribution to Knowledge</label>
-                                    <span class="text-sm text-gray-500">Max: 10</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="range" name="criteria_contribution" min="0" max="10" value="0" 
-                                           class="flex-1" oninput="this.nextElementSibling.value = this.value">
-                                    <input type="number" name="criteria_contribution" class="w-20 px-2 py-1 border rounded text-center" 
-                                           value="0" min="0" max="10" oninput="this.previousElementSibling.value = this.value">
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="text-green-600">8-10:</span> Excellent contribution | 
-                                    <span class="text-yellow-600">5-7:</span> Moderate contribution | 
-                                    <span class="text-red-600">0-4:</span> Fair or weak contribution
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Total Score Preview -->
-                        <div class="mt-6 p-4 bg-white rounded-lg">
-                            <div class="flex justify-between items-center">
-                                <span class="font-semibold text-gray-800">Total Score:</span>
-                                <span id="totalScoreDisplay" class="text-2xl font-bold text-blue-600">0</span>
-                                <span class="text-gray-500">/ 100</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                <div id="scoreProgress" class="h-2 rounded-full bg-blue-600" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Overall Recommendation -->
-                    <div class="bg-gray-50 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Overall Recommendation</h3>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-4">
-                                What is your recommendation for this paper?
-                            </label>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                @php
-                                    $recommendations = [
-                                        'strong_accept' => ['Strong Accept', 'bg-green-600'],
-                                        'accept' => ['Accept', 'bg-green-500'],
-                                        'weak_accept' => ['Weak Accept', 'bg-yellow-500'],
-                                        'borderline' => ['Borderline', 'bg-gray-500'],
-                                        'weak_reject' => ['Weak Reject', 'bg-orange-500'],
-                                        'reject' => ['Reject', 'bg-red-500'],
-                                        'strong_reject' => ['Strong Reject', 'bg-red-700'],
-                                    ];
-                                @endphp
-                                
-                                @foreach($recommendations as $value => [$label, $color])
-                                <label class="relative">
-                                    <input type="radio" name="recommendation" value="{{ $value }}" 
-                                           class="sr-only peer" required>
-                                    <div class="border-2 rounded-lg p-3 text-center cursor-pointer transition-all peer-checked:border-blue-500 peer-checked:ring-2 peer-checked:ring-blue-200 hover:bg-gray-100">
-                                        <div class="w-3 h-3 rounded-full {{ $color }} mx-auto mb-1"></div>
-                                        <p class="text-sm font-medium">{{ $label }}</p>
-                                    </div>
-                                </label>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Detailed Comments -->
-                    <div class="space-y-6">
-                        <div>
-                            <label for="comments_author" class="block text-sm font-medium text-gray-700 mb-2">
-                                Comments for Authors (Will be shared with authors) *
-                            </label>
-                            <textarea id="comments_author" name="comments_author" rows="6"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Provide constructive feedback for the authors..."
-                                      required></textarea>
-                            <p class="mt-2 text-sm text-gray-500">Please be constructive and professional in your feedback.</p>
-                        </div>
-                        
-                        <div>
-                            <label for="strengths" class="block text-sm font-medium text-gray-700 mb-2">
-                                Strengths
-                            </label>
-                            <textarea id="strengths" name="strengths" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      placeholder="What are the main strengths of this paper?"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label for="weaknesses" class="block text-sm font-medium text-gray-700 mb-2">
-                                Weaknesses and Areas for Improvement
-                            </label>
-                            <textarea id="weaknesses" name="weaknesses" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      placeholder="What are the main weaknesses or limitations?"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label for="suggestions" class="block text-sm font-medium text-gray-700 mb-2">
-                                Suggestions for Improvement
-                            </label>
-                            <textarea id="suggestions" name="suggestions" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Specific suggestions to improve the paper..."></textarea>
-                        </div>
-                        
-                        <div>
-                            <label for="revision_suggestions" class="block text-sm font-medium text-gray-700 mb-2">
-                                Revision Suggestions (If recommending revisions)
-                            </label>
-                            <textarea id="revision_suggestions" name="revision_suggestions" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Specific changes required for revision..."></textarea>
-                        </div>
-                    </div>
-                    
-                    <!-- Submit Button -->
-                    <div class="flex justify-between pt-6 border-t">
-                        <a href="{{ route('reviews.my') }}" 
-                           class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">
-                            Back to My Reviews
-                        </a>
-                        <div class="space-x-4">
-                            <button type="submit" name="save_draft" value="1"
-                                    class="px-8 py-3 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700">
-                                Save as Draft
-                            </button>
-                            <button type="submit" name="submit_review" value="1"
-                                    class="px-8 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
-                                Submit Review
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            @endif
-        @endif
-
-        @if($paper->decision == 'revise' && $paper->revision_deadline)
-        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <!-- Revision Deadline Notice -->
+        @if(in_array($paper->status, ['needs_revision', 'accept_with_minor_revision', 'accept_with_major_revision']) && $paper->revision_deadline)
+        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-8">
             <div class="flex items-center">
                 <i class="fas fa-calendar-exclamation text-yellow-600 mr-3"></i>
                 <div>
@@ -542,6 +355,11 @@
                         Authors must submit revised version by: 
                         <span class="font-bold">{{ \Carbon\Carbon::parse($paper->revision_deadline)->format('F d, Y') }}</span>
                     </p>
+                    @if($paper->revision_notes)
+                    <p class="text-sm text-yellow-700 mt-2">
+                        <strong>Revision Instructions:</strong> {{ $paper->revision_notes }}
+                    </p>
+                    @endif
                     @if(\Carbon\Carbon::parse($paper->revision_deadline)->isPast())
                     <p class="text-sm text-red-600 mt-1">
                         <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -558,12 +376,11 @@
         @endif
 
         <!-- Admin Actions (Only for admins and chairs) -->
-        @if(auth()->user()->is_admin || auth()->user()->is_chair)
+        <!-- @if(auth()->user()->is_admin || auth()->user()->is_chair)
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h2 class="text-xl font-semibold text-gray-800 mb-6">Admin Actions</h2>
                 
                 <div class="space-y-4">
-                    <!-- Status Update -->
                     <form action="{{ route('papers.update-status', $paper) }}" method="POST" class="space-y-4">
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -573,7 +390,10 @@
                                     <option value="draft" {{ $paper->status == 'draft' ? 'selected' : '' }}>Draft</option>
                                     <option value="submitted" {{ $paper->status == 'submitted' ? 'selected' : '' }}>Submitted</option>
                                     <option value="under_review" {{ $paper->status == 'under_review' ? 'selected' : '' }}>Under Review</option>
+                                    <option value="reviewed" {{ $paper->status == 'reviewed' ? 'selected' : '' }}>Reviewed</option>
                                     <option value="accepted" {{ $paper->status == 'accepted' ? 'selected' : '' }}>Accepted</option>
+                                    <option value="accept_with_minor_revision" {{ $paper->decision == 'accept_with_minor_revision' ? 'selected' : '' }}>Minor Revision</option>
+                                    <option value="accept_with_major_revision" {{ $paper->decision == 'accept_with_major_revision' ? 'selected' : '' }}>Major Revision</option>
                                     <option value="rejected" {{ $paper->status == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                     <option value="camera_ready" {{ $paper->status == 'camera_ready' ? 'selected' : '' }}>Camera Ready</option>
                                 </select>
@@ -583,8 +403,8 @@
                                 <select name="decision" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                     <option value="">No Decision</option>
                                     <option value="accept" {{ $paper->decision == 'accept' ? 'selected' : '' }}>Accept</option>
-                                    <option value="minor_revisions" {{ $paper->decision == 'minor_revisions' ? 'selected' : '' }}>Minor Revisions</option>
-                                    <option value="major_revisions" {{ $paper->decision == 'major_revisions' ? 'selected' : '' }}>Major Revisions</option>
+                                    <option value="accept_with_minor_revision" {{ $paper->decision == 'accept_with_minor_revision' ? 'selected' : '' }}>Accept with Minor Revision</option>
+                                    <option value="accept_with_major_revision" {{ $paper->decision == 'accept_with_major_revision' ? 'selected' : '' }}>Accept with Major Revision</option>
                                     <option value="reject" {{ $paper->decision == 'reject' ? 'selected' : '' }}>Reject</option>
                                 </select>
                             </div>
@@ -598,22 +418,24 @@
                         
                         <div class="flex justify-end">
                             <button type="submit" 
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                    class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary">
                                 Update Status
                             </button>
                         </div>
                     </form>
                     
-                    <!-- Assign Reviewers -->
+                    @if($paper->reviewAssignments->count() < 2 && in_array($paper->status, ['submitted', 'under_review']))
                     <div class="pt-4 border-t">
-                        <a href="{{ route('assignments.index') }}?paper={{ $paper->id }}" 
+                        <a href="{{ route('assignments.assign', $paper) }}" 
                            class="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
                             <i class="fas fa-user-plus mr-2"></i>Assign Reviewers
                         </a>
+                        <p class="text-xs text-gray-500 mt-2">This paper needs {{ 2 - $paper->reviewAssignments->count() }} more reviewer(s)</p>
                     </div>
+                    @endif
                 </div>
             </div>
-        @endif
+        @endif -->
     </div>
 </div>
 
