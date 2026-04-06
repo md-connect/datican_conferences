@@ -118,34 +118,34 @@ class ChairController extends Controller
         // Get important deadlines
         $deadlines = [];
 
-    $dates = [
-        ['title' => 'Paper Submission Deadline', 'description' => 'Final date for paper submissions', 'month' => 3, 'day' => 15],
-        ['title' => 'Review Deadline', 'description' => 'All reviews must be completed', 'month' => 4, 'day' => 15],
-        ['title' => 'Camera Ready Deadline', 'description' => 'Final camera-ready versions due', 'month' => 5, 'day' => 1],
-    ];
-
-    foreach ($dates as $item) {
-        $date = Carbon::create($year, $item['month'], $item['day']);
-        $isPast = $date->isPast();
-        $daysDiff = now()->diffInDays($date, false); // false means negative if past
-        
-        $deadlines[] = (object)[
-            'title' => $item['title'],
-            'description' => $item['description'],
-            'date' => $date,
-            'is_past' => $isPast,
-            'is_approaching' => !$isPast && $date->diffInDays(now()) <= 30,
-            'days_left' => max(0, floor($daysDiff)),
+        $dates = [
+            ['title' => 'Paper Submission Deadline', 'description' => 'Final date for paper submissions', 'month' => 3, 'day' => 15],
+            ['title' => 'Review Deadline', 'description' => 'All reviews must be completed', 'month' => 4, 'day' => 15],
+            ['title' => 'Camera Ready Deadline', 'description' => 'Final camera-ready versions due', 'month' => 5, 'day' => 1],
         ];
-    }
 
-        
-        return view('dashboard.chair', compact(
-            'stats', 'pendingDecisions', 'recentSubmissions', 
-            'reviewerPerformance', 'topicsDistribution', 'deadlines', 'year'
-        ));
+        foreach ($dates as $item) {
+            $date = Carbon::create($year, $item['month'], $item['day']);
+            $isPast = $date->isPast();
+            $daysDiff = now()->diffInDays($date, false); // false means negative if past
+            
+            $deadlines[] = (object)[
+                'title' => $item['title'],
+                'description' => $item['description'],
+                'date' => $date,
+                'is_past' => $isPast,
+                'is_approaching' => !$isPast && $date->diffInDays(now()) <= 30,
+                'days_left' => max(0, floor($daysDiff)),
+            ];
+        }
+
+            
+            return view('dashboard.chair', compact(
+                'stats', 'pendingDecisions', 'recentSubmissions', 
+                'reviewerPerformance', 'topicsDistribution', 'deadlines', 'year'
+            ));
     }
-   
+    
 
     /**
      * Manage papers (for chairs)
@@ -282,63 +282,63 @@ class ChairController extends Controller
     }
 
     /**
- * Export peer review comparison data
- */
-public function exportPeerReview($type)
-{
-    $papers = Paper::with(['reviewAssignments' => function($query) {
-        $query->where('status', 'completed')->orderBy('id');
-    }, 'reviewAssignments.reviewer'])->get();
-    
-    $data = $papers->filter(function($paper) {
-        return $paper->reviewAssignments->count() >= 2;
-    })->map(function($paper) {
-        $reviews = $paper->reviewAssignments->sortBy('id');
-        $review1 = $reviews->first();
-        $review2 = $reviews->last();
+     * Export peer review comparison data
+     */
+    public function exportPeerReview($type)
+    {
+        $papers = Paper::with(['reviewAssignments' => function($query) {
+            $query->where('status', 'completed')->orderBy('id');
+        }, 'reviewAssignments.reviewer'])->get();
         
-        // Calculate reviewer 1 total
-        $review1Total = ($review1->criteria_relevance ?? 0) + 
-                        ($review1->criteria_originality ?? 0) + 
-                        ($review1->criteria_quality ?? 0) + 
-                        ($review1->criteria_impact ?? 0) + 
-                        ($review1->criteria_clarity ?? 0) + 
-                        ($review1->criteria_contribution ?? 0);
+        $data = $papers->filter(function($paper) {
+            return $paper->reviewAssignments->count() >= 2;
+        })->map(function($paper) {
+            $reviews = $paper->reviewAssignments->sortBy('id');
+            $review1 = $reviews->first();
+            $review2 = $reviews->last();
+            
+            // Calculate reviewer 1 total
+            $review1Total = ($review1->criteria_relevance ?? 0) + 
+                            ($review1->criteria_originality ?? 0) + 
+                            ($review1->criteria_quality ?? 0) + 
+                            ($review1->criteria_impact ?? 0) + 
+                            ($review1->criteria_clarity ?? 0) + 
+                            ($review1->criteria_contribution ?? 0);
+            
+            // Calculate reviewer 2 total
+            $review2Total = ($review2->criteria_relevance ?? 0) + 
+                            ($review2->criteria_originality ?? 0) + 
+                            ($review2->criteria_quality ?? 0) + 
+                            ($review2->criteria_impact ?? 0) + 
+                            ($review2->criteria_clarity ?? 0) + 
+                            ($review2->criteria_contribution ?? 0);
+            
+            return [
+                'Paper ID' => $paper->anonymous_id,
+                'Paper Title' => $paper->title,
+                'Reviewer 1' => $review1->reviewer->first_name . ' ' . $review1->reviewer->last_name,
+                'Reviewer 1 - Relevance (20)' => $review1->criteria_relevance ?? 'N/A',
+                'Reviewer 1 - Originality (20)' => $review1->criteria_originality ?? 'N/A',
+                'Reviewer 1 - Quality (15)' => $review1->criteria_quality ?? 'N/A',
+                'Reviewer 1 - Impact (15)' => $review1->criteria_impact ?? 'N/A',
+                'Reviewer 1 - Clarity (10)' => $review1->criteria_clarity ?? 'N/A',
+                'Reviewer 1 - Contribution (10)' => $review1->criteria_contribution ?? 'N/A',
+                'Reviewer 1 - Total' => $review1Total,
+                'Reviewer 2' => $review2->reviewer->first_name . ' ' . $review2->reviewer->last_name,
+                'Reviewer 2 - Relevance (20)' => $review2->criteria_relevance ?? 'N/A',
+                'Reviewer 2 - Originality (20)' => $review2->criteria_originality ?? 'N/A',
+                'Reviewer 2 - Quality (15)' => $review2->criteria_quality ?? 'N/A',
+                'Reviewer 2 - Impact (15)' => $review2->criteria_impact ?? 'N/A',
+                'Reviewer 2 - Clarity (10)' => $review2->criteria_clarity ?? 'N/A',
+                'Reviewer 2 - Contribution (10)' => $review2->criteria_contribution ?? 'N/A',
+                'Reviewer 2 - Total' => $review2Total,
+                'Score Difference' => abs($review1Total - $review2Total),
+                'Average Total Score' => round(($review1Total + $review2Total) / 2, 1),
+            ];
+        });
         
-        // Calculate reviewer 2 total
-        $review2Total = ($review2->criteria_relevance ?? 0) + 
-                        ($review2->criteria_originality ?? 0) + 
-                        ($review2->criteria_quality ?? 0) + 
-                        ($review2->criteria_impact ?? 0) + 
-                        ($review2->criteria_clarity ?? 0) + 
-                        ($review2->criteria_contribution ?? 0);
-        
-        return [
-            'Paper ID' => $paper->anonymous_id,
-            'Paper Title' => $paper->title,
-            'Reviewer 1' => $review1->reviewer->first_name . ' ' . $review1->reviewer->last_name,
-            'Reviewer 1 - Relevance (20)' => $review1->criteria_relevance ?? 'N/A',
-            'Reviewer 1 - Originality (20)' => $review1->criteria_originality ?? 'N/A',
-            'Reviewer 1 - Quality (15)' => $review1->criteria_quality ?? 'N/A',
-            'Reviewer 1 - Impact (15)' => $review1->criteria_impact ?? 'N/A',
-            'Reviewer 1 - Clarity (10)' => $review1->criteria_clarity ?? 'N/A',
-            'Reviewer 1 - Contribution (10)' => $review1->criteria_contribution ?? 'N/A',
-            'Reviewer 1 - Total' => $review1Total,
-            'Reviewer 2' => $review2->reviewer->first_name . ' ' . $review2->reviewer->last_name,
-            'Reviewer 2 - Relevance (20)' => $review2->criteria_relevance ?? 'N/A',
-            'Reviewer 2 - Originality (20)' => $review2->criteria_originality ?? 'N/A',
-            'Reviewer 2 - Quality (15)' => $review2->criteria_quality ?? 'N/A',
-            'Reviewer 2 - Impact (15)' => $review2->criteria_impact ?? 'N/A',
-            'Reviewer 2 - Clarity (10)' => $review2->criteria_clarity ?? 'N/A',
-            'Reviewer 2 - Contribution (10)' => $review2->criteria_contribution ?? 'N/A',
-            'Reviewer 2 - Total' => $review2Total,
-            'Score Difference' => abs($review1Total - $review2Total),
-            'Average Total Score' => round(($review1Total + $review2Total) / 2, 1),
-        ];
-    });
-    
-    return $this->toCsv($data, 'DATICAN_2026_Conference_peer_review_comparison.csv');
-}
+        return $this->toCsv($data, 'DATICAN_2026_Conference_peer_review_comparison.csv');
+    }
 
     /**
      * Helper method to convert data to CSV and download
@@ -448,7 +448,6 @@ public function exportPeerReview($type)
     /**
      * Make paper decision
      */
-
     public function makeDecision(Request $request, Paper $paper)
     {
         // Log all incoming data
@@ -459,14 +458,12 @@ public function exportPeerReview($type)
             'has_revision_deadline' => $request->has('revision_deadline'),
             'revision_deadline' => $request->revision_deadline,
             'decision_notes' => $request->decision_notes,
-            'all_input' => $request->all(),
-            'method' => $request->method(),
-            'url' => $request->url()
+            'all_input' => $request->all()
         ]);
         
-        // Basic validation
+        // Basic validation - Updated decision options
         $validator = Validator::make($request->all(), [
-            'decision' => 'required|in:accept,reject,revise',
+            'decision' => 'required|in:accept,accept_with_minor_revision,accept_with_major_revision,reject',
             'decision_notes' => 'nullable|string|max:1000',
         ]);
         
@@ -475,16 +472,11 @@ public function exportPeerReview($type)
             'errors' => $validator->errors()->all()
         ]);
         
-        // Only require revision_deadline for 'revise' decision
-        if ($request->decision === 'revise') {
+        // Only require revision_deadline for revision decisions
+        if (in_array($request->decision, ['accept_with_minor_revision', 'accept_with_major_revision'])) {
             \Log::info('Adding revision_deadline validation rules');
             $validator->addRules([
                 'revision_deadline' => 'required|date|after:today'
-            ]);
-            
-            // Log the rule addition
-            \Log::info('Revision deadline validation added', [
-                'rules' => $validator->getRules()
             ]);
         }
         
@@ -503,17 +495,17 @@ public function exportPeerReview($type)
         \Log::info('Validation passed, proceeding with update');
         
         try {
-            // Determine new status
+            // Determine new status based on decision
             $status = match($request->decision) {
                 'accept' => 'accepted',
+                'accept_with_minor_revision', 'accept_with_major_revision' => 'needs_revision',
                 'reject' => 'rejected',
-                'revise' => 'needs_revision',
                 default => 'under_review'
             };
             
             \Log::info('Status determined', ['status' => $status]);
             
-            // Prepare update data
+            // Prepare update data for paper
             $updateData = [
                 'decision' => $request->decision,
                 'decision_notes' => $request->decision_notes,
@@ -524,35 +516,65 @@ public function exportPeerReview($type)
             
             \Log::info('Base update data prepared', $updateData);
             
-            // Only add revision_deadline for revise decisions
-            if ($request->decision === 'revise' && $request->filled('revision_deadline')) {
+            // Add revision data for revision decisions
+            if (in_array($request->decision, ['accept_with_minor_revision', 'accept_with_major_revision']) && $request->filled('revision_deadline')) {
                 $updateData['revision_deadline'] = $request->revision_deadline;
                 $updateData['needs_revision'] = true;
                 $updateData['revision_requested_at'] = now();
                 
-                \Log::info('Added revision data', [
+                // IMPORTANT: Save decision_notes as revision_notes
+                $updateData['revision_notes'] = $request->decision_notes;
+                
+                \Log::info('Added revision data to paper', [
                     'revision_deadline' => $request->revision_deadline,
-                    'needs_revision' => true
+                    'needs_revision' => true,
+                    'revision_requested_at' => now(),
+                    'revision_notes' => substr($request->decision_notes ?? '', 0, 100)
                 ]);
             }
             
-            \Log::info('Final update data', $updateData);
+            \Log::info('Final update data for paper', $updateData);
             
             // Update paper
             $paper->update($updateData);
             
-            \Log::info('Paper updated successfully', [
-                'paper_id' => $paper->id,
-                'new_status' => $paper->fresh()->status
+            // Save chair decision to all completed review assignments
+            $updatedReviews = $paper->reviewAssignments()
+                ->where('status', 'completed')
+                ->update([
+                    'chair_decision' => $request->decision,
+                    'chair_decision_notes' => $request->decision_notes,
+                    'chair_decision_made_at' => now(),
+                    'chair_decision_made_by' => auth()->id()
+                ]);
+            
+            \Log::info('Chair decision saved to review assignments', [
+                'updated_reviews_count' => $updatedReviews
             ]);
             
-            $message = match($request->decision) {
-                'accept' => 'Paper accepted successfully!',
-                'reject' => 'Paper rejected successfully!',
-                'revise' => 'Revision requested. Deadline: ' . 
-                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y'),
-                default => 'Decision submitted successfully!'
-            };
+            \Log::info('Paper updated successfully', [
+                'paper_id' => $paper->id,
+                'new_status' => $paper->fresh()->status,
+                'decision' => $paper->fresh()->decision,
+                'revision_deadline' => $paper->fresh()->revision_deadline,
+                'needs_revision' => $paper->fresh()->needs_revision,
+                'has_revision_notes' => !is_null($paper->fresh()->revision_notes)
+            ]);
+            
+            // Prepare success message
+            if ($request->decision == 'accept') {
+                $message = 'Paper accepted successfully!';
+            } elseif ($request->decision == 'reject') {
+                $message = 'Paper rejected successfully!';
+            } elseif ($request->decision == 'accept_with_minor_revision') {
+                $message = 'Paper accepted with minor revisions requested. Author must submit revisions by ' . 
+                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y');
+            } elseif ($request->decision == 'accept_with_major_revision') {
+                $message = 'Paper accepted with major revisions requested. Author must submit revisions by ' . 
+                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y');
+            } else {
+                $message = 'Decision submitted successfully!';
+            }
             
             return redirect()->route('chair.papers')
                 ->with('success', $message);

@@ -28,6 +28,10 @@ class ReviewAssignment extends Model
         'criteria_clarity',
         'criteria_contribution',
         'total_score',
+        'chair_decision',
+        'chair_decision_notes',
+        'chair_decision_made_at',
+        'chair_decision_made_by',
     ];
 
     protected $casts = [
@@ -49,6 +53,7 @@ class ReviewAssignment extends Model
         'criteria_clarity' => 'integer',
         'criteria_contribution' => 'integer',
         'total_score' => 'integer',
+        'chair_decision_made_at' => 'datetime',
     ];
 
     protected $appends = ['recommendation_text', 'is_overdue', 'score_percentage', 'score_badge_class'];
@@ -531,4 +536,17 @@ class ReviewAssignment extends Model
             return 'low';
         }
     }
+
+    public function getChairDecisionTextAttribute()
+    {
+        $decisionTexts = [
+            'accept' => 'Accept',
+            'accept_with_minor_revision' => 'Accept with Minor Revision',
+            'accept_with_major_revision' => 'Accept with Major Revision',
+            'reject' => 'Reject',
+        ];
+        
+        return $decisionTexts[$this->chair_decision] ?? 'Not decided';
+    }
+
 }

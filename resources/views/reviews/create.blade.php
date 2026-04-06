@@ -61,6 +61,16 @@
             </div>
         </div>
         
+        @if ($errors->any())
+            <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                <ul class="list-disc pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <!-- Review Form -->
         <form method="POST" action="{{ $review->exists ? route('reviews.update', $review) : route('reviews.store') }}" class="space-y-8" id="reviewForm">
             @csrf
@@ -69,70 +79,6 @@
             @endif
             
             <input type="hidden" name="paper_id" value="{{ $paper->id }}">
-            
-            <!-- Detailed Comments Section -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Detailed Comments</h3>
-                <p class="text-sm text-gray-600 mb-6">Provide detailed feedback for the authors</p>
-                
-                <div class="space-y-6">
-                    <!-- Comments for Authors -->
-                    <div>
-                        <label for="comments_author" class="block text-sm font-medium text-gray-700 mb-2">
-                            Comments for Authors *
-                        </label>
-                        <textarea id="comments_author" name="comments_author" rows="6"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Provide constructive feedback for the authors..."
-                                  required>{{ isset($review) ? $review->comments_author : '' }}</textarea>
-                        <div class="flex justify-between items-center mt-1">
-                            <p class="text-sm text-gray-500">Be constructive and specific. This feedback will be sent to the authors.</p>
-                            <div id="author-chars" class="text-sm text-gray-500"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Strengths -->
-                    <div>
-                        <label for="strengths" class="block text-sm font-medium text-gray-700 mb-2">
-                            Strengths
-                        </label>
-                        <textarea id="strengths" name="strengths" rows="4"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                  placeholder="What are the main strengths of this paper?">{{ isset($review) ? $review->strengths : '' }}</textarea>
-                    </div>
-                    
-                    <!-- Weaknesses -->
-                    <div>
-                        <label for="weaknesses" class="block text-sm font-medium text-gray-700 mb-2">
-                            Weaknesses and Areas for Improvement
-                        </label>
-                        <textarea id="weaknesses" name="weaknesses" rows="4"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                  placeholder="What are the main weaknesses or limitations?">{{ isset($review) ? $review->weaknesses : '' }}</textarea>
-                    </div>
-                    
-                    <!-- Suggestions -->
-                    <div>
-                        <label for="suggestions" class="block text-sm font-medium text-gray-700 mb-2">
-                            Suggestions for Improvement
-                        </label>
-                        <textarea id="suggestions" name="suggestions" rows="4"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Specific suggestions to improve the paper...">{{ isset($review) ? $review->suggestions : '' }}</textarea>
-                    </div>
-                    
-                    <!-- Confidential Comments for Chairs -->
-                    <div>
-                        <label for="comments_chair" class="block text-sm font-medium text-gray-700 mb-2">
-                            Confidential Comments for Chairs
-                        </label>
-                        <textarea id="comments_chair" name="comments_chair" rows="3"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Any confidential comments for program chairs (authors won't see this)...">{{ isset($review) ? $review->comments_chair : '' }}</textarea>
-                        <p class="mt-1 text-sm text-gray-500">These comments are confidential and will only be seen by program chairs.</p>
-                    </div>
-                </div>
-            </div>
             
             <!-- Scoring Criteria Section -->
             <div class="bg-white rounded-xl shadow-md p-6">
@@ -327,6 +273,131 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Recommendation Section -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recommendation</h3>
+                <p class="text-sm text-gray-600 mb-6">Please provide your overall recommendation for this paper</p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Recommendation *
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="flex flex-col items-center p-4 border-2 border-green-200 rounded-lg hover:bg-green-50 cursor-pointer">
+                            <input type="radio" name="recommendation" value="accept_without_revision" 
+                                   class="mb-3 recommendation-radio" required
+                                   {{ (isset($review) && $review->recommendation == 'accept_without_revision') ? 'checked' : '' }}>
+                            <i class="fas fa-check-circle text-3xl text-green-600 mb-2"></i>
+                            <span class="font-medium text-green-700">Accept without revision</span>
+                            <span class="text-xs text-gray-600 text-center mt-1">Paper meets all standards</span>
+                        </label>
+                        
+                        <label class="flex flex-col items-center p-4 border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 cursor-pointer">
+                            <input type="radio" name="recommendation" value="accept_with_minor_revision" 
+                                   class="mb-3 recommendation-radio" required
+                                   {{ (isset($review) && $review->recommendation == 'accept_with_minor_revision') ? 'checked' : '' }}>
+                            <i class="fas fa-edit text-3xl text-yellow-600 mb-2"></i>
+                            <span class="font-medium text-yellow-700">Accept with minor revision</span>
+                            <span class="text-xs text-gray-600 text-center mt-1">Small changes required</span>
+                        </label>
+                        
+                        <label class="flex flex-col items-center p-4 border-2 border-orange-200 rounded-lg hover:bg-orange-50 cursor-pointer">
+                            <input type="radio" name="recommendation" value="accept_with_major_revision" 
+                                   class="mb-3 recommendation-radio" required
+                                   {{ (isset($review) && $review->recommendation == 'accept_with_major_revision') ? 'checked' : '' }}>
+                            <i class="fas fa-redo-alt text-3xl text-orange-600 mb-2"></i>
+                            <span class="font-medium text-orange-700">Accept with major revision</span>
+                            <span class="text-xs text-gray-600 text-center mt-1">Significant changes required</span>
+                        </label>
+                        
+                        <label class="flex flex-col items-center p-4 border-2 border-red-200 rounded-lg hover:bg-red-50 cursor-pointer">
+                            <input type="radio" name="recommendation" value="reject" 
+                                   class="mb-3 recommendation-radio" required
+                                   {{ (isset($review) && $review->recommendation == 'reject') ? 'checked' : '' }}>
+                            <i class="fas fa-times-circle text-3xl text-red-600 mb-2"></i>
+                            <span class="font-medium text-red-700">Reject</span>
+                            <span class="text-xs text-gray-600 text-center mt-1">Does not meet standards</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Revision Suggestions (shown when revision is recommended) -->
+                <div id="revision-suggestions-container" style="display: none;">
+                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <label for="revision_suggestions" class="block text-sm font-medium text-yellow-800 mb-2">
+                            Revision Suggestions *
+                        </label>
+                        <textarea id="revision_suggestions" name="revision_suggestions" rows="4"
+                                  class="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500"
+                                  placeholder="Please provide specific suggestions for revision...">{{ isset($review) ? $review->revision_suggestions : '' }}</textarea>
+                        <p class="mt-1 text-sm text-yellow-600">These suggestions will help the authors improve their paper.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detailed Comments Section -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Detailed Comments</h3>
+                <p class="text-sm text-gray-600 mb-6">Provide detailed feedback for the authors</p>
+                
+                <div class="space-y-6">
+                    <!-- Comments for Authors (No minimum character requirement) -->
+                    <div>
+                        <label for="comments_author" class="block text-sm font-medium text-gray-700 mb-2">
+                            Comments for Authors
+                        </label>
+                        <textarea id="comments_author" name="comments_author" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Provide constructive feedback for the authors...">{{ isset($review) ? $review->comments_author : '' }}</textarea>
+                        <div class="flex justify-between items-center mt-1">
+                            <p class="text-sm text-gray-500">Be constructive and specific. This feedback will be sent to the authors.</p>
+                            <div id="author-chars" class="text-sm text-gray-500"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Strengths -->
+                    <div>
+                        <label for="strengths" class="block text-sm font-medium text-gray-700 mb-2">
+                            Strengths
+                        </label>
+                        <textarea id="strengths" name="strengths" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="What are the main strengths of this paper?">{{ isset($review) ? $review->strengths : '' }}</textarea>
+                    </div>
+                    
+                    <!-- Weaknesses -->
+                    <div>
+                        <label for="weaknesses" class="block text-sm font-medium text-gray-700 mb-2">
+                            Weaknesses and Areas for Improvement
+                        </label>
+                        <textarea id="weaknesses" name="weaknesses" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="What are the main weaknesses or limitations?">{{ isset($review) ? $review->weaknesses : '' }}</textarea>
+                    </div>
+                    
+                    <!-- Suggestions -->
+                    <div>
+                        <label for="suggestions" class="block text-sm font-medium text-gray-700 mb-2">
+                            Suggestions for Improvement
+                        </label>
+                        <textarea id="suggestions" name="suggestions" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Specific suggestions to improve the paper...">{{ isset($review) ? $review->suggestions : '' }}</textarea>
+                    </div>
+                    
+                    <!-- Confidential Comments for Chairs -->
+                    <div>
+                        <label for="comments_chair" class="block text-sm font-medium text-gray-700 mb-2">
+                            Confidential Comments for Chairs
+                        </label>
+                        <textarea id="comments_chair" name="comments_chair" rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Any confidential comments for program chairs (authors won't see this)...">{{ isset($review) ? $review->comments_chair : '' }}</textarea>
+                        <p class="mt-1 text-sm text-gray-500">These comments are confidential and will only be seen by program chairs.</p>
+                    </div>
+                </div>
+            </div>
             
             <!-- Action Buttons -->
             <div class="flex justify-between pt-6 border-t">
@@ -341,7 +412,7 @@
                     <button type="submit" 
                             name="submit_review" 
                             value="1"
-                            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-700"
                             id="submitBtn">
                         <i class="fas fa-check-circle mr-2"></i>
                         @if($review->exists)
@@ -353,50 +424,63 @@
                 </div>
             </div>
         </form>
-        
-        <!-- Guidelines -->
-        <div class="mt-8 bg-blue-50 rounded-xl shadow p-6">
-            <h3 class="text-lg font-semibold text-blue-800 mb-4">Review Guidelines</h3>
-            <ul class="space-y-2 text-blue-700">
-                <li class="flex items-start">
-                    <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                    <span>Be constructive and specific in your feedback</span>
-                </li>
-                <li class="flex items-start">
-                    <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                    <span>Focus on the paper's scientific content and methodology</span>
-                </li>
-                <li class="flex items-start">
-                    <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                    <span>Maintain a professional and respectful tone</span>
-                </li>
-                <li class="flex items-start">
-                    <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                    <span>Provide actionable suggestions for improvement</span>
-                </li>
-                <li class="flex items-start">
-                    <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                    <span>Score fairly based on the criteria provided</span>
-                </li>
-            </ul>
-        </div>
     </div>
 </div>
 
 <script>
-    // Character counter for comments_author
+    // Character counter for comments_author (just for display, no validation)
     const authorTextarea = document.getElementById('comments_author');
     const authorCharsDiv = document.getElementById('author-chars');
     
     function updateCharacterCount() {
-        const length = authorTextarea.value.length;
-        authorCharsDiv.innerHTML = `Characters: <span class="font-medium ${length < 50 ? 'text-red-600' : 'text-green-600'}">${length}</span>`;
+        if (authorTextarea && authorCharsDiv) {
+            const length = authorTextarea.value.length;
+            authorCharsDiv.innerHTML = `Characters: ${length}`;
+        }
     }
     
     if (authorTextarea && authorCharsDiv) {
         authorTextarea.addEventListener('input', updateCharacterCount);
         updateCharacterCount(); // Initial call
     }
+    
+    // Show/hide revision suggestions based on recommendation
+    const recommendationRadios = document.querySelectorAll('.recommendation-radio');
+    const revisionContainer = document.getElementById('revision-suggestions-container');
+    
+    function toggleRevisionSuggestions() {
+        if (!revisionContainer) return;
+        
+        let selectedValue = null;
+        recommendationRadios.forEach(radio => {
+            if (radio.checked) {
+                selectedValue = radio.value;
+            }
+        });
+        
+        // Show revision suggestions for revision recommendations
+        if (selectedValue === 'accept_with_minor_revision' || selectedValue === 'accept_with_major_revision') {
+            revisionContainer.style.display = 'block';
+            // Make revision suggestions required
+            const revisionTextarea = document.getElementById('revision_suggestions');
+            if (revisionTextarea) {
+                revisionTextarea.required = true;
+            }
+        } else {
+            revisionContainer.style.display = 'none';
+            const revisionTextarea = document.getElementById('revision_suggestions');
+            if (revisionTextarea) {
+                revisionTextarea.required = false;
+            }
+        }
+    }
+    
+    recommendationRadios.forEach(radio => {
+        radio.addEventListener('change', toggleRevisionSuggestions);
+    });
+    
+    // Initial call to set correct state
+    toggleRevisionSuggestions();
     
     // Total score calculation
     function updateTotalScore() {
@@ -434,23 +518,24 @@
     const form = document.getElementById('reviewForm');
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Check if this is a save draft submission
-            const isSaveDraft = document.activeElement && 
-                                document.activeElement.getAttribute('name') === 'save_draft';
+            console.log('Form submission started');
             
-            console.log('Form submission:', {
-                activeElement: document.activeElement ? document.activeElement.getAttribute('name') : 'unknown',
-                isSaveDraft: isSaveDraft
+            // Get selected recommendation
+            let selectedRecommendation = null;
+            recommendationRadios.forEach(radio => {
+                if (radio.checked) {
+                    selectedRecommendation = radio.value;
+                }
             });
             
-            // Skip validation for save draft
-            if (isSaveDraft) {
-                console.log('Saving draft - skipping validation');
-                return true;
+            let errors = [];
+            
+            // Validate recommendation
+            if (!selectedRecommendation) {
+                errors.push('Please select a recommendation.');
             }
             
-            // Validate for final submission
-            const commentsAuthor = document.getElementById('comments_author').value;
+            // Validate each criterion
             const relevance = document.getElementById('criteria_relevance').value;
             const originality = document.getElementById('criteria_originality').value;
             const quality = document.getElementById('criteria_quality').value;
@@ -458,18 +543,20 @@
             const clarity = document.getElementById('criteria_clarity').value;
             const contribution = document.getElementById('criteria_contribution').value;
             
-            let errors = [];
-            
-            // Validate comments for authors
-            
-            
-            // Validate each criterion
             if (relevance === '') errors.push('Please enter a score for Relevance to Conference Theme.');
             if (originality === '') errors.push('Please enter a score for Originality & Innovation.');
             if (quality === '') errors.push('Please enter a score for Technical/Academic Quality.');
             if (impact === '') errors.push('Please enter a score for Practical Impact & Applicability.');
             if (clarity === '') errors.push('Please enter a score for Clarity & Organization.');
             if (contribution === '') errors.push('Please enter a score for Contribution to Knowledge.');
+            
+            // Validate revision suggestions if revision is recommended
+            if (selectedRecommendation === 'accept_with_minor_revision' || selectedRecommendation === 'accept_with_major_revision') {
+                const revisionSuggestions = document.getElementById('revision_suggestions').value;
+                if (!revisionSuggestions || revisionSuggestions.trim() === '') {
+                    errors.push('Please provide revision suggestions when recommending revisions.');
+                }
+            }
             
             if (errors.length > 0) {
                 e.preventDefault();

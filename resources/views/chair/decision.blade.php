@@ -51,7 +51,7 @@
                         </div>
                         <div>
                             <p class="text-sm text-gray-600">Submitted</p>
-                            <p class="font-medium">{{ $paper->submitted_at->format('F d, Y') }}</p>
+                            <p class="font-medium">{{ $paper->submitted_at?->format('F d, Y') ?? 'N/A' }}</p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-600">Current Status</p>
@@ -67,10 +67,15 @@
                             </span>
                         </div>
                     </div>
+                     
                 </div>
             </div>
+             <div>
+                <p class="text-sm text-gray-600">Abstract</p>
+                <p class="font-medium">{{ $paper->abstract }}</p>
+            </div>
         </div>
-        
+         
         <!-- Reviews Summary with Scoring Criteria -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Peer Reviews Summary</h3>
@@ -188,95 +193,287 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Individual Review Details -->
                 <div class="mt-8">
                     <h4 class="text-md font-semibold text-gray-800 mb-4">Individual Review Details</h4>
+                    
+                    @php
+                        $reviewers = $completedReviews->values(); // Reset indices
+                        $reviewer1 = $reviewers->get(0);
+                        $reviewer2 = $reviewers->get(1);
+                    @endphp
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        @foreach($completedReviews as $review)
-                        <div class="border rounded-lg p-5 {{ $loop->iteration == 1 ? 'border-blue-200 bg-blue-50' : 'border-purple-200 bg-purple-50' }}">
+                        <!-- Reviewer 1 - Left Column -->
+                        <div class="border rounded-lg p-5 border-blue-200 bg-blue-50">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded-full 
-                                        {{ $loop->iteration == 1 ? 'bg-blue-200 text-blue-800' : 'bg-purple-200 text-purple-800' }}">
-                                        Reviewer {{ $loop->iteration }}
+                                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-blue-200 text-blue-800">
+                                        Reviewer 1
                                     </span>
-                                    <p class="text-sm text-gray-600 mt-2">{{ $review->reviewer->full_name }}</p>
+                                    @if($reviewer1)
+                                    <p class="text-sm text-gray-600 mt-2">{{ $reviewer1->reviewer->full_name }}</p>
+                                    @endif
                                 </div>
+                                @if($reviewer1)
                                 @php
-                                    $reviewerTotal = ($review->criteria_relevance ?? 0) + 
-                                                     ($review->criteria_originality ?? 0) + 
-                                                     ($review->criteria_quality ?? 0) + 
-                                                     ($review->criteria_impact ?? 0) + 
-                                                     ($review->criteria_clarity ?? 0) + 
-                                                     ($review->criteria_contribution ?? 0);
+                                    $reviewerTotal = ($reviewer1->criteria_relevance ?? 0) + 
+                                                    ($reviewer1->criteria_originality ?? 0) + 
+                                                    ($reviewer1->criteria_quality ?? 0) + 
+                                                    ($reviewer1->criteria_impact ?? 0) + 
+                                                    ($reviewer1->criteria_clarity ?? 0) + 
+                                                    ($reviewer1->criteria_contribution ?? 0);
                                     $reviewerColor = $reviewerTotal >= 80 ? 'text-green-600' : ($reviewerTotal >= 60 ? 'text-yellow-600' : 'text-red-600');
                                 @endphp
                                 <div class="text-right">
                                     <span class="text-2xl font-bold {{ $reviewerColor }}">{{ $reviewerTotal }}</span>
                                     <span class="text-sm text-gray-500">/100</span>
                                 </div>
+                                @endif
                             </div>
                             
-                            <!-- Score Breakdown -->
-                            <div class="space-y-2 mb-4">
-                                <div class="grid grid-cols-2 gap-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Relevance:</span>
-                                        <span class="font-medium">{{ $review->criteria_relevance ?? 0 }}/20</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Originality:</span>
-                                        <span class="font-medium">{{ $review->criteria_originality ?? 0 }}/20</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Quality:</span>
-                                        <span class="font-medium">{{ $review->criteria_quality ?? 0 }}/15</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Impact:</span>
-                                        <span class="font-medium">{{ $review->criteria_impact ?? 0 }}/15</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Clarity:</span>
-                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/15</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Contribution:</span>
-                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/15</span>
+                            @if($reviewer1)
+                                <!-- Score Breakdown -->
+                                <div class="space-y-2 mb-4">
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Relevance:</span>
+                                            <span class="font-medium">{{ $reviewer1->criteria_relevance ?? 0 }}/20</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Originality:</span>
+                                            <span class="font-medium">{{ $reviewer1->criteria_originality ?? 0 }}/20</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Quality:</span>
+                                            <span class="font-medium">{{ $reviewer1->criteria_quality ?? 0 }}/15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Impact:</span>
+                                            <span class="font-medium">{{ $reviewer1->criteria_impact ?? 0 }}/15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Clarity:</span>
+                                            <span class="font-medium">{{ $reviewer1->criteria_clarity ?? 0 }}/15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Contribution:</span>
+                                            <span class="font-medium">{{ $reviewer1->criteria_contribution ?? 0 }}/15</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Recommendation -->
-                            @if($review->recommendation)
-                            <div class="mt-3 pt-3 border-t border-gray-200">
-                                <p class="text-sm font-medium text-gray-700">Recommendation:</p>
-                                <p class="text-sm {{ 
-                                    $review->recommendation == 'strong_accept' || $review->recommendation == 'accept' ? 'text-green-600' : 
-                                    ($review->recommendation == 'weak_reject' || $review->recommendation == 'reject' || $review->recommendation == 'strong_reject' ? 'text-red-600' : 'text-yellow-600') 
-                                }}">
-                                    {{ ucfirst(str_replace('_', ' ', $review->recommendation)) }}
-                                </p>
-                            </div>
+                                
+                                <!-- Recommendation -->
+                                @if($reviewer1->recommendation)
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <p class="text-sm font-medium text-gray-700">Reviewer Recommendation:</p>
+                                    <p class="text-sm {{ 
+                                        $reviewer1->recommendation == 'accept_without_revision' ? 'text-green-600' : 
+                                        ($reviewer1->recommendation == 'accept_with_minor_revision' ? 'text-yellow-600' : 
+                                        ($reviewer1->recommendation == 'accept_with_major_revision' ? 'text-orange-600' : 'text-red-600')) 
+                                    }}">
+                                        {{ ucfirst(str_replace('_', ' ', $reviewer1->recommendation)) }}
+                                    </p>
+                                </div>
+                                @endif
+                                
+                                <!-- Strengths -->
+                                @if($reviewer1->strengths)
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <p class="text-sm font-medium text-gray-700">Strengths:</p>
+                                    <p class="text-sm text-gray-600">{{ $reviewer1->strengths }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Weaknesses -->
+                                @if($reviewer1->weaknesses)
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium text-gray-700">Weaknesses & Limitations:</p>
+                                    <p class="text-sm text-gray-600">{{ $reviewer1->weaknesses }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Suggestions -->
+                                @if($reviewer1->suggestions)
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium text-gray-700">Suggestions for Improvement:</p>
+                                    <p class="text-sm text-gray-600">{{ $reviewer1->suggestions }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Revision Suggestions -->
+                                @if($reviewer1->revision_suggestions)
+                                <div class="mt-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                                    <p class="text-sm font-medium text-yellow-800">Revision Suggestions:</p>
+                                    <p class="text-sm text-yellow-700">{{ $reviewer1->revision_suggestions }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Comments to Authors -->
+                                @if($reviewer1->comments_author)
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
+                                    <p class="text-sm text-gray-600 line-clamp-3">{{ Str::limit($reviewer1->comments_author, 200) }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Confidential Comments for Chairs -->
+                                @if($reviewer1->comments_chair)
+                                <div class="mt-3 p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+                                    <p class="text-sm font-medium text-red-800">Confidential Comments for Chairs:</p>
+                                    <p class="text-sm text-red-700">{{ $reviewer1->comments_chair }}</p>
+                                </div>
+                                @endif
+                                
+                                <div class="mt-3">
+                                    <a href="{{ route('reviews.show', $reviewer1) }}" 
+                                    class="text-sm text-blue-600 hover:text-blue-800">
+                                        View Full Review <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            @else
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-user-slash text-4xl mb-2"></i>
+                                    <p>No review from Reviewer 1 yet</p>
+                                </div>
                             @endif
-                            
-                            <!-- Comments Summary -->
-                            @if($review->comments_author)
-                            <div class="mt-3">
-                                <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
-                                <p class="text-sm text-gray-600 line-clamp-3">{{ Str::limit($review->comments_author, 150) }}</p>
-                            </div>
-                            @endif
-                            
-                            <div class="mt-3">
-                                <a href="{{ route('reviews.show', $review) }}" 
-                                   class="text-sm text-blue-600 hover:text-blue-800">
-                                    View Full Review <i class="fas fa-arrow-right ml-1"></i>
-                                </a>
-                            </div>
                         </div>
-                        @endforeach
+                        
+                        <!-- Reviewer 2 - Right Column -->
+                        <div class="border rounded-lg p-5 border-purple-200 bg-purple-50">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded-full bg-purple-200 text-purple-800">
+                                        Reviewer 2
+                                    </span>
+                                    @if($reviewer2)
+                                    <p class="text-sm text-gray-600 mt-2">{{ $reviewer2->reviewer->full_name }}</p>
+                                    @endif
+                                </div>
+                                @if($reviewer2)
+                                @php
+                                    $reviewerTotal = ($reviewer2->criteria_relevance ?? 0) + 
+                                                    ($reviewer2->criteria_originality ?? 0) + 
+                                                    ($reviewer2->criteria_quality ?? 0) + 
+                                                    ($reviewer2->criteria_impact ?? 0) + 
+                                                    ($reviewer2->criteria_clarity ?? 0) + 
+                                                    ($reviewer2->criteria_contribution ?? 0);
+                                    $reviewerColor = $reviewerTotal >= 80 ? 'text-green-600' : ($reviewerTotal >= 60 ? 'text-yellow-600' : 'text-red-600');
+                                @endphp
+                                <div class="text-right">
+                                    <span class="text-2xl font-bold {{ $reviewerColor }}">{{ $reviewerTotal }}</span>
+                                    <span class="text-sm text-gray-500">/100</span>
+                                </div>
+                                @endif
+                            </div>
+                            
+                            @if($reviewer2)
+                                <!-- Score Breakdown -->
+                                <div class="space-y-2 mb-4">
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Relevance:</span>
+                                            <span class="font-medium">{{ $reviewer2->criteria_relevance ?? 0 }}/20</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Originality:</span>
+                                            <span class="font-medium">{{ $reviewer2->criteria_originality ?? 0 }}/20</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Quality:</span>
+                                            <span class="font-medium">{{ $reviewer2->criteria_quality ?? 0 }}/15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Impact:</span>
+                                            <span class="font-medium">{{ $reviewer2->criteria_impact ?? 0 }}/15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Clarity:</span>
+                                            <span class="font-medium">{{ $reviewer2->criteria_clarity ?? 0 }}/15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Contribution:</span>
+                                            <span class="font-medium">{{ $reviewer2->criteria_contribution ?? 0 }}/15</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recommendation -->
+                                @if($reviewer2->recommendation)
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <p class="text-sm font-medium text-gray-700">Reviewer Recommendation:</p>
+                                    <p class="text-sm {{ 
+                                        $reviewer2->recommendation == 'accept_without_revision' ? 'text-green-600' : 
+                                        ($reviewer2->recommendation == 'accept_with_minor_revision' ? 'text-yellow-600' : 
+                                        ($reviewer2->recommendation == 'accept_with_major_revision' ? 'text-orange-600' : 'text-red-600')) 
+                                    }}">
+                                        {{ ucfirst(str_replace('_', ' ', $reviewer2->recommendation)) }}
+                                    </p>
+                                </div>
+                                @endif
+                                
+                                <!-- Strengths -->
+                                @if($reviewer2->strengths)
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <p class="text-sm font-medium text-gray-700">Strengths:</p>
+                                    <p class="text-sm text-gray-600">{{ $reviewer2->strengths }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Weaknesses -->
+                                @if($reviewer2->weaknesses)
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium text-gray-700">Weaknesses & Limitations:</p>
+                                    <p class="text-sm text-gray-600">{{ $reviewer2->weaknesses }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Suggestions -->
+                                @if($reviewer2->suggestions)
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium text-gray-700">Suggestions for Improvement:</p>
+                                    <p class="text-sm text-gray-600">{{ $reviewer2->suggestions }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Revision Suggestions -->
+                                @if($reviewer2->revision_suggestions)
+                                <div class="mt-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                                    <p class="text-sm font-medium text-yellow-800">Revision Suggestions:</p>
+                                    <p class="text-sm text-yellow-700">{{ $reviewer2->revision_suggestions }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Comments to Authors -->
+                                @if($reviewer2->comments_author)
+                                <div class="mt-3">
+                                    <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
+                                    <p class="text-sm text-gray-600 line-clamp-3">{{ Str::limit($reviewer2->comments_author, 200) }}</p>
+                                </div>
+                                @endif
+                                
+                                <!-- Confidential Comments for Chairs -->
+                                @if($reviewer2->comments_chair)
+                                <div class="mt-3 p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+                                    <p class="text-sm font-medium text-red-800">Confidential Comments for Chairs:</p>
+                                    <p class="text-sm text-red-700">{{ $reviewer2->comments_chair }}</p>
+                                </div>
+                                @endif
+                                
+                                <div class="mt-3">
+                                    <a href="{{ route('reviews.show', $reviewer2) }}" 
+                                    class="text-sm text-blue-600 hover:text-blue-800">
+                                        View Full Review <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            @else
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-user-slash text-4xl mb-2"></i>
+                                    <p>No review from Reviewer 2 yet</p>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
                 
@@ -343,10 +540,11 @@
                             <strong>Decision:</strong> 
                             <span class="px-3 py-1 ml-2 text-sm font-medium rounded-full 
                                 @if($paper->decision == 'accept') bg-green-100 text-green-800
+                                @elseif($paper->decision == 'accept_with_minor_revision') bg-yellow-100 text-yellow-800
+                                @elseif($paper->decision == 'accept_with_major_revision') bg-orange-100 text-orange-800
                                 @elseif($paper->decision == 'reject') bg-red-100 text-red-800
-                                @elseif($paper->decision == 'revise') bg-yellow-100 text-yellow-800
                                 @endif">
-                                {{ ucfirst($paper->decision) }}
+                                {{ ucfirst(str_replace('_', ' ', $paper->decision)) }}
                             </span>
                         </p>
                         @if($paper->decision_notes)
@@ -410,7 +608,7 @@
                     <!-- Decision Selection -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-3">Decision *</label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <label class="flex flex-col items-center p-4 border-2 border-green-200 rounded-lg hover:bg-green-50 cursor-pointer">
                                 <input type="radio" name="decision" value="accept" class="mb-3" required>
                                 <i class="fas fa-check-circle text-3xl text-green-600 mb-2"></i>
@@ -419,10 +617,17 @@
                             </label>
                             
                             <label class="flex flex-col items-center p-4 border-2 border-yellow-200 rounded-lg hover:bg-yellow-50 cursor-pointer">
-                                <input type="radio" name="decision" value="revise" class="mb-3" required>
+                                <input type="radio" name="decision" value="accept_with_minor_revision" class="mb-3" required>
                                 <i class="fas fa-edit text-3xl text-yellow-600 mb-2"></i>
-                                <span class="font-medium text-yellow-700">Revise & Resubmit</span>
-                                <span class="text-xs text-gray-600 text-center mt-1">Needs improvements</span>
+                                <span class="font-medium text-yellow-700 text-center">Accept with Minor Revision</span>
+                                <span class="text-xs text-gray-600 text-center mt-1">Small changes required</span>
+                            </label>
+                            
+                            <label class="flex flex-col items-center p-4 border-2 border-orange-200 rounded-lg hover:bg-orange-50 cursor-pointer">
+                                <input type="radio" name="decision" value="accept_with_major_revision" class="mb-3" required>
+                                <i class="fas fa-redo-alt text-3xl text-orange-600 mb-2"></i>
+                                <span class="font-medium text-orange-700 text-center">Accept with Major Revision</span>
+                                <span class="text-xs text-gray-600 text-center mt-1">Significant changes required</span>
                             </label>
                             
                             <label class="flex flex-col items-center p-4 border-2 border-red-200 rounded-lg hover:bg-red-50 cursor-pointer">
@@ -466,7 +671,7 @@
                     <!-- Submit Button -->
                     <div class="flex justify-end pt-6 border-t">
                         <button type="submit" 
-                                class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                                class="px-8 py-3 bg-primary text-white rounded-lg hover:bg-primary-700 font-medium">
                             <i class="fas fa-gavel mr-2"></i> Submit Decision
                         </button>
                     </div>
@@ -520,21 +725,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to toggle revision deadline field
     function toggleRevisionDeadline() {
         const selectedDecision = document.querySelector('input[name="decision"]:checked');
-        
-        console.log('Toggle function called', {
-            selectedDecision: selectedDecision ? selectedDecision.value : 'none'
-        });
-        
-        if (selectedDecision && selectedDecision.value === 'revise') {
-            console.log('Showing revision deadline field');
+
+        if (!selectedDecision) return;
+
+        if (selectedDecision.value === 'accept_with_minor_revision' || selectedDecision.value === 'accept_with_major_revision') {
             revisionDeadlineContainer.style.display = 'block';
-            revisionDeadlineContainer.classList.remove('hidden');
             revisionDeadlineInput.required = true;
             revisionDeadlineInput.disabled = false;
         } else {
-            console.log('Hiding revision deadline field');
             revisionDeadlineContainer.style.display = 'none';
-            revisionDeadlineContainer.classList.add('hidden');
             revisionDeadlineInput.required = false;
             revisionDeadlineInput.disabled = true;
             revisionDeadlineInput.value = '';
@@ -563,8 +762,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // For revise decision, ensure deadline is set
-            if (selectedDecision.value === 'revise') {
+            // For revision decisions, ensure deadline is set
+            if (selectedDecision.value === 'accept_with_minor_revision' || selectedDecision.value === 'accept_with_major_revision') {
                 revisionDeadlineInput.disabled = false;
                 
                 if (!revisionDeadlineInput.value) {
@@ -584,9 +783,9 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleRevisionDeadline();
     
     // Handle old input
-    @if(old('decision') === 'revise')
-        console.log('Old decision was revise');
-        const reviseRadio = document.querySelector('input[name="decision"][value="revise"]');
+    @if(old('decision') === 'accept_with_minor_revision' || old('decision') === 'accept_with_major_revision')
+        console.log('Old decision was revision');
+        const reviseRadio = document.querySelector('input[name="decision"][value="' + "{{ old('decision') }}" + '"]');
         if (reviseRadio) {
             reviseRadio.checked = true;
             toggleRevisionDeadline();

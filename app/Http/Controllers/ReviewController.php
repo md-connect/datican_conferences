@@ -129,21 +129,26 @@ class ReviewController extends Controller
 
         if (!$isDraft) {
             $rules += [
-                // Detailed Comments (Required)
-                'comments_author' => 'required|string|min:50',
+                // Detailed Comments
+                'comments_author' => 'nullable|string',
                 'strengths' => 'nullable|string',
                 'weaknesses' => 'nullable|string',
                 'suggestions' => 'nullable|string',
-                'revision_suggestions' => 'nullable|string|max:2000',
                 'comments_chair' => 'nullable|string',
+                
+                // Recommendation
+                'recommendation' => 'required|in:accept_without_revision,accept_with_minor_revision,accept_with_major_revision,reject',
+                
+                // Revision suggestions (required when revision is recommended)
+                'revision_suggestions' => 'nullable|required_if:recommendation,accept_with_minor_revision,accept_with_major_revision|string|max:2000',
                 
                 // Scoring Criteria
                 'criteria_relevance' => 'required|integer|min:0|max:20',
                 'criteria_originality' => 'required|integer|min:0|max:20',
                 'criteria_quality' => 'required|integer|min:0|max:15',
                 'criteria_impact' => 'required|integer|min:0|max:15',
-                'criteria_clarity' => 'required|integer|min:0|max:10',
-                'criteria_contribution' => 'required|integer|min:0|max:10',
+                'criteria_clarity' => 'required|integer|min:0|max:15',
+                'criteria_contribution' => 'required|integer|min:0|max:15',
             ];
         }
 
@@ -189,6 +194,11 @@ class ReviewController extends Controller
         }
         if ($request->has('comments_chair')) {
             $updateData['comments_chair'] = $request->comments_chair;
+        }
+        
+        // RECOMMENDATION
+        if ($request->has('recommendation')) {
+            $updateData['recommendation'] = $request->recommendation;
         }
         
         // SCORING CRITERIA FIELDS
@@ -239,7 +249,7 @@ class ReviewController extends Controller
             // Add revision-specific message
             if ($request->is_revision_review) {
                 $message = 'Revision review submitted successfully!';
-            } elseif (!empty($request->revision_suggestions)) {
+            } elseif (in_array($request->recommendation, ['accept_with_minor_revision', 'accept_with_major_revision'])) {
                 $message = 'Review submitted with revision suggestions. The chair will review these suggestions.';
             }
         }
@@ -358,16 +368,6 @@ class ReviewController extends Controller
         // Determine if it's a draft based on which button was clicked
         $isDraft = $request->has('save_draft') && $request->save_draft == '1';
 
-        // Log for debugging
-        \Log::info('Update request', [
-            'review_id' => $review->id,
-            'has_save_draft' => $request->has('save_draft'),
-            'save_draft_value' => $request->input('save_draft'),
-            'has_submit' => $request->has('submit_review'),
-            'isDraft' => $isDraft,
-            'all_input' => $request->all()
-        ]);
-
         $rules = [
             'is_revision_review' => 'nullable|boolean',
             'original_review_id' => 'nullable|exists:review_assignments,id',
@@ -375,21 +375,26 @@ class ReviewController extends Controller
 
         if (!$isDraft) {
             $rules += [
-                // Detailed Comments (Required)
-                'comments_author' => 'required|string',
+                // Detailed Comments
+                'comments_author' => 'nullable|string',
                 'strengths' => 'nullable|string',
                 'weaknesses' => 'nullable|string',
                 'suggestions' => 'nullable|string',
-                'revision_suggestions' => 'nullable|string|max:2000',
                 'comments_chair' => 'nullable|string',
+                
+                // Recommendation
+                'recommendation' => 'required|in:accept_without_revision,accept_with_minor_revision,accept_with_major_revision,reject',
+                
+                // Revision suggestions (required when revision is recommended)
+                'revision_suggestions' => 'nullable|required_if:recommendation,accept_with_minor_revision,accept_with_major_revision|string|max:2000',
                 
                 // Scoring Criteria
                 'criteria_relevance' => 'required|integer|min:0|max:20',
                 'criteria_originality' => 'required|integer|min:0|max:20',
                 'criteria_quality' => 'required|integer|min:0|max:15',
                 'criteria_impact' => 'required|integer|min:0|max:15',
-                'criteria_clarity' => 'required|integer|min:0|max:10',
-                'criteria_contribution' => 'required|integer|min:0|max:10',
+                'criteria_clarity' => 'required|integer|min:0|max:15',
+                'criteria_contribution' => 'required|integer|min:0|max:15',
             ];
         }
 
@@ -429,6 +434,11 @@ class ReviewController extends Controller
         }
         if ($request->has('comments_chair')) {
             $updateData['comments_chair'] = $request->comments_chair;
+        }
+        
+        // RECOMMENDATION
+        if ($request->has('recommendation')) {
+            $updateData['recommendation'] = $request->recommendation;
         }
         
         // SCORING CRITERIA FIELDS
@@ -479,7 +489,7 @@ class ReviewController extends Controller
             // Add revision-specific message
             if ($request->is_revision_review) {
                 $message = 'Revision review submitted successfully!';
-            } elseif (!empty($request->revision_suggestions)) {
+            } elseif (in_array($request->recommendation, ['accept_with_minor_revision', 'accept_with_major_revision'])) {
                 $message = 'Review updated with revision suggestions. The chair will review these suggestions.';
             }
         }
