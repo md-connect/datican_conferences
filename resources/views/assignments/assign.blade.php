@@ -60,9 +60,9 @@
                                                 Load: {{ $suggestion['assigned_count'] ?? 0 }}/10
                                             </span>
                                             @if(isset($suggestion['expertise_score']))
-                                            <span class="text-xs px-2 py-1 bg-purple-100 rounded-full">
+                                            <!-- <span class="text-xs px-2 py-1 bg-purple-100 rounded-full">
                                                 Expertise: {{ $suggestion['expertise_score'] ?? 0 }}%
-                                            </span>
+                                            </span> -->
                                             @endif
                                         </div>
                                         @if(isset($suggestion['expertise']) && count($suggestion['expertise']) > 0)
