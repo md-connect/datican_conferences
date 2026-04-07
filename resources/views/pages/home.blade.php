@@ -32,7 +32,7 @@
         <div class="container mx-auto px-4">
             <div class="max-w-4xl mx-auto text-center">
                 <div class="mb-6">
-                    <span class="bg-accent text-white px-4 py-1 rounded-full text-2xl font-semibold">1st International Conference</span>
+                    <span class="bg-accent text-white px-4 py-1 rounded-full text-2xl font-semibold">DATICAN International Conference</span>
                 </div>
                 <h1 class="text-4xl md:text-5xl font-bold mb-6">Theme: "Improving Medical Diagnostics in Nigeria Using AI and Data Science"</h1>
                 <p class="text-xl mb-8 text-gray-200">Join leading experts, researchers, and practitioners in advancing healthcare through artificial intelligence and data science.</p>
