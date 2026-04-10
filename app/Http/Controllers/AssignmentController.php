@@ -504,4 +504,122 @@ class AssignmentController extends Controller
         return redirect()->back()->with('success', 'Reminder sent successfully!');
     }
 
+    /**
+ * Force assign a reviewer to a paper (bypasses all limits)
+ * This method allows assigning a reviewer even if:
+ * - Paper already has max reviewers
+ * - Reviewer is overloaded
+ * - Reviewer has conflicts (with warning)
+ */
+public function forceAssign(Request $request, Paper $paper)
+{
+    $request->validate([
+        'reviewer_id' => 'required|exists:users,id',
+        'reason' => 'nullable|string|max:500',
+        'override_conflicts' => 'sometimes|boolean',
+    ]);
+    
+    $reviewer = User::findOrFail($request->reviewer_id);
+    
+    // Check if reviewer is actually a reviewer
+    if (!$reviewer->is_reviewer) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This user is not marked as a reviewer. Please mark them as a reviewer first.'
+        ], 422);
+    }
+    
+    $warnings = [];
+    $overrideConflicts = $request->boolean('override_conflicts', false);
+    
+    // Check for conflicts (with override option)
+    $hasConflict = $paper->authors()->where('users.id', $reviewer->id)->exists();
+    if ($hasConflict) {
+        if (!$overrideConflicts) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This reviewer is an author of the paper. Use "override conflicts" to force assign.',
+                'has_conflict' => true
+            ], 422);
+        }
+        $warnings[] = 'Reviewer is an author of this paper (overridden).';
+    }
+    
+    // Check if already assigned
+    $existingAssignment = ReviewAssignment::where('paper_id', $paper->id)
+        ->where('reviewer_id', $reviewer->id)
+        ->first();
+    
+    if ($existingAssignment) {
+        if ($existingAssignment->status === 'completed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This reviewer has already completed a review for this paper.'
+            ], 422);
+        }
+        
+        // Reactivate declined or pending assignment
+        $existingAssignment->update([
+            'status' => 'pending',
+            'assigned_by' => Auth::id(),
+            'assigned_at' => now(),
+            'deadline' => now()->addWeeks(2),
+            'notes' => 'Force reassigned by chair. Reason: ' . ($request->reason ?? 'No reason provided'),
+            'updated_at' => now()
+        ]);
+        
+        $message = "Reviewer re-assigned successfully! Previous assignment reactivated.";
+        $action = "reactivated";
+        
+    } else {
+        // Create new assignment
+        $assignment = ReviewAssignment::create([
+            'paper_id' => $paper->id,
+            'reviewer_id' => $reviewer->id,
+            'assigned_by' => Auth::id(),
+            'status' => 'pending',
+            'assigned_at' => now(),
+            'deadline' => now()->addWeeks(2),
+            'notes' => 'Force assigned by chair. Reason: ' . ($request->reason ?? 'No reason provided')
+        ]);
+        
+        $message = "Reviewer force assigned successfully!";
+        $action = "assigned";
+    }
+    
+    // Log the force assignment
+    \Log::info('Force assignment performed', [
+        'paper_id' => $paper->id,
+        'paper_title' => $paper->title,
+        'reviewer_id' => $reviewer->id,
+        'reviewer_name' => $reviewer->name,
+        'assigned_by' => Auth::id(),
+        'assigned_by_name' => Auth::user()->name,
+        'reason' => $request->reason,
+        'override_conflicts' => $overrideConflicts,
+        'warnings' => $warnings,
+        'action' => $action
+    ]);
+    
+    // Update paper status if needed
+    if (in_array($paper->status, ['submitted', 'abstract_submitted'])) {
+        $paper->update(['status' => 'under_review']);
+    }
+    
+    // Get current assignment count
+    $currentAssignments = $paper->reviewAssignments()
+        ->whereIn('status', ['pending', 'under_review', 'in_progress'])
+        ->count();
+    
+    return response()->json([
+        'success' => true,
+        'message' => $message,
+        'warnings' => $warnings,
+        'assignment_count' => $currentAssignments,
+        'max_reviewers' => 2, // Your max reviewers per paper
+        'action' => $action
+    ]);
+}
+
+
 }

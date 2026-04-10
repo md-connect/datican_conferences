@@ -67,7 +67,7 @@ Route::prefix('conference')->group(function () {
 Route::middleware(['auth'])->group(function () {
     // Unified Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -178,6 +178,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('/analytics/export/{type}', [AnalyticsController::class, 'export'])->name('analytics.export');
         Route::get('/analytics/reviewers', [AnalyticsController::class, 'reviewerPerformance'])->name('analytics.reviewers');
+        Route::post('/papers/{paper}/resend-decision', [ChairController::class, 'resendDecisionEmail'])
+        ->name('chair.papers.resend-decision')
+        ->middleware(['auth', 'chair']);
     });
     
     // ==================== ADMIN-ONLY ROUTES ====================

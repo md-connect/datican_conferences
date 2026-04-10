@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaperDecisionMail;
 
 class ChairController extends Controller
 {
@@ -561,19 +563,67 @@ class ChairController extends Controller
                 'has_revision_notes' => !is_null($paper->fresh()->revision_notes)
             ]);
             
-            // Prepare success message
+            // ========== SEND EMAIL NOTIFICATION ==========
+            try {
+                $emailSent = false;
+                $recipients = [];
+                
+                foreach ($paper->authors as $author) {
+                    if (filter_var($author->email, FILTER_VALIDATE_EMAIL)) {
+                        Mail::to($author->email)->send(new PaperDecisionMail(
+                            $paper,
+                            $request->decision,
+                            $request->decision_notes,
+                            $request->revision_deadline
+                        ));
+                        $recipients[] = $author->email;
+                        $emailSent = true;
+                        
+                        \Log::info('Decision email sent to author', [
+                            'paper_id' => $paper->id,
+                            'author_email' => $author->email,
+                            'author_name' => $author->first_name . ' ' . $author->last_name
+                        ]);
+                    }
+                }
+                
+                if ($emailSent) {
+                    \Log::info('All decision emails sent successfully', [
+                        'paper_id' => $paper->id,
+                        'recipients_count' => count($recipients),
+                        'recipients' => $recipients
+                    ]);
+                } else {
+                    \Log::warning('No valid email addresses found for paper authors', [
+                        'paper_id' => $paper->id,
+                        'authors_count' => $paper->authors->count()
+                    ]);
+                }
+                
+            } catch (\Exception $emailError) {
+                // Don't fail the decision if email fails - just log the error
+                \Log::error('Failed to send decision notification emails', [
+                    'paper_id' => $paper->id,
+                    'error' => $emailError->getMessage(),
+                    'trace' => $emailError->getTraceAsString()
+                ]);
+            }
+            
+            // Prepare success message with email status
+            $emailStatus = $emailSent ?? false ? ' Notification sent to authors.' : '';
+            
             if ($request->decision == 'accept') {
-                $message = 'Paper accepted successfully!';
+                $message = 'Paper accepted successfully!' . $emailStatus;
             } elseif ($request->decision == 'reject') {
-                $message = 'Paper rejected successfully!';
+                $message = 'Paper rejected successfully!' . $emailStatus;
             } elseif ($request->decision == 'accept_with_minor_revision') {
                 $message = 'Paper accepted with minor revisions requested. Author must submit revisions by ' . 
-                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y');
+                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y') . $emailStatus;
             } elseif ($request->decision == 'accept_with_major_revision') {
                 $message = 'Paper accepted with major revisions requested. Author must submit revisions by ' . 
-                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y');
+                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y') . $emailStatus;
             } else {
-                $message = 'Decision submitted successfully!';
+                $message = 'Decision submitted successfully!' . $emailStatus;
             }
             
             return redirect()->route('chair.papers')
@@ -676,5 +726,45 @@ class ChairController extends Controller
         $accepted = Paper::where('conference_year', $year)->where('status', 'accepted')->count();
         
         return $total > 0 ? round(($accepted / $total) * 100, 2) : 0;
+    }
+
+    /**
+     * Resend decision email to authors
+     */
+    public function resendDecisionEmail(Paper $paper)
+    {
+        if (!$paper->decision_made_at) {
+            return redirect()->back()->with('error', 'No decision has been made for this paper yet.');
+        }
+        
+        try {
+            $recipients = [];
+            foreach ($paper->authors as $author) {
+                if (filter_var($author->email, FILTER_VALIDATE_EMAIL)) {
+                    Mail::to($author->email)->send(new PaperDecisionMail(
+                        $paper,
+                        $paper->decision,
+                        $paper->decision_notes,
+                        $paper->revision_deadline
+                    ));
+                    $recipients[] = $author->email;
+                }
+            }
+            
+            \Log::info('Decision email resent', [
+                'paper_id' => $paper->id,
+                'recipients' => $recipients
+            ]);
+            
+            return redirect()->back()->with('success', 'Decision email resent to ' . count($recipients) . ' author(s).');
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to resend decision email', [
+                'paper_id' => $paper->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to resend email: ' . $e->getMessage());
+        }
     }
 }
