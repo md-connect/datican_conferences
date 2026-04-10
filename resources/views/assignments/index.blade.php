@@ -343,169 +343,169 @@
         @endif
 
         <!-- Assignments Tab -->
-@if(request('tab') == 'assignments')
-<div id="tab-content-assignments" class="tab-content">
-    <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
-            <h3 class="font-semibold text-gray-800">All Assignments ({{ $assignments->total() }})</h3>
-            <div class="flex space-x-2">
-                <select name="status_filter" id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                    <option value="">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="under_review">Under Review</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="declined">Declined</option>
-                </select>
-                <input type="text" placeholder="Search by paper ID or reviewer..." 
-                       class="px-4 py-2 border border-gray-300 rounded-lg text-sm"
-                       id="searchAssignments">
-                <a href="{{ route('assignments.export') }}?year={{ $year }}" 
-                   class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
-                    <i class="fas fa-download mr-1"></i> Export
-                </a>
+        @if(request('tab') == 'assignments')
+        <div id="tab-content-assignments" class="tab-content">
+            <div class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
+                    <h3 class="font-semibold text-gray-800">All Assignments ({{ $assignments->total() }})</h3>
+                    <div class="flex space-x-2">
+                        <select name="status_filter" id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="under_review">Under Review</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="declined">Declined</option>
+                        </select>
+                        <input type="text" placeholder="Search by paper ID or reviewer..." 
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                            id="searchAssignments">
+                        <a href="{{ route('assignments.export') }}?year={{ $year }}" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                            <i class="fas fa-download mr-1"></i> Export
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse($assignments as $assignment)
+                            <tr class="hover:bg-gray-50 {{ $assignment->deadline && $assignment->deadline < now() && !in_array($assignment->status, ['completed', 'declined']) ? 'bg-red-50' : '' }}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-mono text-sm font-medium text-gray-900">{{ $assignment->paper->anonymous_id }}</div>
+                                    <div class="text-xs text-gray-500">{{ $assignment->paper->topic_area }}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900 truncate max-w-xs">{{ Str::limit($assignment->paper->title, 50) }}</div>
+                                    <div class="text-xs text-gray-500">Subm: {{ $assignment->paper->submitted_at ? $assignment->paper->submitted_at->format('M d') : 'N/A' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <span class="text-xs font-medium text-blue-700">
+                                                {{ strtoupper(substr($assignment->reviewer->first_name, 0, 1) . substr($assignment->reviewer->last_name, 0, 1)) }}
+                                            </span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-gray-900">{{ $assignment->reviewer->full_name }}</div>
+                                            <div class="text-xs text-gray-500">{{ $assignment->reviewer->email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $statusColors = [
+                                            'pending' => 'bg-yellow-100 text-yellow-800',
+                                            'under_review' => 'bg-blue-100 text-blue-800',
+                                            'in_progress' => 'bg-indigo-100 text-indigo-800',
+                                            'completed' => 'bg-green-100 text-green-800',
+                                            'declined' => 'bg-red-100 text-red-800',
+                                        ];
+                                    @endphp
+                                    <span class="px-2 py-1 text-xs rounded-full {{ $statusColors[$assignment->status] ?? 'bg-gray-100' }}">
+                                        {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}
+                                    </span>
+                                    @if($assignment->status == 'pending')
+                                    <div class="mt-1">
+                                        <button onclick="acceptAssignment({{ $assignment->id }})" 
+                                                class="text-xs text-green-600 hover:text-green-800 mr-2">Accept</button>
+                                        <button onclick="declineAssignment({{ $assignment->id }})" 
+                                                class="text-xs text-red-600 hover:text-red-800">Decline</button>
+                                    </div>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $assignment->assigned_at ? $assignment->assigned_at->format('M d, Y') : 'N/A' }}
+                                    <div class="text-xs text-gray-400">{{ $assignment->assigned_at ? $assignment->assigned_at->diffForHumans() : '' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($assignment->deadline)
+                                    <div class="text-sm {{ $assignment->deadline < now() && !in_array($assignment->status, ['completed', 'declined']) ? 'text-red-600 font-bold' : 'text-gray-600' }}">
+                                        {{ $assignment->deadline->format('M d, Y') }}
+                                    </div>
+                                    @if($assignment->deadline < now() && !in_array($assignment->status, ['completed', 'declined']))
+                                    <div class="text-xs text-red-500">Overdue</div>
+                                    @endif
+                                    @else
+                                    <span class="text-sm text-gray-400">No deadline</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($assignment->status == 'completed')
+                                        @php
+                                            $totalScore = ($assignment->criteria_relevance ?? 0) + 
+                                                        ($assignment->criteria_originality ?? 0) + 
+                                                        ($assignment->criteria_quality ?? 0) + 
+                                                        ($assignment->criteria_impact ?? 0) + 
+                                                        ($assignment->criteria_clarity ?? 0) + 
+                                                        ($assignment->criteria_contribution ?? 0);
+                                        @endphp
+                                        <div class="text-center">
+                                            <span class="text-sm font-bold {{ $totalScore >= 80 ? 'text-green-600' : ($totalScore >= 60 ? 'text-yellow-600' : 'text-red-600') }}">
+                                                {{ $totalScore }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">/100</span>
+                                        </div>
+                                    @else
+                                        <span class="text-sm text-gray-400">-</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-2">
+                                        <a href="{{ route('reviews.show', $assignment) }}" 
+                                        class="text-blue-600 hover:text-blue-800" title="View Review">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if(in_array($assignment->status, ['pending', 'under_review', 'in_progress']))
+                                        <button onclick="sendReminder({{ $assignment->id }})" 
+                                                class="text-yellow-600 hover:text-yellow-800" title="Send Reminder">
+                                            <i class="fas fa-bell"></i>
+                                        </button>
+                                        <button onclick="reassignAssignment({{ $assignment->id }})" 
+                                                class="text-purple-600 hover:text-purple-800" title="Reassign">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </button>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="8" class="px-6 py-12 text-center">
+                                    <div class="text-gray-500">
+                                        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+                                        <p class="text-lg font-medium">No assignments found</p>
+                                        <p class="text-sm mt-2">No review assignments have been created yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                @if($assignments->hasPages())
+                <div class="px-6 py-4 border-t">
+                    {{ $assignments->withQueryString()->links() }}
+                </div>
+                @endif
             </div>
         </div>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper Title</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($assignments as $assignment)
-                    <tr class="hover:bg-gray-50 {{ $assignment->deadline && $assignment->deadline < now() && !in_array($assignment->status, ['completed', 'declined']) ? 'bg-red-50' : '' }}">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-mono text-sm font-medium text-gray-900">{{ $assignment->paper->anonymous_id }}</div>
-                            <div class="text-xs text-gray-500">{{ $assignment->paper->topic_area }}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900 truncate max-w-xs">{{ Str::limit($assignment->paper->title, 50) }}</div>
-                            <div class="text-xs text-gray-500">Subm: {{ $assignment->paper->submitted_at ? $assignment->paper->submitted_at->format('M d') : 'N/A' }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <span class="text-xs font-medium text-blue-700">
-                                        {{ strtoupper(substr($assignment->reviewer->first_name, 0, 1) . substr($assignment->reviewer->last_name, 0, 1)) }}
-                                    </span>
-                                </div>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">{{ $assignment->reviewer->full_name }}</div>
-                                    <div class="text-xs text-gray-500">{{ $assignment->reviewer->email }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @php
-                                $statusColors = [
-                                    'pending' => 'bg-yellow-100 text-yellow-800',
-                                    'under_review' => 'bg-blue-100 text-blue-800',
-                                    'in_progress' => 'bg-indigo-100 text-indigo-800',
-                                    'completed' => 'bg-green-100 text-green-800',
-                                    'declined' => 'bg-red-100 text-red-800',
-                                ];
-                            @endphp
-                            <span class="px-2 py-1 text-xs rounded-full {{ $statusColors[$assignment->status] ?? 'bg-gray-100' }}">
-                                {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}
-                            </span>
-                            @if($assignment->status == 'pending')
-                            <div class="mt-1">
-                                <button onclick="acceptAssignment({{ $assignment->id }})" 
-                                        class="text-xs text-green-600 hover:text-green-800 mr-2">Accept</button>
-                                <button onclick="declineAssignment({{ $assignment->id }})" 
-                                        class="text-xs text-red-600 hover:text-red-800">Decline</button>
-                            </div>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $assignment->assigned_at ? $assignment->assigned_at->format('M d, Y') : 'N/A' }}
-                            <div class="text-xs text-gray-400">{{ $assignment->assigned_at ? $assignment->assigned_at->diffForHumans() : '' }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($assignment->deadline)
-                            <div class="text-sm {{ $assignment->deadline < now() && !in_array($assignment->status, ['completed', 'declined']) ? 'text-red-600 font-bold' : 'text-gray-600' }}">
-                                {{ $assignment->deadline->format('M d, Y') }}
-                            </div>
-                            @if($assignment->deadline < now() && !in_array($assignment->status, ['completed', 'declined']))
-                            <div class="text-xs text-red-500">Overdue</div>
-                            @endif
-                            @else
-                            <span class="text-sm text-gray-400">No deadline</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($assignment->status == 'completed')
-                                @php
-                                    $totalScore = ($assignment->criteria_relevance ?? 0) + 
-                                                  ($assignment->criteria_originality ?? 0) + 
-                                                  ($assignment->criteria_quality ?? 0) + 
-                                                  ($assignment->criteria_impact ?? 0) + 
-                                                  ($assignment->criteria_clarity ?? 0) + 
-                                                  ($assignment->criteria_contribution ?? 0);
-                                @endphp
-                                <div class="text-center">
-                                    <span class="text-sm font-bold {{ $totalScore >= 80 ? 'text-green-600' : ($totalScore >= 60 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $totalScore }}
-                                    </span>
-                                    <span class="text-xs text-gray-500">/100</span>
-                                </div>
-                            @else
-                                <span class="text-sm text-gray-400">-</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex space-x-2">
-                                <a href="{{ route('reviews.show', $assignment) }}" 
-                                   class="text-blue-600 hover:text-blue-800" title="View Review">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                @if(in_array($assignment->status, ['pending', 'under_review', 'in_progress']))
-                                <button onclick="sendReminder({{ $assignment->id }})" 
-                                        class="text-yellow-600 hover:text-yellow-800" title="Send Reminder">
-                                    <i class="fas fa-bell"></i>
-                                </button>
-                                <button onclick="reassignAssignment({{ $assignment->id }})" 
-                                        class="text-purple-600 hover:text-purple-800" title="Reassign">
-                                    <i class="fas fa-exchange-alt"></i>
-                                </button>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <div class="text-gray-500">
-                                <i class="fas fa-clipboard-list text-4xl mb-4"></i>
-                                <p class="text-lg font-medium">No assignments found</p>
-                                <p class="text-sm mt-2">No review assignments have been created yet.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Pagination -->
-        @if($assignments->hasPages())
-        <div class="px-6 py-4 border-t">
-            {{ $assignments->withQueryString()->links() }}
-        </div>
         @endif
-    </div>
-</div>
-@endif
         
         <!-- Success/Error Messages -->
         @if(session('success'))
