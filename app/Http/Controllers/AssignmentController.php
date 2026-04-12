@@ -58,21 +58,25 @@ class AssignmentController extends Controller
         }
 
         $papers = $papersQuery->with(['reviews' => function($query) {
-                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'declined', 'completed'])
-                    ->with('reviewer');
-            }, 'bids'])
-            ->orderBy('submitted_at')
-            ->get()
-            ->filter(function($paper) {
-                // A paper needs a reviewer if:
-                // 1. It has NO active reviews (pending/under_review/in_progress), OR
-                // 2. It has LESS THAN 2 active reviews
-                $activeReviews = $paper->reviews->filter(function($review) {
-                    return in_array($review->status, ['pending', 'under_review', 'in_progress']);
-                });
-                
-                return $activeReviews->count() < 2;
-            });
+        $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'declined', 'completed'])
+            ->with('reviewer');
+    }, 'bids'])
+    ->orderBy('submitted_at')
+    ->get()
+    ->filter(function($paper) {
+        $activeReviews = $paper->reviews->filter(function($review) {
+            return in_array($review->status, ['pending', 'under_review', 'in_progress']);
+        });
+        
+        $completedReviews = $paper->reviews->filter(function($review) {
+            return $review->status === 'completed';
+        });
+        
+        // Paper needs a reviewer if:
+        // - Less than 2 active reviews, AND
+        // - Less than 2 completed reviews (paper isn't fully reviewed yet)
+        return $activeReviews->count() < 2 && $completedReviews->count() < 2;
+    });
         
         // Available reviewers - exclude those who already declined this specific paper
         $reviewers = User::where('is_reviewer', true)
