@@ -40,24 +40,47 @@
             </div>
             
             <!-- Assignment Stats -->
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="text-center p-4 bg-blue-50 rounded-lg">
-                    <p class="text-2xl font-bold text-blue-700">{{ $stats['papers'] }}</p>
-                    <p class="text-sm text-blue-600">Papers to Assign</p>
-                </div>
-                <div class="text-center p-4 bg-green-50 rounded-lg">
-                    <p class="text-2xl font-bold text-green-700">{{ $stats['reviewers'] }}</p>
-                    <p class="text-sm text-green-600">Available Reviewers</p>
-                </div>
-                <div class="text-center p-4 bg-yellow-50 rounded-lg">
-                    <p class="text-2xl font-bold text-yellow-700">{{ $stats['avg_load'] }}</p>
-                    <p class="text-sm text-yellow-600">Avg Load/Reviewer</p>
-                </div>
-                <div class="text-center p-4 bg-purple-50 rounded-lg">
-                    <p class="text-2xl font-bold text-purple-700">{{ $stats['coverage'] }}%</p>
-                    <p class="text-sm text-purple-600">Coverage</p>
-                </div>
-            </div>
+<div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="text-center p-4 bg-blue-50 rounded-lg">
+        <p class="text-2xl font-bold text-blue-700">{{ $stats['papers'] }}</p>
+        <p class="text-sm text-blue-600">Papers Needing Reviewers</p>
+        <p class="text-xs text-gray-500 mt-1">Need 2 reviewers each</p>
+    </div>
+    
+    <div class="text-center p-4 bg-green-50 rounded-lg">
+        <p class="text-2xl font-bold text-green-700">{{ $stats['available_reviewers'] }}</p>
+        <p class="text-sm text-green-600">Available Reviewers</p>
+        <p class="text-xs text-gray-500 mt-1">No active assignments</p>
+    </div>
+    
+    <div class="text-center p-4 bg-yellow-50 rounded-lg">
+        <p class="text-2xl font-bold text-yellow-700">{{ $stats['avg_load'] }}</p>
+        <p class="text-sm text-yellow-600">Avg Load/Reviewer</p>
+        <p class="text-xs text-gray-500 mt-1">Active reviewers only</p>
+    </div>
+    
+    <div class="text-center p-4 bg-purple-50 rounded-lg">
+        <p class="text-2xl font-bold text-purple-700">{{ $stats['coverage'] }}%</p>
+        <p class="text-sm text-purple-600">Coverage</p>
+        <p class="text-xs text-gray-500 mt-1">{{ $stats['total_active_reviews'] }}/{{ $stats['papers'] * 2 }} reviews</p>
+    </div>
+</div>
+
+<!-- Additional Stats Row (Optional) -->
+<div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="text-center p-3 bg-gray-50 rounded-lg">
+        <p class="text-lg font-bold text-gray-700">{{ $stats['active_reviewers'] }}</p>
+        <p class="text-xs text-gray-500">Active Reviewers</p>
+    </div>
+    <div class="text-center p-3 bg-gray-50 rounded-lg">
+        <p class="text-lg font-bold text-gray-700">{{ $stats['total_active_reviews'] }}</p>
+        <p class="text-xs text-gray-500">Active Reviews</p>
+    </div>
+    <div class="text-center p-3 bg-gray-50 rounded-lg">
+        <p class="text-lg font-bold text-gray-700">{{ $stats['completion_rate'] }}%</p>
+        <p class="text-xs text-gray-500">Completion Rate</p>
+    </div>
+</div>
         </div>
         
         <!-- Tabs -->

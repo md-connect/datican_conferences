@@ -113,7 +113,9 @@ class AssignmentController extends Controller
             $assignments = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         }
         
-        // Statistics - Papers needing assignments (papers with less than 2 active reviews)
+        // ========== CORRECTED STATISTICS ==========
+
+        // Papers needing assignments (papers with less than 2 active reviews)
         $papersNeedingAssignments = Paper::where('conference_year', $year)
             ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
             ->where(function($query) {
@@ -125,12 +127,24 @@ class AssignmentController extends Controller
             })
             ->count();
 
-        $totalAssignedReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
+        // Total active reviews (pending, under_review, in_progress)
+        $totalActiveReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
                 $q->where('conference_year', $year);
             })
             ->whereIn('status', ['pending', 'under_review', 'in_progress'])
             ->count();
 
+        // Total completed reviews
+        $totalCompletedReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })
+            ->where('status', 'completed')
+            ->count();
+
+        // All reviewers (not just active ones)
+        $totalReviewers = User::where('is_reviewer', true)->count();
+
+        // Reviewers with active assignments (currently working)
         $activeReviewers = User::where('is_reviewer', true)
             ->whereHas('reviewAssignments', function($q) use ($year) {
                 $q->whereHas('paper', function($q2) use ($year) {
@@ -138,18 +152,44 @@ class AssignmentController extends Controller
                 })->whereIn('status', ['pending', 'under_review', 'in_progress']);
             })
             ->count();
-        
-        $avgLoad = $activeReviewers > 0 ? round($totalAssignedReviews / $activeReviewers, 1) : 0;
-        
-        // Calculate max possible reviews (2 per paper that needs reviewers)
-        $maxPossibleReviews = $papersNeedingAssignments * 2;
-        $coverage = $maxPossibleReviews > 0 ? round(($totalAssignedReviews / $maxPossibleReviews) * 100, 1) : 0;
-        
+
+        // Reviewers without any active assignments (available)
+        $availableReviewers = User::where('is_reviewer', true)
+            ->whereDoesntHave('reviewAssignments', function($q) use ($year) {
+                $q->whereHas('paper', function($q2) use ($year) {
+                    $q2->where('conference_year', $year);
+                })->whereIn('status', ['pending', 'under_review', 'in_progress']);
+            })
+            ->count();
+
+        // Average load calculation
+        $avgLoad = $activeReviewers > 0 ? round($totalActiveReviews / $activeReviewers, 1) : 0;
+
+        // Required reviews total (each paper needing assignments needs 2 reviews)
+        $requiredReviews = $papersNeedingAssignments * 2;
+
+        // Coverage percentage
+        $coverage = $requiredReviews > 0 ? round(($totalActiveReviews / $requiredReviews) * 100, 1) : 0;
+
+        // Completion rate (completed vs total assigned)
+        $totalAssigned = ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })
+            ->whereIn('status', ['pending', 'under_review', 'in_progress', 'completed'])
+            ->count();
+            
+        $completionRate = $totalAssigned > 0 ? round(($totalCompletedReviews / $totalAssigned) * 100, 1) : 0;
+
         $stats = [
             'papers' => $papersNeedingAssignments,
             'reviewers' => $reviewers->count(),
+            'active_reviewers' => $activeReviewers,
+            'available_reviewers' => $availableReviewers,
             'avg_load' => $avgLoad,
-            'coverage' => $coverage
+            'coverage' => $coverage,
+            'total_active_reviews' => $totalActiveReviews,
+            'total_completed_reviews' => $totalCompletedReviews,
+            'completion_rate' => $completionRate,
         ];
         
         return view('assignments.index', compact('papers', 'reviewers', 'stats', 'assignments', 'year'));
