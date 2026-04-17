@@ -81,6 +81,35 @@
             color: #999;
             text-align: center;
         }
+        .congrats {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #D1FAE5;
+            border-radius: 8px;
+            color: #065F46;
+        }
+        .full-paper-deadline {
+            background-color: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .journal-note {
+            background-color: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .revision-instructions {
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -101,16 +130,10 @@
                     'reject' => 'decision-reject',
                 ];
                 $decisionTitles = [
-                    'accept' => 'Congratulations! Your Paper Has Been Accepted',
-                    'accept_with_minor_revision' => 'Paper Accepted with Minor Revisions',
-                    'accept_with_major_revision' => 'Paper Accepted with Major Revisions',
+                    'accept' => 'Abstract Acceptance Notification',
+                    'accept_with_minor_revision' => 'Abstract Acceptance Notification (Minor Revisions Required)',
+                    'accept_with_major_revision' => 'Abstract Acceptance Notification (Major Revisions Required)',
                     'reject' => 'Paper Decision Notification',
-                ];
-                $decisionMessages = [
-                    'accept' => 'We are pleased to inform you that your paper has been accepted for presentation at the DATICAN Conference.',
-                    'accept_with_minor_revision' => 'Your paper has been accepted pending minor revisions. Please submit the revised version by the deadline.',
-                    'accept_with_major_revision' => 'Your paper has been accepted pending major revisions. Please carefully address the reviewers comments and submit the revised version by the deadline.',
-                    'reject' => 'Thank you for your submission. After careful review, we regret to inform you that your paper has not been accepted for the conference.',
                 ];
             @endphp
             
@@ -122,39 +145,85 @@
             
             <p>Dear <strong>{{ $paper->authors->first()->first_name }} {{ $paper->authors->first()->last_name }}</strong>,</p>
             
-            <p>{{ $decisionMessages[$decision] ?? $decisionMessages['reject'] }}</p>
+            <p>Thank you for your recent abstract submission to the DATICAN International Conference. Please find below the update regarding your submission titled, <strong>"{{ $paper->title }}"</strong>.</p>
             
-            <!-- Review Summary -->
-            @php
-                $completedReviews = $paper->reviewAssignments->where('status', 'completed');
-            @endphp
-            @if($completedReviews->count() > 0)
+            <!-- Common Acceptance Message for ALL acceptance types -->
+            @if(in_array($decision, ['accept', 'accept_with_minor_revision', 'accept_with_major_revision']))
+                <p>After an initial review by our team of seasoned reviewers and experts in the field, we are pleased to inform you that your abstract has been <strong>accepted for presentation</strong> at the conference.</p>
+                
+                <!-- Revision Instructions (for minor/major revision) -->
+                @if($decision == 'accept_with_minor_revision')
+                    <div class="revision-instructions">
+                        <p style="margin: 0 0 10px 0;"><strong>Minor Revisions Required</strong></p>
+                        <p style="margin: 0;">The reviewers have recommended minor revisions to improve your paper. Please carefully address the reviewers' comments and suggestions provided below.</p>
+                    </div>
+                @endif
+                
+                @if($decision == 'accept_with_major_revision')
+                    <div class="revision-instructions">
+                        <p style="margin: 0 0 10px 0;"><strong>Major Revisions Required</strong></p>
+                        <p style="margin: 0;">The reviewers have recommended major revisions to improve your paper. Please carefully address all reviewers' comments and provide a detailed response to each concern raised.</p>
+                    </div>
+                @endif
+                
+                <!-- Full Paper Submission Deadline -->
                 @php
-                    $avgScore = $completedReviews->avg('total_score');
+                    $fullPaperDeadline = $revisionDeadline ?? \Carbon\Carbon::parse('2026-05-21');
                 @endphp
+                <div class="full-paper-deadline">
+                    <p style="margin: 0 0 10px 0;"><strong>Full Paper Submission Required</strong></p>
+                    <p style="margin: 0;">You are kindly requested to submit your full paper by: <strong>{{ $fullPaperDeadline->format('F d, Y') }}</strong></p>
+                    <p style="margin: 10px 0 0 0; font-size: 14px;">This will enable us to proceed with the submission to the PG Journal of LASU for peer-review process.</p>
+                </div>
+                
+                <!-- Journal Peer Review Note -->
+                <div class="journal-note">
+                    <p style="margin: 0 0 10px 0;"><strong>Journal Publication Process</strong></p>
+                    <p style="margin: 0;">Your full paper will undergo a thorough peer-review by experts in the field. You will be notified of the outcome, along with further guidelines regarding the presentation, in due course.</p>
+                </div>
+                
+                <!-- Participation Appreciation -->
                 <div class="info-box">
-                    <p style="margin: 0 0 10px 0;"><strong>📊 Review Summary</strong></p>
-                    <p style="margin: 0;">Average Score: <strong>{{ round($avgScore, 1) }}/100</strong></p>
-                    <p style="margin: 10px 0 0 0;">Number of Reviews: <strong>{{ $completedReviews->count() }}</strong></p>
+                    <p style="margin: 0;">We appreciate your interest in contributing to the success of DATICAN's International Conference and look forward to your participation.</p>
+                </div>
+                
+                <!-- Contact Information -->
+                <div class="info-box">
+                    <p style="margin: 0;">If you have any questions or require additional information, please do not hesitate to contact us through our conference portal.</p>
+                </div>
+                
+                <!-- Congratulations Message -->
+                <div class="congrats">
+                    <p style="margin: 0; font-size: 18px; font-weight: bold;">Congratulations!</p>
                 </div>
             @endif
             
-            <!-- Revision Deadline -->
+            <!-- Reject Message -->
+            @if($decision == 'reject')
+                <p>Thank you for your submission. After careful review by our team of seasoned reviewers and experts in the field, we regret to inform you that your abstract has not been accepted for presentation at the conference.</p>
+                
+                <div class="info-box">
+                    <p style="margin: 0 0 10px 0;"><strong>Reviewer Comments</strong></p>
+                    <p style="margin: 0;">The reviewers have provided detailed feedback to help strengthen your work for future submissions. Please find their comments below.</p>
+                </div>
+                
+                <div class="info-box">
+                    <p style="margin: 0;">We appreciate your interest in DATICAN and encourage you to consider submitting your future work to our conference.</p>
+                </div>
+            @endif
+            
+            
+            
+            <!-- Revision Deadline (for minor/major revision decisions) - Additional reminder -->
             @if($revisionDeadline && in_array($decision, ['accept_with_minor_revision', 'accept_with_major_revision']))
                 <div class="deadline-box">
-                    <p style="margin: 0 0 10px 0;"><strong>Revision Deadline</strong></p>
+                    <p style="margin: 0 0 10px 0;"><strong>Revision Submission Deadline</strong></p>
                     <p style="margin: 0;">Please submit your revised paper by: <strong>{{ \Carbon\Carbon::parse($revisionDeadline)->format('F d, Y') }}</strong></p>
                     <p style="margin: 10px 0 0 0; font-size: 14px;">Submit your revision through your conference dashboard.</p>
                 </div>
             @endif
             
-            <!-- Decision Notes -->
-            @if($decisionNotes)
-                <div class="info-box">
-                    <p style="margin: 0 0 10px 0;"><strong>Decision Notes</strong></p>
-                    <p style="margin: 0;">{{ $decisionNotes }}</p>
-                </div>
-            @endif
+            
             
             <!-- Paper Details -->
             <div class="info-box">
