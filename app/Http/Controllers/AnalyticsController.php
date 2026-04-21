@@ -24,22 +24,78 @@ class AnalyticsController extends Controller
     }
 
     /**
-     * Main dashboard
+     * Main dashboard - Updated to match chair dashboard stats
      */
     public function index(Request $request)
     {
         $year = $request->input('year', date('Y'));
         
+        // Get papers that are under review (have at least one assignment)
+        $papersUnderReview = Paper::where('conference_year', $year)
+            ->where('status', 'under_review')
+            ->withCount(['reviewAssignments as total_assignments'])
+            ->withCount(['reviewAssignments as completed_assignments' => function($query) {
+                $query->where('status', 'completed');
+            }])
+            ->having('total_assignments', '>', 0)
+            ->get();
+        
+        // Calculate review completion statistics (>=2 completed reviews)
+        $papersWithBothReviews = $papersUnderReview->filter(function($paper) {
+            return $paper->completed_assignments >= 2;
+        })->count();
+        
         $stats = [
-            'papers' => $this->getPaperStats($year),
+            'papers' => Paper::where('conference_year', $year)->count(),
             'reviews' => $this->getReviewStats($year),
             'users' => $this->getUserStats($year),
             'timeline' => $this->getTimelineStats($year),
             'geographic' => $this->getGeographicStats($year),
             'topic_distribution' => $this->getTopicDistribution($year),
+            'conference_registrations' => ConferenceRegistration::count(),
+            'total_users' => User::count(),
+            'reviews_completed' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
+                $q->where('conference_year', $year);
+            })->where('status', 'completed')->count(),
+            'papers_under_review' => $papersUnderReview->count(),
+            'papers_with_both_reviews' => $papersWithBothReviews,
         ];
         
-        return view('analytics.index', compact('stats', 'year'));
+        // Get papers needing decisions (papers with at least 2 completed reviews)
+        $pendingDecisions = Paper::where('conference_year', $year)
+            ->where('status', 'under_review')
+            ->withCount(['reviewAssignments as total_assignments'])
+            ->withCount(['reviewAssignments as completed_assignments_count' => function($query) {
+                $query->where('status', 'completed');
+            }])
+            ->having('total_assignments', '>', 0)
+            ->having('completed_assignments_count', '>=', 2)
+            ->with(['reviewAssignments' => function($query) {
+                $query->where('status', 'completed');
+            }, 'authors'])
+            ->get()
+            ->each(function($paper) {
+                $paper->average_score = $paper->reviewAssignments->avg(function($review) {
+                    return ($review->criteria_relevance ?? 0) + 
+                           ($review->criteria_originality ?? 0) + 
+                           ($review->criteria_quality ?? 0) + 
+                           ($review->criteria_impact ?? 0) + 
+                           ($review->criteria_clarity ?? 0) + 
+                           ($review->criteria_contribution ?? 0);
+                });
+            });
+        
+        // Get recent papers
+        $recentPapers = Paper::where('conference_year', $year)
+            ->with(['authors', 'reviewAssignments'])
+            ->latest()
+            ->take(10)
+            ->get();
+        
+        // Get recent registrations
+        $recentRegistrations = ConferenceRegistration::latest()->take(10)->get();
+        
+        return view('analytics.index', compact('stats', 'year', 'pendingDecisions', 'recentPapers', 'recentRegistrations'));
     }
 
     /**
@@ -80,11 +136,27 @@ class AnalyticsController extends Controller
             $q->where('conference_year', $year);
         });
         
+        // Calculate average score from criteria
+        $completedReviews = $reviews->where('status', 'completed')->get();
+        $avgScore = 0;
+        if ($completedReviews->count() > 0) {
+            $totalScores = $completedReviews->map(function($review) {
+                return ($review->criteria_relevance ?? 0) + 
+                       ($review->criteria_originality ?? 0) + 
+                       ($review->criteria_quality ?? 0) + 
+                       ($review->criteria_impact ?? 0) + 
+                       ($review->criteria_clarity ?? 0) + 
+                       ($review->criteria_contribution ?? 0);
+            });
+            $avgScore = round($totalScores->avg(), 2);
+        }
+        
         return [
             'total' => $reviews->count(),
             'completed' => $reviews->where('status', 'completed')->count(),
-            'pending' => $reviews->where('status', '!=', 'completed')->count(),
-            'average_score' => round($reviews->avg('overall_score') ?? 0, 2),
+            'pending' => $reviews->where('status', 'pending')->count(),
+            'in_progress' => $reviews->whereIn('status', ['accepted', 'in_progress'])->count(),
+            'average_score' => $avgScore,
             'by_recommendation' => $reviews->whereNotNull('recommendation')
                 ->select('recommendation', DB::raw('count(*) as count'))
                 ->groupBy('recommendation')
@@ -155,11 +227,7 @@ class AnalyticsController extends Controller
      */
     private function getGeographicStats($year)
     {
-        // This would require adding country field to users or registrations
-        // For now, using institution as proxy
-        $institutions = ConferenceRegistration::whereHas('papers', function($q) use ($year) {
-            $q->where('conference_year', $year);
-        })->select('institution', DB::raw('count(*) as count'))
+        $institutions = ConferenceRegistration::select('institution', DB::raw('count(*) as count'))
           ->groupBy('institution')
           ->orderByDesc('count')
           ->limit(10)
@@ -234,7 +302,6 @@ class AnalyticsController extends Controller
 
     private function getCountryStats($year)
     {
-        // This is a placeholder - you'd need to add country field
         return [
             'total' => 0,
             'top_countries' => [],
@@ -256,7 +323,7 @@ class AnalyticsController extends Controller
     }
 
     /**
-     * Export data
+     * Export data - Updated to match chair format
      */
     public function export(Request $request, $type)
     {
@@ -284,22 +351,41 @@ class AnalyticsController extends Controller
         $year = $year ?? date('Y');
         
         $papers = Paper::byYear($year)
-            ->with(['authors'])
+            ->with(['authors', 'reviewAssignments' => function($q) {
+                $q->where('status', 'completed');
+            }])
             ->orderBy('id')
             ->get();
         
         $data = $papers->map(function($paper) {
+            // Calculate average score from completed reviews
+            $completedReviews = $paper->reviewAssignments->where('status', 'completed');
+            $totalScores = [];
+            foreach($completedReviews as $review) {
+                $score = ($review->criteria_relevance ?? 0) + 
+                        ($review->criteria_originality ?? 0) + 
+                        ($review->criteria_quality ?? 0) + 
+                        ($review->criteria_impact ?? 0) + 
+                        ($review->criteria_clarity ?? 0) + 
+                        ($review->criteria_contribution ?? 0);
+                $totalScores[] = $score;
+            }
+            $averageScore = !empty($totalScores) ? round(array_sum($totalScores) / count($totalScores), 2) : 'N/A';
+            
+            $completedCount = $completedReviews->count();
+            $totalRequired = $paper->reviewAssignments->where('status', '!=', 'declined')->count();
+            
             return [
                 'ID' => $paper->anonymous_id,
                 'Title' => $paper->title,
                 'Status' => ucfirst(str_replace('_', ' ', $paper->status)),
-                'Decision' => $paper->decision ? ucfirst($paper->decision) : 'Pending',
+                'Decision' => $paper->decision ? ucfirst(str_replace('_', ' ', $paper->decision)) : 'Pending',
                 'Authors' => $paper->author_list,
                 'Topic Area' => $paper->topic_area,
                 'Submission Type' => $paper->submission_type === 'abstract_only' ? 'Abstract Only' : 'Full Paper',
                 'Submission Date' => $paper->submitted_at?->format('Y-m-d H:i:s'),
-                'Review Count' => $paper->review_count,
-                'Average Score' => round($paper->average_score, 2),
+                'Reviews Completed' => $completedCount . '/' . ($totalRequired ?: 2),
+                'Average Score' => $averageScore,
                 'Keywords' => $paper->keywords,
             ];
         });
@@ -308,7 +394,7 @@ class AnalyticsController extends Controller
     }
 
     /**
-     * Export reviews to CSV (matching chair format)
+     * Export reviews to CSV (matching chair format with calculated scores)
      */
     public function exportReviews($year = null)
     {
@@ -321,7 +407,7 @@ class AnalyticsController extends Controller
             ->get();
         
         $data = $reviews->map(function($review) {
-            // Calculate total score if completed
+            // Calculate total score from individual criteria
             $totalScore = null;
             if ($review->status === 'completed') {
                 $totalScore = ($review->criteria_relevance ?? 0) + 
@@ -332,6 +418,18 @@ class AnalyticsController extends Controller
                             ($review->criteria_contribution ?? 0);
             }
             
+            // Get recommendation text
+            $recommendationText = 'N/A';
+            if ($review->recommendation) {
+                $recommendationMap = [
+                    'accept_without_revision' => 'Accept without revision',
+                    'accept_with_minor_revision' => 'Accept with minor revision',
+                    'accept_with_major_revision' => 'Accept with major revision',
+                    'reject' => 'Reject',
+                ];
+                $recommendationText = $recommendationMap[$review->recommendation] ?? $review->recommendation;
+            }
+            
             return [
                 'Paper ID' => $review->paper->anonymous_id,
                 'Paper Title' => $review->paper->title,
@@ -339,7 +437,13 @@ class AnalyticsController extends Controller
                 'Reviewer Email' => $review->reviewer->email,
                 'Status' => ucfirst(str_replace('_', ' ', $review->status)),
                 'Overall Score' => $totalScore ?? 'N/A',
-                'Recommendation' => $review->recommendation_text ?? 'N/A',
+                'Relevance (20)' => $review->criteria_relevance ?? 'N/A',
+                'Originality (20)' => $review->criteria_originality ?? 'N/A',
+                'Quality (15)' => $review->criteria_quality ?? 'N/A',
+                'Impact (15)' => $review->criteria_impact ?? 'N/A',
+                'Clarity (15)' => $review->criteria_clarity ?? 'N/A',
+                'Contribution (15)' => $review->criteria_contribution ?? 'N/A',
+                'Recommendation' => $recommendationText,
                 'Confidence' => $review->confidence ?? 'N/A',
                 'Assigned Date' => $review->assigned_at?->format('Y-m-d H:i:s'),
                 'Submitted Date' => $review->submitted_at?->format('Y-m-d H:i:s'),
@@ -369,7 +473,6 @@ class AnalyticsController extends Controller
         
         foreach ($papers as $paper) {
             $authors = $paper->authors->sortBy('pivot.author_order');
-            $firstAuthor = $authors->first();
             
             foreach ($authors as $index => $author) {
                 $data->push([
@@ -401,87 +504,32 @@ class AnalyticsController extends Controller
         $reviewStats = $this->getReviewStats($year);
         $userStats = $this->getUserStats($year);
         
+        // Get both reviews done count
+        $bothReviewsDone = Paper::whereHas('reviewAssignments', function($q) {
+            $q->where('status', 'completed');
+        }, '>=', 2)->count();
+        
         $data = collect([
-            [
-                'Metric Category' => 'Papers',
-                'Metric Name' => 'Total Papers Submitted',
-                'Value' => $paperStats['total'],
-            ],
-            [
-                'Metric Category' => 'Papers',
-                'Metric Name' => 'Full Papers',
-                'Value' => $paperStats['by_type']['full_paper'] ?? 0,
-            ],
-            [
-                'Metric Category' => 'Papers',
-                'Metric Name' => 'Abstract Only',
-                'Value' => $paperStats['by_type']['abstract_only'] ?? 0,
-            ],
-            [
-                'Metric Category' => 'Papers',
-                'Metric Name' => 'Acceptance Rate (%)',
-                'Value' => $paperStats['acceptance_rate'],
-            ],
-            [
-                'Metric Category' => 'Reviews',
-                'Metric Name' => 'Total Reviews Assigned',
-                'Value' => $reviewStats['total'],
-            ],
-            [
-                'Metric Category' => 'Reviews',
-                'Metric Name' => 'Completed Reviews',
-                'Value' => $reviewStats['completed'],
-            ],
-            [
-                'Metric Category' => 'Reviews',
-                'Metric Name' => 'Pending Reviews',
-                'Value' => $reviewStats['pending'],
-            ],
-            [
-                'Metric Category' => 'Reviews',
-                'Metric Name' => 'Average Score',
-                'Value' => $reviewStats['average_score'],
-            ],
-            [
-                'Metric Category' => 'Reviews',
-                'Metric Name' => 'Average Turnaround (days)',
-                'Value' => $reviewStats['review_turnaround'],
-            ],
-            [
-                'Metric Category' => 'Users',
-                'Metric Name' => 'Total Authors',
-                'Value' => $userStats['total_authors'],
-            ],
-            [
-                'Metric Category' => 'Users',
-                'Metric Name' => 'Unique Authors',
-                'Value' => $userStats['unique_authors'],
-            ],
-            [
-                'Metric Category' => 'Users',
-                'Metric Name' => 'Total Reviewers',
-                'Value' => $userStats['reviewers'],
-            ],
-            [
-                'Metric Category' => 'Users',
-                'Metric Name' => 'Active Reviewers',
-                'Value' => $userStats['active_reviewers'],
-            ],
-            [
-                'Metric Category' => 'Reviewer Load',
-                'Metric Name' => 'Average Papers per Reviewer',
-                'Value' => $reviewStats['reviewer_load']['average'],
-            ],
-            [
-                'Metric Category' => 'Reviewer Load',
-                'Metric Name' => 'Max Papers per Reviewer',
-                'Value' => $reviewStats['reviewer_load']['max'],
-            ],
-            [
-                'Metric Category' => 'Reviewer Load',
-                'Metric Name' => 'Min Papers per Reviewer',
-                'Value' => $reviewStats['reviewer_load']['min'],
-            ],
+            ['Metric Category' => 'Conference', 'Metric Name' => 'Conference Registrations', 'Value' => ConferenceRegistration::count()],
+            ['Metric Category' => 'Conference', 'Metric Name' => 'Total System Users', 'Value' => User::count()],
+            ['Metric Category' => 'Papers', 'Metric Name' => 'Total Papers Submitted', 'Value' => $paperStats['total']],
+            ['Metric Category' => 'Papers', 'Metric Name' => 'Full Papers', 'Value' => $paperStats['by_type']['full_paper'] ?? 0],
+            ['Metric Category' => 'Papers', 'Metric Name' => 'Abstract Only', 'Value' => $paperStats['by_type']['abstract_only'] ?? 0],
+            ['Metric Category' => 'Papers', 'Metric Name' => 'Both Reviews Done (≥2)', 'Value' => $bothReviewsDone],
+            ['Metric Category' => 'Papers', 'Metric Name' => 'Acceptance Rate (%)', 'Value' => $paperStats['acceptance_rate']],
+            ['Metric Category' => 'Reviews', 'Metric Name' => 'Total Reviews Assigned', 'Value' => $reviewStats['total']],
+            ['Metric Category' => 'Reviews', 'Metric Name' => 'Completed Reviews', 'Value' => $reviewStats['completed']],
+            ['Metric Category' => 'Reviews', 'Metric Name' => 'Pending Reviews', 'Value' => $reviewStats['pending']],
+            ['Metric Category' => 'Reviews', 'Metric Name' => 'In Progress Reviews', 'Value' => $reviewStats['in_progress']],
+            ['Metric Category' => 'Reviews', 'Metric Name' => 'Average Score', 'Value' => $reviewStats['average_score']],
+            ['Metric Category' => 'Reviews', 'Metric Name' => 'Average Turnaround (days)', 'Value' => $reviewStats['review_turnaround']],
+            ['Metric Category' => 'Users', 'Metric Name' => 'Total Authors', 'Value' => $userStats['total_authors']],
+            ['Metric Category' => 'Users', 'Metric Name' => 'Unique Authors', 'Value' => $userStats['unique_authors']],
+            ['Metric Category' => 'Users', 'Metric Name' => 'Total Reviewers', 'Value' => $userStats['reviewers']],
+            ['Metric Category' => 'Users', 'Metric Name' => 'Active Reviewers', 'Value' => $userStats['active_reviewers']],
+            ['Metric Category' => 'Reviewer Load', 'Metric Name' => 'Average Papers per Reviewer', 'Value' => $reviewStats['reviewer_load']['average']],
+            ['Metric Category' => 'Reviewer Load', 'Metric Name' => 'Max Papers per Reviewer', 'Value' => $reviewStats['reviewer_load']['max']],
+            ['Metric Category' => 'Reviewer Load', 'Metric Name' => 'Min Papers per Reviewer', 'Value' => $reviewStats['reviewer_load']['min']],
         ]);
         
         // Add status breakdown
@@ -507,7 +555,7 @@ class AnalyticsController extends Controller
         foreach ($reviewStats['by_recommendation'] as $rec => $count) {
             $data->push([
                 'Metric Category' => 'Reviews by Recommendation',
-                'Metric Name' => ucfirst($rec),
+                'Metric Name' => ucfirst(str_replace('_', ' ', $rec)),
                 'Value' => $count,
             ]);
         }
@@ -559,19 +607,19 @@ class AnalyticsController extends Controller
                 'Reviewer 1 - Originality (20)' => $review1->criteria_originality ?? 'N/A',
                 'Reviewer 1 - Quality (15)' => $review1->criteria_quality ?? 'N/A',
                 'Reviewer 1 - Impact (15)' => $review1->criteria_impact ?? 'N/A',
-                'Reviewer 1 - Clarity (10)' => $review1->criteria_clarity ?? 'N/A',
-                'Reviewer 1 - Contribution (10)' => $review1->criteria_contribution ?? 'N/A',
+                'Reviewer 1 - Clarity (15)' => $review1->criteria_clarity ?? 'N/A',
+                'Reviewer 1 - Contribution (15)' => $review1->criteria_contribution ?? 'N/A',
                 'Reviewer 1 - Total' => $review1Total,
-                'Reviewer 1 - Recommendation' => $review1->recommendation_text ?? 'N/A',
+                'Reviewer 1 - Recommendation' => $review1->recommendation ?? 'N/A',
                 'Reviewer 2' => $review2->reviewer->first_name . ' ' . $review2->reviewer->last_name,
                 'Reviewer 2 - Relevance (20)' => $review2->criteria_relevance ?? 'N/A',
                 'Reviewer 2 - Originality (20)' => $review2->criteria_originality ?? 'N/A',
                 'Reviewer 2 - Quality (15)' => $review2->criteria_quality ?? 'N/A',
                 'Reviewer 2 - Impact (15)' => $review2->criteria_impact ?? 'N/A',
-                'Reviewer 2 - Clarity (10)' => $review2->criteria_clarity ?? 'N/A',
-                'Reviewer 2 - Contribution (10)' => $review2->criteria_contribution ?? 'N/A',
+                'Reviewer 2 - Clarity (15)' => $review2->criteria_clarity ?? 'N/A',
+                'Reviewer 2 - Contribution (15)' => $review2->criteria_contribution ?? 'N/A',
                 'Reviewer 2 - Total' => $review2Total,
-                'Reviewer 2 - Recommendation' => $review2->recommendation_text ?? 'N/A',
+                'Reviewer 2 - Recommendation' => $review2->recommendation ?? 'N/A',
                 'Score Difference' => abs($review1Total - $review2Total),
                 'Average Total Score' => round(($review1Total + $review2Total) / 2, 1),
             ];
@@ -612,70 +660,5 @@ class AnalyticsController extends Controller
         };
         
         return response()->stream($callback, 200, $headers);
-    }
-
-    /**
-     * Manage reviews (for chairs)
-     */
-    public function reviews(Request $request)
-    {
-        $year = $request->input('year', date('Y'));
-        $status = $request->input('status');
-        $reviewer_id = $request->input('reviewer_id');
-        
-        $query = ReviewAssignment::whereHas('paper', function($q) use ($year) {
-                $q->where('conference_year', $year);
-            })
-            ->with(['paper', 'reviewer']);
-        
-        if ($status) {
-            $query->where('status', $status);
-        }
-        
-        if ($reviewer_id) {
-            $query->where('reviewer_id', $reviewer_id);
-        }
-        
-        $reviews = $query->latest()->paginate(20);
-        
-        // Get reviewers for filter
-        $reviewers = User::where('is_reviewer', true)
-            ->whereHas('reviewAssignments', function($q) use ($year) {
-                $q->whereHas('paper', function($q2) use ($year) {
-                    $q2->where('conference_year', $year);
-                });
-            })
-            ->get();
-        
-        return view('chair.reviews', compact('reviews', 'year', 'status', 'reviewer_id', 'reviewers'));
-    }
-
-    /**
-     * Manage reviewers (for chairs)
-     */
-    public function reviewers(Request $request)
-    {
-        $year = $request->input('year', date('Y'));
-        
-        $reviewers = User::where('is_reviewer', true)
-            ->withCount(['reviewAssignments as assigned_count' => function($query) use ($year) {
-                $query->whereHas('paper', function($q) use ($year) {
-                    $q->where('conference_year', $year);
-                });
-            }])
-            ->withCount(['reviewAssignments as completed_count' => function($query) use ($year) {
-                $query->whereHas('paper', function($q) use ($year) {
-                    $q->where('conference_year', $year);
-                })->where('status', 'completed');
-            }])
-            ->withCount(['reviewAssignments as pending_count' => function($query) use ($year) {
-                $query->whereHas('paper', function($q) use ($year) {
-                    $q->where('conference_year', $year);
-                })->whereIn('status', ['pending', 'accepted', 'in_progress']);
-            }])
-            ->orderByDesc('assigned_count')
-            ->get();
-        
-        return view('chair.reviewers', compact('reviewers', 'year'));
     }
 }

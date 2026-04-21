@@ -668,5 +668,4 @@ public function forceAssign(Request $request, Paper $paper)
     ]);
 }
 
-
 }

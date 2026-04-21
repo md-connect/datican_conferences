@@ -28,7 +28,31 @@ class ChairController extends Controller
     {
         $year = $request->input('year', date('Y'));
         
-        // Get statistics - UPDATED with new metrics
+        // Get papers that are under review (have at least one assignment)
+        $papersUnderReview = Paper::where('conference_year', $year)
+            ->where('status', 'under_review')
+            ->withCount(['reviewAssignments as total_assignments'])
+            ->withCount(['reviewAssignments as completed_assignments' => function($query) {
+                $query->where('status', 'completed');
+            }])
+            ->having('total_assignments', '>', 0)
+            ->get();
+        
+        // Calculate review completion statistics
+        // Both Reviews Done = papers with at least 2 completed reviews (2/2 OR 2/3)
+        $papersWithBothReviews = $papersUnderReview->filter(function($paper) {
+            return $paper->completed_assignments >= 2;
+        })->count();
+        
+        $papersWithOneReview = $papersUnderReview->filter(function($paper) {
+            return $paper->completed_assignments == 1;
+        })->count();
+        
+        $papersWithNoReviews = $papersUnderReview->filter(function($paper) {
+            return $paper->completed_assignments == 0;
+        })->count();
+        
+        // Get statistics
         $stats = [
             'papers' => Paper::where('conference_year', $year)->count(),
             'reviewers' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
@@ -38,23 +62,27 @@ class ChairController extends Controller
                 $q->where('conference_year', $year);
             })->where('status', 'pending')->count(),
             'acceptance_rate' => $this->calculateAcceptanceRate($year),
-            // NEW STATS
             'conference_registrations' => ConferenceRegistration::count(),
             'total_users' => User::count(),
             'reviews_completed' => ReviewAssignment::whereHas('paper', function($q) use ($year) {
                 $q->where('conference_year', $year);
             })->where('status', 'completed')->count(),
+            'papers_under_review' => $papersUnderReview->count(),
+            'papers_with_both_reviews' => $papersWithBothReviews,  // Papers with >=2 completed reviews
+            'papers_with_one_review' => $papersWithOneReview,
+            'papers_with_no_reviews' => $papersWithNoReviews,
         ];
         
-        // Get papers needing decisions (papers where all assigned reviews are completed)
+        // Get papers needing decisions (papers with at least 2 completed reviews)
+        // Ready for Decision = same as Both Reviews Done (>=2 completed reviews)
         $pendingDecisions = Paper::where('conference_year', $year)
             ->where('status', 'under_review')
             ->withCount(['reviewAssignments as total_assignments'])
             ->withCount(['reviewAssignments as completed_assignments_count' => function($query) {
                 $query->where('status', 'completed');
             }])
-            ->having('total_assignments', '>', 0) // Papers with at least one assignment
-            ->havingRaw('completed_assignments_count = total_assignments') // All reviews completed
+            ->having('total_assignments', '>', 0)
+            ->having('completed_assignments_count', '>=', 2)  // At least 2 completed reviews (2/2 OR 2/3)
             ->with(['reviewAssignments' => function($query) {
                 $query->where('status', 'completed');
             }])
@@ -64,6 +92,20 @@ class ChairController extends Controller
                 $paper->review_count = $paper->reviewAssignments->count();
             });
         
+        // Get papers needing reviewers (papers with less than 2 active assignments)
+        $papersNeedingReviewers = Paper::where('conference_year', $year)
+            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
+            ->withCount(['reviewAssignments as active_assignments' => function($query) {
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted']);
+            }])
+            ->having('active_assignments', '<', 2)
+            ->with(['reviewAssignments' => function($query) {
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted']);
+            }])
+            ->latest()
+            ->take(10)
+            ->get();
+        
         // Get recent submissions
         $recentSubmissions = Paper::where('conference_year', $year)
             ->whereIn('status', ['submitted', 'abstract_submitted'])
@@ -71,7 +113,6 @@ class ChairController extends Controller
             ->latest()
             ->take(10)
             ->get();
-
         
         // Get reviewer performance
         $reviewerPerformance = User::where('is_reviewer', true)
@@ -98,7 +139,7 @@ class ChairController extends Controller
             ->having('assigned_count', '>', 0)
             ->get();
         
-        // Calculate average review time for each reviewer
+        // Calculate average review time and average score for each reviewer
         foreach ($reviewerPerformance as $reviewer) {
             $reviewer->avg_review_time = ReviewAssignment::where('reviewer_id', $reviewer->id)
                 ->where('status', 'completed')
@@ -108,6 +149,13 @@ class ChairController extends Controller
                 ->whereNotNull('assigned_at')
                 ->whereNotNull('submitted_at')
                 ->avg(DB::raw('DATEDIFF(submitted_at, assigned_at)'));
+            
+            $reviewer->avg_score = ReviewAssignment::where('reviewer_id', $reviewer->id)
+                ->where('status', 'completed')
+                ->whereHas('paper', function($q) use ($year) {
+                    $q->where('conference_year', $year);
+                })
+                ->avg('overall_score');
         }
         
         // Get topics distribution
@@ -119,7 +167,6 @@ class ChairController extends Controller
         
         // Get important deadlines
         $deadlines = [];
-
         $dates = [
             ['title' => 'Paper Submission Deadline', 'description' => 'Final date for paper submissions', 'month' => 3, 'day' => 15],
             ['title' => 'Review Deadline', 'description' => 'All reviews must be completed', 'month' => 4, 'day' => 15],
@@ -129,7 +176,7 @@ class ChairController extends Controller
         foreach ($dates as $item) {
             $date = Carbon::create($year, $item['month'], $item['day']);
             $isPast = $date->isPast();
-            $daysDiff = now()->diffInDays($date, false); // false means negative if past
+            $daysDiff = now()->diffInDays($date, false);
             
             $deadlines[] = (object)[
                 'title' => $item['title'],
@@ -140,12 +187,26 @@ class ChairController extends Controller
                 'days_left' => max(0, floor($daysDiff)),
             ];
         }
-
-            
-            return view('dashboard.chair', compact(
-                'stats', 'pendingDecisions', 'recentSubmissions', 
-                'reviewerPerformance', 'topicsDistribution', 'deadlines', 'year'
-            ));
+        
+        // Optional: Debug logging to verify counts
+        \Log::info('Dashboard Statistics', [
+            'year' => $year,
+            'papers_under_review' => $stats['papers_under_review'],
+            'papers_with_both_reviews' => $stats['papers_with_both_reviews'],
+            'pending_decisions_count' => $pendingDecisions->count(),
+            'ready_for_decision_should_equal_both_reviews' => ($stats['papers_with_both_reviews'] == $pendingDecisions->count()) ? 'MATCH' : 'MISMATCH',
+        ]);
+        
+        return view('dashboard.chair', compact(
+            'stats', 
+            'pendingDecisions', 
+            'papersNeedingReviewers',
+            'recentSubmissions', 
+            'reviewerPerformance', 
+            'topicsDistribution', 
+            'deadlines', 
+            'year'
+        ));
     }
     
 
@@ -265,13 +326,30 @@ class ChairController extends Controller
         $reviews = ReviewAssignment::with(['paper', 'reviewer'])->get();
         
         $data = $reviews->map(function($review) {
+            // Calculate total score from individual criteria
+            $totalScore = ($review->criteria_relevance ?? 0) + 
+                        ($review->criteria_originality ?? 0) + 
+                        ($review->criteria_quality ?? 0) + 
+                        ($review->criteria_impact ?? 0) + 
+                        ($review->criteria_clarity ?? 0) + 
+                        ($review->criteria_contribution ?? 0);
+            
+            // Calculate percentage (out of 100)
+            $percentageScore = $totalScore; // Total is already out of 100 (20+20+15+15+15+15 = 100)
+            
             return [
                 'Paper ID' => $review->paper->anonymous_id,
                 'Paper Title' => $review->paper->title,
                 'Reviewer Name' => $review->reviewer->first_name . ' ' . $review->reviewer->last_name,
                 'Reviewer Email' => $review->reviewer->email,
                 'Status' => $review->status,
-                'Overall Score' => $review->overall_score,
+                'Overall Score' => $percentageScore ?: 'N/A',
+                'Relevance (20)' => $review->criteria_relevance ?? 'N/A',
+                'Originality (20)' => $review->criteria_originality ?? 'N/A',
+                'Quality (15)' => $review->criteria_quality ?? 'N/A',
+                'Impact (15)' => $review->criteria_impact ?? 'N/A',
+                'Clarity (15)' => $review->criteria_clarity ?? 'N/A',
+                'Contribution (15)' => $review->criteria_contribution ?? 'N/A',
                 'Recommendation' => $review->recommendation,
                 'Confidence' => $review->confidence,
                 'Assigned Date' => $review->assigned_at?->format('Y-m-d H:i:s'),
