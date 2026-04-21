@@ -39,7 +39,6 @@ class ChairController extends Controller
             ->get();
         
         // Calculate review completion statistics
-        // Both Reviews Done = papers with at least 2 completed reviews (2/2 OR 2/3)
         $papersWithBothReviews = $papersUnderReview->filter(function($paper) {
             return $paper->completed_assignments >= 2;
         })->count();
@@ -68,13 +67,12 @@ class ChairController extends Controller
                 $q->where('conference_year', $year);
             })->where('status', 'completed')->count(),
             'papers_under_review' => $papersUnderReview->count(),
-            'papers_with_both_reviews' => $papersWithBothReviews,  // Papers with >=2 completed reviews
+            'papers_with_both_reviews' => $papersWithBothReviews,
             'papers_with_one_review' => $papersWithOneReview,
             'papers_with_no_reviews' => $papersWithNoReviews,
         ];
         
         // Get papers needing decisions (papers with at least 2 completed reviews)
-        // Ready for Decision = same as Both Reviews Done (>=2 completed reviews)
         $pendingDecisions = Paper::where('conference_year', $year)
             ->where('status', 'under_review')
             ->withCount(['reviewAssignments as total_assignments'])
@@ -82,25 +80,35 @@ class ChairController extends Controller
                 $query->where('status', 'completed');
             }])
             ->having('total_assignments', '>', 0)
-            ->having('completed_assignments_count', '>=', 2)  // At least 2 completed reviews (2/2 OR 2/3)
+            ->having('completed_assignments_count', '>=', 2)
             ->with(['reviewAssignments' => function($query) {
                 $query->where('status', 'completed');
             }])
             ->get()
             ->each(function($paper) {
-                $paper->average_score = $paper->reviewAssignments->avg('overall_score');
+                $paper->average_score = $paper->reviewAssignments->avg(function($review) {
+                    return ($review->criteria_relevance ?? 0) + 
+                        ($review->criteria_originality ?? 0) + 
+                        ($review->criteria_quality ?? 0) + 
+                        ($review->criteria_impact ?? 0) + 
+                        ($review->criteria_clarity ?? 0) + 
+                        ($review->criteria_contribution ?? 0);
+                });
                 $paper->review_count = $paper->reviewAssignments->count();
             });
         
-        // Get papers needing reviewers (papers with less than 2 active assignments)
+        // ========== FIXED: Get papers needing reviewers ==========
+        // A paper needs reviewers ONLY if it has LESS THAN 2 TOTAL assigned reviewers
+        // (including pending, in_progress, accepted, completed)
         $papersNeedingReviewers = Paper::where('conference_year', $year)
             ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
-            ->withCount(['reviewAssignments as active_assignments' => function($query) {
-                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted']);
+            ->withCount(['reviewAssignments as total_assigned' => function($query) {
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted', 'completed']);
             }])
-            ->having('active_assignments', '<', 2)
+            ->having('total_assigned', '<', 2)  // Less than 2 reviewers assigned TOTAL
             ->with(['reviewAssignments' => function($query) {
-                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted']);
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted', 'completed'])
+                    ->with('reviewer');
             }])
             ->latest()
             ->take(10)
@@ -150,12 +158,23 @@ class ChairController extends Controller
                 ->whereNotNull('submitted_at')
                 ->avg(DB::raw('DATEDIFF(submitted_at, assigned_at)'));
             
-            $reviewer->avg_score = ReviewAssignment::where('reviewer_id', $reviewer->id)
+            $completedReviews = ReviewAssignment::where('reviewer_id', $reviewer->id)
                 ->where('status', 'completed')
                 ->whereHas('paper', function($q) use ($year) {
                     $q->where('conference_year', $year);
                 })
-                ->avg('overall_score');
+                ->get();
+            
+            $totalScore = 0;
+            foreach ($completedReviews as $review) {
+                $totalScore += ($review->criteria_relevance ?? 0) + 
+                            ($review->criteria_originality ?? 0) + 
+                            ($review->criteria_quality ?? 0) + 
+                            ($review->criteria_impact ?? 0) + 
+                            ($review->criteria_clarity ?? 0) + 
+                            ($review->criteria_contribution ?? 0);
+            }
+            $reviewer->avg_score = $completedReviews->count() > 0 ? round($totalScore / $completedReviews->count(), 1) : null;
         }
         
         // Get topics distribution
@@ -188,15 +207,6 @@ class ChairController extends Controller
             ];
         }
         
-        // Optional: Debug logging to verify counts
-        \Log::info('Dashboard Statistics', [
-            'year' => $year,
-            'papers_under_review' => $stats['papers_under_review'],
-            'papers_with_both_reviews' => $stats['papers_with_both_reviews'],
-            'pending_decisions_count' => $pendingDecisions->count(),
-            'ready_for_decision_should_equal_both_reviews' => ($stats['papers_with_both_reviews'] == $pendingDecisions->count()) ? 'MATCH' : 'MISMATCH',
-        ]);
-        
         return view('dashboard.chair', compact(
             'stats', 
             'pendingDecisions', 
@@ -208,7 +218,6 @@ class ChairController extends Controller
             'year'
         ));
     }
-    
 
     /**
      * Manage papers (for chairs)
