@@ -219,7 +219,7 @@
                             </div>
                             
                             <!-- Recommendation -->
-                            <!-- @if($review->recommendation)
+                            @if($review->recommendation)
                             <div class="mt-3 pt-3 border-t border-gray-200">
                                 <p class="text-sm font-medium text-gray-700">Reviewer Recommendation:</p>
                                 <p class="text-sm {{ 
@@ -230,32 +230,32 @@
                                     {{ ucfirst(str_replace('_', ' ', $review->recommendation)) }}
                                 </p>
                             </div>
-                            @endif -->
+                            @endif 
                             <!-- Strengths -->
-                            <!-- @if($review->strengths)
+                            @if($review->strengths)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Strengths:</p>
                                 <p class="text-sm text-gray-600">{{ Str::limit($review->strengths, 150) }}</p>
                             </div>
-                            @endif -->
+                            @endif 
                             
                             <!-- Weaknesses -->
-                            <!-- @if($review->weaknesses)
+                            @if($review->weaknesses)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Weaknesses:</p>
                                 <p class="text-sm text-gray-600">{{ Str::limit($review->weaknesses, 150) }}</p>
                             </div>
-                            @endif -->
+                            @endif 
                             
                             <!-- Comments to Authors -->
-                            <!-- @if($review->comments_author)
+                            @if($review->comments_author)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
                                 <div class="bg-white rounded p-2 mt-1">
                                     <p class="text-sm text-gray-600">{{ Str::limit($review->comments_author, 200) }}</p>
                                 </div>
                             </div>
-                            @endif -->
+                            @endif 
                             
                             @if(auth()->user()->is_admin || auth()->user()->is_chair)
                                 <div class="mt-3">
