@@ -114,10 +114,10 @@
         </div>
 
         <!-- Reviews Section (Only for authors, chairs, and admins) -->
-        @if(auth()->user()->is_admin || auth()->user()->is_chair || $paper->authors()->where('users.id', auth()->id())->exists())
+        @if($paper->authors()->where('users.id', auth()->id())->exists())
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-800 mb-6">Peer Reviews Summary</h2>
-                <p class="text-sm text-gray-600 mb-6">Each paper is reviewed by 2 reviewers (Total: 100 points)</p>
+                <p class="text-sm text-gray-600 mb-6">Each paper is reviewed by at least 2 reviewers (Total: 100 points)</p>
                 
                 @php
                     $completedReviews = $paper->reviewAssignments->where('status', 'completed');
@@ -171,7 +171,7 @@
                                         {{ $index == 0 ? 'bg-blue-200 text-blue-800' : 'bg-purple-200 text-purple-800' }}">
                                         Reviewer {{ $index + 1 }}
                                     </span>
-                                    <p class="text-sm text-gray-600 mt-2">{{ $review->reviewer->full_name }}</p>
+                                    <!-- <p class="text-sm text-gray-600 mt-2">{{ $review->reviewer->full_name }}</p> -->
                                 </div>
                                 @php
                                     $reviewTotal = ($review->criteria_relevance ?? 0) + 
@@ -232,30 +232,30 @@
                             </div>
                             @endif -->
                             <!-- Strengths -->
-                            @if($review->strengths)
+                            <!-- @if($review->strengths)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Strengths:</p>
                                 <p class="text-sm text-gray-600">{{ Str::limit($review->strengths, 150) }}</p>
                             </div>
-                            @endif
+                            @endif -->
                             
                             <!-- Weaknesses -->
-                            @if($review->weaknesses)
+                            <!-- @if($review->weaknesses)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Weaknesses:</p>
                                 <p class="text-sm text-gray-600">{{ Str::limit($review->weaknesses, 150) }}</p>
                             </div>
-                            @endif
+                            @endif -->
                             
                             <!-- Comments to Authors -->
-                            @if($review->comments_author)
+                            <!-- @if($review->comments_author)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Comments to Authors:</p>
                                 <div class="bg-white rounded p-2 mt-1">
                                     <p class="text-sm text-gray-600">{{ Str::limit($review->comments_author, 200) }}</p>
                                 </div>
                             </div>
-                            @endif
+                            @endif -->
                             
                             @if(auth()->user()->is_admin || auth()->user()->is_chair || auth()->user()->id == $review->reviewer_id)
                                 <div class="mt-3">
