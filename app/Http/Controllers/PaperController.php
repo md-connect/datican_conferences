@@ -170,11 +170,7 @@ class PaperController extends Controller
         
         $paper->load(['authors', 'reviews.reviewer', 'registrations']);
         
-        // Get all assignments that are not declined
-        $totalAssignments = ReviewAssignment::where('paper_id', $paper->id)
-            ->where('status', '!=', 'declined')
-            ->count();
-
+        
         // Check if this is an abstract-only paper that needs full paper submission
         $canSubmitFullPaper = $paper->submission_type === 'abstract_only' && 
                             !$paper->file_path && 
@@ -185,7 +181,7 @@ class PaperController extends Controller
         $needsRevision = $paper->status === 'needs_revision' && 
                         $paper->authors()->where('users.id', Auth::id())->exists();
         
-        return view('papers.show', compact('paper', 'canSubmitFullPaper', 'needsRevision', 'totalAssignments'));
+        return view('papers.show', compact('paper', 'canSubmitFullPaper', 'needsRevision'));
     }
 
     /**
