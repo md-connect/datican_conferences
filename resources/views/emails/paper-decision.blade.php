@@ -235,8 +235,8 @@
             
             <!-- Action Buttons -->
             <div style="text-align: center; margin: 30px 0;">
-                <a href="{{ route('papers.show', $paper->id) }}" class="button">View Paper Details</a>
-                <a href="{{ route('dashboard') }}" class="button button-primary">Go to Dashboard</a>
+                <a href="{{ route('papers.show', $paper->id) }}" class="button" style="color: #ffffffff;">View Paper Details</a>
+                <a href="{{ route('dashboard') }}" class="button button-primary" style="color: #ffffffff;">Go to Dashboard</a>
             </div>
             
             <hr>
