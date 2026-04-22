@@ -332,7 +332,7 @@
 
                         @else
 
-                        <h3 class="text-sm text-gray-600">No final decision has been made yet. Kindly check back later. A notification will be sent to your email once a decision is made.</h3>
+                        <h3 class="text-sm text-red-600">No final decision has been made yet. Kindly check back later. A notification will be sent to your email once a decision is made.</h3>
                         @endif
                     
                 @else
