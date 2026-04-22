@@ -275,7 +275,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="text-center">
                                 <p class="text-sm text-gray-600">Number of Reviews</p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $reviewCount }}/2</p>
+                                <p class="text-2xl font-bold text-blue-600">{{ $reviewCount }}/ $totalAssignments</p>
                             </div>
                             <div class="text-center">
                                 <p class="text-sm text-gray-600">Average Total Score</p>
