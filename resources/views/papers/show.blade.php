@@ -315,7 +315,7 @@
                     <!-- Chair Decision -->
                         @if($review->chair_decision)
                         <div class="mt-3 pt-3 border-t border-gray-200">
-                            <p class="text-sm font-medium text-gray-700">Chair's Decision:</p>
+                            <p class="text-sm font-medium text-gray-700">Final Decision:</p>
                             <p class="text-sm font-semibold {{ 
                                 $review->chair_decision == 'accept' ? 'text-green-600' : 
                                 ($review->chair_decision == 'accept_with_minor_revision' ? 'text-yellow-600' : 
@@ -325,7 +325,7 @@
                             </p>
                             @if($review->chair_decision_notes)
                             <div class="mt-2">
-                                <p class="text-sm font-medium text-gray-700">Decision Notes:</p>
+                                <p class="text-sm font-medium text-gray-700">Comments:</p>
                                 <p class="text-sm text-gray-600">{{ Str::limit($review->chair_decision_notes, 200) }}</p>
                             </div>
                             @endif
