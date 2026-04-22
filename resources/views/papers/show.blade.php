@@ -257,7 +257,7 @@
                             </div>
                             @endif -->
                             
-                            @if(auth()->user()->is_admin || auth()->user()->is_chair || auth()->user()->id == $review->reviewer_id)
+                            @if(auth()->user()->is_admin || auth()->user()->is_chair)
                                 <div class="mt-3">
                                     <a href="{{ route('reviews.show', $review) }}" 
                                     class="text-sm text-primary-600 hover:text-primary-800">
@@ -325,7 +325,7 @@
                             </p>
                             @if($review->chair_decision_notes)
                             <div class="mt-2">
-                                <p class="text-sm font-medium text-gray-700">Comments:</p>
+                                <p class="text-sm font-medium text-gray-700"><strong>Comments:</strong></p>
                                 <p class="text-sm text-gray-600">{{ $review->chair_decision_notes }}</p>
                             </div>
                             @endif
