@@ -301,7 +301,6 @@
                                 <p class="text-2xl font-bold {{ $agreement <= 10 ? 'text-green-600' : ($agreement <= 20 ? 'text-yellow-600' : 'text-red-600') }}">
                                     {{ $agreementStatus }}
                                 </p>
-                                <p class="text-xs text-gray-500">Difference: {{ $agreement }} pts</p>
                             </div>
                             <div class="text-center">
                                 <p class="text-sm text-gray-600">Review Status</p>
@@ -315,7 +314,7 @@
                     <!-- Chair Decision -->
                         @if($review->chair_decision)
                         <div class="mt-3 pt-3 border-t border-gray-200">
-                            <p class="text-sm font-medium text-gray-700">Final Decision:</p>
+                            <h2 class="text-sm font-medium text-gray-700">Final Decision:</h2>
                             <p class="text-sm font-semibold {{ 
                                 $review->chair_decision == 'accept' ? 'text-green-600' : 
                                 ($review->chair_decision == 'accept_with_minor_revision' ? 'text-yellow-600' : 
@@ -330,6 +329,10 @@
                             </div>
                             @endif
                         </div>
+
+                        @else
+
+                        <h3 class="text-sm text-gray-600">No final decision has been made yet. Kindly check back later. A notification will be sent to your email once a decision is made.</h3>
                         @endif
                     
                 @else
