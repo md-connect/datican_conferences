@@ -116,7 +116,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>DATI CAN Conference</h1>
+            <h1>DATICAN Conference</h1>
             <p>Improving Medical Diagnostics in Nigeria Using AI and Data Science</p>
         </div>
         
