@@ -181,7 +181,9 @@ class PaperController extends Controller
         $needsRevision = $paper->status === 'needs_revision' && 
                         $paper->authors()->where('users.id', Auth::id())->exists();
         
-        return view('papers.show', compact('paper', 'canSubmitFullPaper', 'needsRevision'));
+        $totalAssignments = $paper->reviewAssignments->where('status', '!=', 'declined')->count();
+
+        return view('papers.show', compact('paper', 'canSubmitFullPaper', 'needsRevision', 'totalAssignments'));
     }
 
     /**
