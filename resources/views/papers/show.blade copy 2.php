@@ -114,7 +114,7 @@
         </div>
 
         <!-- Reviews Section (Only for authors, chairs, and admins) -->
-        @if(auth()->user()->is_admin || auth()->user()->is_chair || $paper->authors()->where('users.id', auth()->id())->exists())
+        @if($paper->authors()->where('users.id', auth()->id())->exists())
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-800 mb-6">Peer Reviews Summary</h2>
                 <p class="text-sm text-gray-600 mb-6">Each paper is reviewed by at least 2 reviewers (Total: 100 points)</p>
@@ -235,7 +235,7 @@
                             @if($review->strengths)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Strengths:</p>
-                                <p class="text-sm text-gray-600">{{ $review->strengths }}</p>
+                                <p class="text-sm text-gray-600">{{ Str::limit($review->strengths, 150) }}</p>
                             </div>
                             @endif 
                             
@@ -243,24 +243,9 @@
                             @if($review->weaknesses)
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700">Weaknesses:</p>
-                                <p class="text-sm text-gray-600">{{ $review->weaknesses }}</p>
+                                <p class="text-sm text-gray-600">{{ Str::limit($review->weaknesses, 150) }}</p>
                             </div>
                             @endif 
-                            <!-- Suggestions -->
-                            @if($review->suggestions)
-                            <div class="mt-3">
-                                <p class="text-sm font-medium text-gray-700">Suggestions for Improvement:</p>
-                                <p class="text-sm text-gray-600">{{ $review->suggestions }}</p>
-                            </div>
-                            @endif
-                            
-                            <!-- Revision Suggestions -->
-                            @if($review->revision_suggestions)
-                            <div class="mt-3">
-                                <p class="text-sm font-medium text-gray-700">Revision Suggestions:</p> 
-                                <p class="text-sm text-gray-600">{{ $review->revision_suggestions }}</p>
-                            </div>
-                            @endif
                             
                             <!-- Comments to Authors -->
                             @if($review->comments_author)
@@ -272,12 +257,14 @@
                             </div>
                             @endif 
                             
+                            @if(auth()->user()->is_admin || auth()->user()->is_chair)
                                 <div class="mt-3">
                                     <a href="{{ route('reviews.show', $review) }}" 
                                     class="text-sm text-primary-600 hover:text-primary-800">
                                         View Full Review <i class="fas fa-arrow-right ml-1"></i>
                                     </a>
                                 </div>
+                            @endif
                         </div>
                         @endforeach
                     </div>
