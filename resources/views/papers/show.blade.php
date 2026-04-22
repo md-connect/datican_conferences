@@ -326,7 +326,7 @@
                             @if($review->chair_decision_notes)
                             <div class="mt-2">
                                 <p class="text-sm font-medium text-gray-700">Comments:</p>
-                                <p class="text-sm text-gray-600">{{ Str::limit($review->chair_decision_notes, 200) }}</p>
+                                <p class="text-sm text-gray-600">{{ $review->chair_decision_notes }}</p>
                             </div>
                             @endif
                         </div>
