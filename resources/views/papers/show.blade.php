@@ -320,7 +320,16 @@
                                 ($review->chair_decision == 'accept_with_minor_revision' ? 'text-yellow-600' : 
                                 ($review->chair_decision == 'accept_with_major_revision' ? 'text-orange-600' : 'text-red-600')) 
                             }}">
-                                {{ ucfirst(str_replace('_', ' ', $review->chair_decision)) }}
+                                @php
+                                    $decisionDisplay = match($review->chair_decision) {
+                                        'accept' => 'Accepted',
+                                        'accept_with_minor_revision' => 'Accepted with Minor Revision',
+                                        'accept_with_major_revision' => 'Accepted with Major Revision',
+                                        'reject' => 'Rejected',
+                                        default => ucfirst(str_replace('_', ' ', $review->chair_decision ?? ''))
+                                    };
+                                @endphp
+                                {{ $decisionDisplay }}
                             </p>
                             @if($review->chair_decision_notes)
                             <div class="mt-2">
