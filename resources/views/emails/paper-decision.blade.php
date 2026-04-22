@@ -163,9 +163,11 @@
                             @endif
                         </div>
                     </div>
+                    <p style="margin: 0;"><strong></strong>Kindly login to your dashboard on the conference website and click view button/icon to see more comments from reviewers.</strong></p>
+
                 @endif
-                
-                
+
+
                 @if($decision == 'accept_with_major_revision')
                     <div class="revision-instructions">
                         <p style="margin: 0 0 10px 0;"><strong>Major Revisions Required</strong></p>
@@ -177,6 +179,8 @@
                             @endif
                         </div>
                     </div>
+                    <p style="margin: 0;"><strong></strong>Kindly login to your dashboard on the conference website and click view button/icon to see more comments from reviewers.</strong></p>
+
                 @endif
                 
                 <!-- Full Paper Submission Deadline -->
