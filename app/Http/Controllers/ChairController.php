@@ -544,13 +544,11 @@ class ChairController extends Controller
             'paper_id' => $paper->id,
             'paper_title' => $paper->title,
             'decision' => $request->decision,
-            'has_revision_deadline' => $request->has('revision_deadline'),
-            'revision_deadline' => $request->revision_deadline,
             'decision_notes' => $request->decision_notes,
             'all_input' => $request->all()
         ]);
         
-        // Basic validation - Updated decision options
+        // Basic validation - No revision_deadline
         $validator = Validator::make($request->all(), [
             'decision' => 'required|in:accept,accept_with_minor_revision,accept_with_major_revision,reject',
             'decision_notes' => 'nullable|string|max:1000',
@@ -561,19 +559,10 @@ class ChairController extends Controller
             'errors' => $validator->errors()->all()
         ]);
         
-        // Only require revision_deadline for revision decisions
-        if (in_array($request->decision, ['accept_with_minor_revision', 'accept_with_major_revision'])) {
-            \Log::info('Adding revision_deadline validation rules');
-            $validator->addRules([
-                'revision_deadline' => 'required|date|after:today'
-            ]);
-        }
-        
         if ($validator->fails()) {
             \Log::warning('Validation failed', [
                 'errors' => $validator->errors()->all(),
                 'decision' => $request->decision,
-                'revision_deadline' => $request->revision_deadline
             ]);
             
             return redirect()->back()
@@ -603,19 +592,13 @@ class ChairController extends Controller
                 'status' => $status,
             ];
             
-            \Log::info('Base update data prepared', $updateData);
-            
-            // Add revision data for revision decisions
-            if (in_array($request->decision, ['accept_with_minor_revision', 'accept_with_major_revision']) && $request->filled('revision_deadline')) {
-                $updateData['revision_deadline'] = $request->revision_deadline;
+            // Add revision data for revision decisions (NO deadline)
+            if (in_array($request->decision, ['accept_with_minor_revision', 'accept_with_major_revision'])) {
                 $updateData['needs_revision'] = true;
                 $updateData['revision_requested_at'] = now();
-                
-                // IMPORTANT: Save decision_notes as revision_notes
                 $updateData['revision_notes'] = $request->decision_notes;
                 
                 \Log::info('Added revision data to paper', [
-                    'revision_deadline' => $request->revision_deadline,
                     'needs_revision' => true,
                     'revision_requested_at' => now(),
                     'revision_notes' => substr($request->decision_notes ?? '', 0, 100)
@@ -645,7 +628,6 @@ class ChairController extends Controller
                 'paper_id' => $paper->id,
                 'new_status' => $paper->fresh()->status,
                 'decision' => $paper->fresh()->decision,
-                'revision_deadline' => $paper->fresh()->revision_deadline,
                 'needs_revision' => $paper->fresh()->needs_revision,
                 'has_revision_notes' => !is_null($paper->fresh()->revision_notes)
             ]);
@@ -660,8 +642,7 @@ class ChairController extends Controller
                         Mail::to($author->email)->send(new PaperDecisionMail(
                             $paper,
                             $request->decision,
-                            $request->decision_notes,
-                            $request->revision_deadline
+                            $request->decision_notes
                         ));
                         $recipients[] = $author->email;
                         $emailSent = true;
@@ -704,11 +685,9 @@ class ChairController extends Controller
             } elseif ($request->decision == 'reject') {
                 $message = 'Paper rejected successfully!' . $emailStatus;
             } elseif ($request->decision == 'accept_with_minor_revision') {
-                $message = 'Paper accepted with minor revisions requested. Author must submit revisions by ' . 
-                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y') . $emailStatus;
+                $message = 'Paper accepted with minor revisions requested.' . $emailStatus;
             } elseif ($request->decision == 'accept_with_major_revision') {
-                $message = 'Paper accepted with major revisions requested. Author must submit revisions by ' . 
-                        \Carbon\Carbon::parse($request->revision_deadline)->format('F d, Y') . $emailStatus;
+                $message = 'Paper accepted with major revisions requested.' . $emailStatus;
             } else {
                 $message = 'Decision submitted successfully!' . $emailStatus;
             }

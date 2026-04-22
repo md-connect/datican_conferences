@@ -506,23 +506,6 @@
                         </div>
                     </div>
                     
-                    <!-- Revision Deadline (Conditional) -->
-                    <div id="revisionDeadlineContainer" class="hidden" style="display: none;">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Revision Deadline <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" 
-                            name="revision_deadline" 
-                            id="revisionDeadlineInput"
-                            class="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                            min="{{ date('Y-m-d', strtotime('+1 day')) }}"
-                            value="{{ old('revision_deadline') }}">
-                        <p class="text-sm text-gray-500 mt-1">Date by which authors must submit revised version</p>
-                        @error('revision_deadline')
-                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    
                     <!-- Decision Notes -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -577,40 +560,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Decision form script loaded');
     
-    const decisionRadios = document.querySelectorAll('input[name="decision"]');
-    const revisionDeadlineContainer = document.getElementById('revisionDeadlineContainer');
-    const revisionDeadlineInput = document.getElementById('revisionDeadlineInput');
     const form = document.getElementById('decisionForm');
     
     console.log('Elements found:', {
-        decisionRadios: decisionRadios.length,
-        revisionDeadlineContainer: revisionDeadlineContainer ? 'yes' : 'no',
-        revisionDeadlineInput: revisionDeadlineInput ? 'yes' : 'no',
         form: form ? 'yes' : 'no'
-    });
-    
-    // Function to toggle revision deadline field
-    function toggleRevisionDeadline() {
-        const selectedDecision = document.querySelector('input[name="decision"]:checked');
-
-        if (!selectedDecision) return;
-
-        if (selectedDecision.value === 'accept_with_minor_revision' || selectedDecision.value === 'accept_with_major_revision') {
-            revisionDeadlineContainer.style.display = 'block';
-            revisionDeadlineInput.required = true;
-            revisionDeadlineInput.disabled = false;
-        } else {
-            revisionDeadlineContainer.style.display = 'none';
-            revisionDeadlineInput.required = false;
-            revisionDeadlineInput.disabled = true;
-            revisionDeadlineInput.value = '';
-        }
-    }
-    
-    // Add change event listeners to all radio buttons
-    decisionRadios.forEach(radio => {
-        radio.addEventListener('change', toggleRevisionDeadline);
-        console.log('Added change listener to radio:', radio.value);
     });
     
     // Form submission handler
@@ -619,8 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedDecision = document.querySelector('input[name="decision"]:checked');
             
             console.log('Form submission triggered', {
-                selectedDecision: selectedDecision ? selectedDecision.value : 'none',
-                revisionDeadlineValue: revisionDeadlineInput ? revisionDeadlineInput.value : 'no input'
+                selectedDecision: selectedDecision ? selectedDecision.value : 'none'
             });
             
             if (!selectedDecision) {
@@ -629,38 +581,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // For revision decisions, ensure deadline is set
-            if (selectedDecision.value === 'accept_with_minor_revision' || selectedDecision.value === 'accept_with_major_revision') {
-                revisionDeadlineInput.disabled = false;
-                
-                if (!revisionDeadlineInput.value) {
-                    e.preventDefault();
-                    alert('Please select a revision deadline date.');
-                    revisionDeadlineInput.focus();
-                    return false;
-                }
-            }
-            
             console.log('Form submission allowed');
             return true;
         });
     }
-    
-    // Initial call
-    toggleRevisionDeadline();
-    
-    // Handle old input
-    @if(old('decision') === 'accept_with_minor_revision' || old('decision') === 'accept_with_major_revision')
-        console.log('Old decision was revision');
-        const reviseRadio = document.querySelector('input[name="decision"][value="' + "{{ old('decision') }}" + '"]');
-        if (reviseRadio) {
-            reviseRadio.checked = true;
-            toggleRevisionDeadline();
-            @if(old('revision_deadline'))
-                revisionDeadlineInput.value = "{{ old('revision_deadline') }}";
-            @endif
-        }
-    @endif
 });
 </script>
 

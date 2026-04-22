@@ -209,11 +209,11 @@
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Clarity:</span>
-                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/10</span>
+                                        <span class="font-medium">{{ $review->criteria_clarity ?? 0 }}/15</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Contribution:</span>
-                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/10</span>
+                                        <span class="font-medium">{{ $review->criteria_contribution ?? 0 }}/15</span>
                                     </div>
                                 </div>
                             </div>

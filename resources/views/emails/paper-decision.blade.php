@@ -154,25 +154,39 @@
                 <!-- Revision Instructions (for minor/major revision) -->
                 @if($decision == 'accept_with_minor_revision')
                     <div class="revision-instructions">
-                        <p style="margin: 0 0 10px 0;"><strong>Minor Revisions Required</strong></p>
+                        <p style="margin: 0 0 10px 0;"><strong>Minor Revisions Required:</strong></p>
                         <p style="margin: 0;">The reviewers have recommended minor revisions to improve your paper. Please carefully address the reviewers' comments and suggestions provided below.</p>
+                        <div>
+                            @if(!empty($decisionNotes))
+                                <p style="margin: 0 0 10px 0;"><strong>Comments:</strong></p>
+                                <p style="margin: 0;"><strong></strong>{{ nl2br(e($decisionNotes)) }}</strong></p>
+                            @endif
+                        </div>
                     </div>
                 @endif
+                
                 
                 @if($decision == 'accept_with_major_revision')
                     <div class="revision-instructions">
                         <p style="margin: 0 0 10px 0;"><strong>Major Revisions Required</strong></p>
                         <p style="margin: 0;">The reviewers have recommended major revisions to improve your paper. Please carefully address all reviewers' comments and provide a detailed response to each concern raised.</p>
+                        <div>
+                            @if(!empty($decisionNotes))
+                                <p style="margin: 0 0 10px 0;"><strong>Comments:</strong></p>
+                                <p style="margin: 0;"><strong></strong>{{ nl2br(e($decisionNotes)) }}</strong></p>
+                            @endif
+                        </div>
                     </div>
                 @endif
                 
                 <!-- Full Paper Submission Deadline -->
                 @php
-                    $fullPaperDeadline = $revisionDeadline ?? \Carbon\Carbon::parse('2026-05-21');
+                    $fullPaperDeadline = \Carbon\Carbon::parse('2026-05-21');
                 @endphp
                 <div class="full-paper-deadline">
                     <p style="margin: 0 0 10px 0;"><strong>Full Paper Submission Required</strong></p>
                     <p style="margin: 0;">You are kindly requested to submit your full paper by: <strong>{{ $fullPaperDeadline->format('F d, Y') }}</strong></p>
+                    <p style="margin: 10px 0 0 0; font-size: 14px;">Please ensure all required revisions are incorporated into your full paper submission.</p>
                     <p style="margin: 10px 0 0 0; font-size: 14px;">This will enable us to proceed with the submission to the PG Journal of LASU for peer-review process.</p>
                 </div>
                 
@@ -211,27 +225,16 @@
                     <p style="margin: 0;">We appreciate your interest in DATICAN and encourage you to consider submitting your future work to our conference.</p>
                 </div>
             @endif
-            
-            
-            
-            <!-- Revision Deadline (for minor/major revision decisions) - Additional reminder -->
-            @if($revisionDeadline && in_array($decision, ['accept_with_minor_revision', 'accept_with_major_revision']))
-                <div class="deadline-box">
-                    <p style="margin: 0 0 10px 0;"><strong>Revision Submission Deadline</strong></p>
-                    <p style="margin: 0;">Please submit your revised paper by: <strong>{{ \Carbon\Carbon::parse($revisionDeadline)->format('F d, Y') }}</strong></p>
-                    <p style="margin: 10px 0 0 0; font-size: 14px;">Submit your revision through your conference dashboard.</p>
-                </div>
-            @endif
-            
-            
-            
+
+
+           
             <!-- Paper Details -->
-            <div class="info-box">
+            <!-- <div class="info-box">
                 <p style="margin: 0 0 10px 0;"><strong>Paper Details</strong></p>
                 <p style="margin: 0;"><strong>Title:</strong> {{ $paper->title }}</p>
                 <p style="margin: 10px 0 0 0;"><strong>Paper ID:</strong> {{ $paper->anonymous_id }}</p>
                 <p style="margin: 10px 0 0 0;"><strong>Topic Area:</strong> {{ $paper->topic_area }}</p>
-            </div>
+            </div> -->
             
             <!-- Action Buttons -->
             <div style="text-align: center; margin: 30px 0;">

@@ -32,7 +32,6 @@ class Paper extends Model
         'decision_made_by',
         'submitted_at',
         'review_due_date',
-        'revision_deadline',
         'conference_year',
         'created_by',
         'updated_by',
@@ -49,12 +48,10 @@ class Paper extends Model
         'full_paper_deadline',
         'needs_revision',
         'revision_requested_at',
-        'revision_deadline',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
-        'revision_deadline' => 'date',
         'review_due_date' => 'datetime',
         'decision_made_at' => 'datetime',
         'is_anonymous' => 'boolean',
@@ -69,7 +66,6 @@ class Paper extends Model
         'all_reviews_completed' => 'boolean',
         'abstract_accepted_at' => 'datetime',
         'full_paper_deadline' => 'date',
-        'revision_deadline' => 'date',
     ];
 
     protected $appends = ['author_list', 'file_size_formatted', 'status_badge', 'is_abstract_only', 'is_full_paper'];
