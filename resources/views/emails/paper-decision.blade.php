@@ -218,7 +218,7 @@
             
             <!-- Reject Message -->
             @if($decision == 'reject')
-                <p>Thank you for your submission. After careful review by our team of seasoned reviewers and experts in the field, we regret to inform you that your abstract has not been accepted for presentation at the conference.</p>
+                <p>After careful review by our team of seasoned reviewers and experts in the field, we regret to inform you that your abstract has not been accepted for presentation at the conference.</p>
                 
                 <div class="info-box">
                     <p style="margin: 0 0 10px 0;"><strong>Reviewer Comments</strong></p>
