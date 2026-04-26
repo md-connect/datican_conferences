@@ -34,45 +34,43 @@ class AssignmentController extends Controller
     {
         $year = $request->input('year', date('Y'));
         $tab = $request->input('tab', 'papers');
-        $paperId = $request->input('paper');
         
-        // ========== FIXED: Papers needing assignments ==========
-        // A paper needs reviewers if it has LESS THAN 2 TOTAL assigned reviewers
-        // (including both active AND completed reviews)
-        $papersNeedingAssignments = Paper::where('conference_year', $year)
-            ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
-            ->whereDoesntHave('reviewAssignments', function($q) {
-                // Papers that have LESS than 2 TOTAL assigned reviewers
-                // (we want papers with < 2, so we count those with >= 2 and exclude them)
-            }, '>=', 2)
-            ->count();
-        
-        // For papers tab, show papers that need reviewers
+        // ========== GET PAPERS NEEDING REVIEWERS ==========
         $papers = collect();
+        $papersNeedingAssignmentsCount = 0;
+        
         if ($tab === 'papers') {
-            $papers = Paper::where('conference_year', $year)
+            // Get all papers first
+            $allPapers = Paper::where('conference_year', $year)
                 ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
-                ->whereDoesntHave('reviewAssignments', function($q) {
-                    // Exclude papers that already have 2 or MORE assigned reviewers
-                    $q->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted', 'completed']);
-                }, '>=', 2)
-                ->with(['reviewAssignments' => function($query) {
-                    $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'declined', 'completed'])
-                        ->with('reviewer');
-                }, 'bids'])
-                ->orderBy('submitted_at')
                 ->get();
+            
+            // Filter papers with less than 2 reviewers
+            $papers = $allPapers->filter(function($paper) {
+                $totalReviewers = $paper->reviewAssignments()
+                    ->where('status', '!=', 'declined')
+                    ->count();
+                return $totalReviewers < 2;
+            })->values();
+            
+            // Load relationships
+            $papers->load(['reviewAssignments' => function($query) {
+                $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'declined', 'completed'])
+                    ->with('reviewer');
+            }, 'bids']);
+            
+            $papersNeedingAssignmentsCount = $papers->count();
         }
         
         // ========== STATISTICS ==========
         
-        // Papers needing assignments (same logic as above)
-        $papersNeedingAssignmentsCount = Paper::where('conference_year', $year)
+        // Total papers needing assignments (for stats)
+        $papersNeedingAssignmentsStats = Paper::where('conference_year', $year)
             ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
-            ->whereDoesntHave('reviewAssignments', function($q) {
-                $q->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted', 'completed']);
-            }, '>=', 2)
-            ->count();
+            ->get()
+            ->filter(function($paper) {
+                return $paper->reviewAssignments()->where('status', '!=', 'declined')->count() < 2;
+            })->count();
         
         // Total active reviews (pending, under_review, in_progress)
         $totalActiveReviews = ReviewAssignment::whereHas('paper', function($q) use ($year) {
@@ -113,7 +111,7 @@ class AssignmentController extends Controller
         $avgLoad = $activeReviewers > 0 ? round($totalActiveReviews / $activeReviewers, 1) : 0;
 
         // Required reviews total (each paper needing assignments needs 2 reviews total)
-        $requiredReviews = $papersNeedingAssignmentsCount * 2;
+        $requiredReviews = $papersNeedingAssignmentsStats * 2;
 
         // Coverage percentage
         $coverage = $requiredReviews > 0 ? round(($totalActiveReviews / $requiredReviews) * 100, 1) : 0;
@@ -128,7 +126,7 @@ class AssignmentController extends Controller
         $completionRate = $totalAssigned > 0 ? round(($totalCompletedReviews / $totalAssigned) * 100, 1) : 0;
 
         $stats = [
-            'papers' => $papersNeedingAssignmentsCount,
+            'papers' => $papersNeedingAssignmentsStats,
             'reviewers' => $totalReviewers,
             'active_reviewers' => $activeReviewers,
             'available_reviewers' => $availableReviewers,
@@ -167,6 +165,7 @@ class AssignmentController extends Controller
                     $q2->where('conference_year', $year);
                 })->whereIn('status', ['pending', 'under_review', 'in_progress']);
             }])
+            ->orderBy('first_name')
             ->get();
         
         return view('assignments.index', compact('papers', 'reviewers', 'stats', 'assignments', 'year'));
