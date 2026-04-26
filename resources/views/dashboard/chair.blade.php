@@ -8,7 +8,7 @@
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Conference Chair Dashboard</h1>
         
         <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Conference Registrations -->
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
@@ -78,25 +78,53 @@
                     <span class="text-xs text-gray-500">Out of {{ $stats['papers_under_review'] ?? 0 }} under review</span>
                 </div>
             </div>
-            
-            <!-- Total Users -->
+        </div>
+        <!-- Decision Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Accepted Papers -->
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                        <i class="fas fa-users text-xl"></i>
+                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                        <i class="fas fa-check-circle text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $stats['total_users'] }}</p>
-                        <p class="text-sm text-gray-500">System Users</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['accepted_papers'] ?? 0 }}</p>
+                        <p class="text-sm text-gray-500">Accepted Papers</p>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <a href="{{ route('users.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
-                        Manage <i class="fas fa-arrow-right ml-1"></i>
-                    </a>
+            
+            </div>
+            
+            <!-- Rejected Papers -->
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                        <i class="fas fa-times-circle text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['rejected_papers'] ?? 0 }}</p>
+                        <p class="text-sm text-gray-500">Rejected Papers</p>
+                    </div>
                 </div>
+                
+            </div>
+            
+            <!-- Needing Decision -->
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">
+                        <i class="fas fa-hourglass-half text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['needing_decision'] ?? 0 }}</p>
+                        <p class="text-sm text-gray-500">Needing Decision</p>
+                    </div>
+                </div>
+                
             </div>
         </div>
+        
+        
         
         <!-- Export Actions -->
         <div class="bg-white rounded-xl shadow p-6 mb-8">
@@ -193,8 +221,8 @@
                                         {{ $paper->completed_assignments_count }}/{{ $paper->total_assignments }} reviews completed
                                     </span>
                                     @if($paper->average_score > 0)
-                                    <span class="text-sm font-medium {{ $paper->average_score >= 3.5 ? 'text-green-600' : 'text-red-600' }}">
-                                        Avg: {{ number_format($paper->average_score, 1) }}/5
+                                    <span class="text-sm font-medium {{ $paper->average_score >= 70 ? 'text-green-600' : 'text-red-600' }}">
+                                        Avg: {{ number_format($paper->average_score, 1) }}/100
                                     </span>
                                     @endif
                                     @if($paper->completed_assignments_count >= 2)
@@ -352,7 +380,7 @@
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900">{{ $reviewer->name }}</div>
-                                        <div class="text-sm text-gray-500">{{ $reviewer->email }}</div>
+                                        <div class="text-sm text-gray-500">{{ $reviewer->email or $reviewer->email }}</div>
                                     </div>
                                 </div>
                             </td>

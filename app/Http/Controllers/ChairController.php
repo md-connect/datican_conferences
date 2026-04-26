@@ -51,6 +51,22 @@ class ChairController extends Controller
             return $paper->completed_assignments == 0;
         })->count();
         
+        // ========== NEW DECISION STATS ==========
+        $acceptedPapers = Paper::where('conference_year', $year)
+            ->where('status', 'accepted')
+            ->count();
+        
+        $rejectedPapers = Paper::where('conference_year', $year)
+            ->where('status', 'rejected')
+            ->count();
+        
+        $needingDecision = Paper::where('conference_year', $year)
+            ->where('status', 'under_review')
+            ->whereHas('reviewAssignments', function($q) {
+                $q->where('status', 'completed');
+            }, '>=', 2)
+            ->count();
+        
         // Get statistics
         $stats = [
             'papers' => Paper::where('conference_year', $year)->count(),
@@ -70,6 +86,20 @@ class ChairController extends Controller
             'papers_with_both_reviews' => $papersWithBothReviews,
             'papers_with_one_review' => $papersWithOneReview,
             'papers_with_no_reviews' => $papersWithNoReviews,
+            // ========== DECISION STATS - FIXED ==========
+            'accepted_papers' => Paper::where('conference_year', $year)
+                ->whereIn('decision', ['accept', 'accept_with_minor_revision', 'accept_with_major_revision'])
+                ->count(),
+            'rejected_papers' => Paper::where('conference_year', $year)
+                ->where('decision', 'reject')
+                ->count(),
+            'needing_decision' => Paper::where('conference_year', $year)
+                ->where('status', 'under_review')
+                ->whereHas('reviewAssignments', function($q) {
+                    $q->where('status', 'completed');
+                }, '>=', 2)
+                ->whereNull('decision')
+                ->count(),
         ];
         
         // Get papers needing decisions (papers with at least 2 completed reviews)
@@ -97,15 +127,13 @@ class ChairController extends Controller
                 $paper->review_count = $paper->reviewAssignments->count();
             });
         
-        // ========== FIXED: Get papers needing reviewers ==========
-        // A paper needs reviewers ONLY if it has LESS THAN 2 TOTAL assigned reviewers
-        // (including pending, in_progress, accepted, completed)
+        // Get papers needing reviewers
         $papersNeedingReviewers = Paper::where('conference_year', $year)
             ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
             ->withCount(['reviewAssignments as total_assigned' => function($query) {
                 $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted', 'completed']);
             }])
-            ->having('total_assigned', '<', 2)  // Less than 2 reviewers assigned TOTAL
+            ->having('total_assigned', '<', 2)
             ->with(['reviewAssignments' => function($query) {
                 $query->whereIn('status', ['pending', 'under_review', 'in_progress', 'accepted', 'completed'])
                     ->with('reviewer');
