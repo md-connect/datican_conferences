@@ -161,91 +161,104 @@
                         </td>
                         
                         <td class="px-6 py-4">
-    <!-- Active Reviewers Section -->
-    @php
-        $activeReviews = $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress']);
-        $completedReviews = $paper->reviews->where('status', 'completed');
-        $declinedReviews = $paper->reviews->where('status', 'declined');
-    @endphp
-    
-    @if($activeReviews->count() > 0)
-    <div class="mb-2">
-        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Reviewers</div>
-        <div class="flex -space-x-2">
-            @foreach($activeReviews->take(3) as $review)
-            <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center" 
-                title="{{ $review->reviewer->full_name ?? 'Unknown' }} ({{ $review->status }})">
-                <span class="text-xs font-medium text-blue-700">
-                    @if($review->reviewer)
-                        {{ strtoupper(substr($review->reviewer->first_name, 0, 1)) }}
-                    @else
-                        ?
-                    @endif
-                </span>
-            </div>
-            @endforeach
-            @if($activeReviews->count() > 3)
-            <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
-                <span class="text-xs font-medium text-gray-700">+{{ $activeReviews->count() - 3 }}</span>
-            </div>
-            @endif
-        </div>
-        <div class="text-xs text-gray-500 mt-1">
-            {{ $activeReviews->count() }} active reviewer(s)
-        </div>
-    </div>
-    @endif
-    
-    <!-- Completed Reviewers Section -->
-    @if($completedReviews->count() > 0)
-    <div class="mt-2 pt-2 border-t border-gray-100">
-        <div class="text-xs font-semibold text-green-500 uppercase tracking-wider mb-1 flex items-center">
-            <i class="fas fa-check-circle mr-1 text-xs"></i>
-            Completed ({{ $completedReviews->count() }})
-        </div>
-        <div class="space-y-1">
-            @foreach($completedReviews as $review)
-            <div class="flex items-center text-xs">
-                <i class="fas fa-user-check text-green-400 mr-2"></i>
-                <span class="text-gray-600">{{ $review->reviewer->full_name ?? 'Unknown' }}</span>
-                @if($review->submitted_at)
-                <span class="text-gray-400 ml-2">({{ $review->submitted_at->format('M d') }})</span>
-                @endif
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
-    
-    <!-- Declined Reviewers Section -->
-    @if($declinedReviews->count() > 0)
-    <div class="mt-2 pt-2 border-t border-gray-100">
-        <div class="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1 flex items-center">
-            <i class="fas fa-exclamation-triangle mr-1 text-xs"></i>
-            Declined ({{ $declinedReviews->count() }})
-        </div>
-        <div class="space-y-1">
-            @foreach($declinedReviews as $review)
-            <div class="flex items-center text-xs">
-                <i class="fas fa-user-times text-red-400 mr-2"></i>
-                <span class="text-gray-600">{{ $review->reviewer->full_name ?? 'Unknown' }}</span>
-                @if($review->declined_at)
-                <span class="text-gray-400 ml-2">({{ $review->declined_at->format('M d') }})</span>
-                @endif
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
-    
-    @if($activeReviews->count() === 0 && $completedReviews->count() === 0 && $declinedReviews->count() === 0)
-    <span class="text-sm text-gray-500">No assignments</span>
-    @elseif($activeReviews->count() === 0 && $completedReviews->count() > 0)
-    <div class="mt-2 text-xs text-green-600">
-        All reviews completed!
-    </div>
-    @endif
-</td>
+                            <!-- Active Reviewers Section -->
+                            @php
+                                $activeReviews = $paper->reviews->whereIn('status', ['pending', 'under_review', 'in_progress']);
+                                $completedReviews = $paper->reviews->where('status', 'completed');
+                                $declinedReviews = $paper->reviews->where('status', 'declined');
+                                $totalNeeded = 2; // Each paper needs 2 reviewers total
+                            @endphp
+                            
+                            @if($activeReviews->count() > 0)
+                            <div class="mb-2">
+                                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Reviewers</div>
+                                <div class="flex -space-x-2">
+                                    @foreach($activeReviews->take(3) as $review)
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center" 
+                                        title="{{ $review->reviewer->full_name ?? 'Unknown' }} ({{ $review->status }})">
+                                        <span class="text-xs font-medium text-blue-700">
+                                            @if($review->reviewer)
+                                                {{ strtoupper(substr($review->reviewer->first_name, 0, 1)) }}
+                                            @else
+                                                ?
+                                            @endif
+                                        </span>
+                                    </div>
+                                    @endforeach
+                                    @if($activeReviews->count() > 3)
+                                    <div class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
+                                        <span class="text-xs font-medium text-gray-700">+{{ $activeReviews->count() - 3 }}</span>
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {{ $activeReviews->count() }} active reviewer(s)
+                                </div>
+                                <div class="text-xs text-gray-400 mt-0.5">
+                                    Needs {{ $totalNeeded - ($activeReviews->count() + $completedReviews->count()) }} more
+                                </div>
+                            </div>
+                            @endif
+                            
+                            <!-- Completed Reviewers Section -->
+                            @if($completedReviews->count() > 0)
+                            <div class="mt-2 pt-2 border-t border-gray-100">
+                                <div class="text-xs font-semibold text-green-500 uppercase tracking-wider mb-1 flex items-center">
+                                    <i class="fas fa-check-circle mr-1 text-xs"></i>
+                                    Completed ({{ $completedReviews->count() }})
+                                </div>
+                                <div class="space-y-1">
+                                    @foreach($completedReviews as $review)
+                                    <div class="flex items-center text-xs">
+                                        <i class="fas fa-user-check text-green-400 mr-2"></i>
+                                        <span class="text-gray-600">{{ $review->reviewer->full_name ?? 'Unknown' }}</span>
+                                        @if($review->submitted_at)
+                                        <span class="text-gray-400 ml-2">({{ $review->submitted_at->format('M d') }})</span>
+                                        @endif
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                            
+                            <!-- Declined Reviewers Section -->
+                            @if($declinedReviews->count() > 0)
+                            <div class="mt-2 pt-2 border-t border-gray-100">
+                                <div class="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1 flex items-center">
+                                    <i class="fas fa-exclamation-triangle mr-1 text-xs"></i>
+                                    Declined ({{ $declinedReviews->count() }})
+                                </div>
+                                <div class="space-y-1">
+                                    @foreach($declinedReviews as $review)
+                                    <div class="flex items-center text-xs">
+                                        <i class="fas fa-user-times text-red-400 mr-2"></i>
+                                        <span class="text-gray-600">{{ $review->reviewer->full_name ?? 'Unknown' }}</span>
+                                        @if($review->declined_at)
+                                        <span class="text-gray-400 ml-2">({{ $review->declined_at->format('M d') }})</span>
+                                        @endif
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                            
+                            @if($activeReviews->count() === 0 && $completedReviews->count() === 0 && $declinedReviews->count() === 0)
+                                <span class="text-sm text-gray-500">No assignments</span>
+                            @elseif($activeReviews->count() === 0 && $completedReviews->count() > 0)
+                                @if($completedReviews->count() >= $totalNeeded)
+                                    <div class="mt-2 text-xs text-green-600">
+                                        <i class="fas fa-check-circle mr-1"></i> All reviews completed! ({{ $completedReviews->count() }}/{{ $totalNeeded }})
+                                    </div>
+                                @else
+                                    <div class="mt-2 text-xs text-yellow-600">
+                                        <i class="fas fa-clock mr-1"></i> {{ $completedReviews->count() }}/{{ $totalNeeded }} reviews completed
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-0.5">
+                                        Waiting for {{ $totalNeeded - $completedReviews->count() }} more reviewer(s)
+                                    </div>
+                                @endif
+                            @endif
+                        </td>
                         
                         <!-- NEW: Assigned Reviewers Column -->
                         <td class="px-6 py-4">
