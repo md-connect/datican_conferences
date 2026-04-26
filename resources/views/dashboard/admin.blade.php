@@ -74,7 +74,7 @@
                 </a>
             </div>
             
-            <!-- Peer Review Stats (NEW) -->
+            <!-- Both Reviews Done -->
             <div class="bg-white rounded-xl shadow p-6 border-l-4 border-indigo-500">
                 <div class="flex items-center justify-between">
                     <div>
@@ -87,7 +87,7 @@
                             @endphp
                             {{ $bothReviewsDone }}
                         </p>
-                        <p class="text-xs text-gray-500 mt-1">Papers with 2 reviews</p>
+                        <p class="text-xs text-gray-500 mt-1">Papers with 2+ reviews</p>
                     </div>
                     <div class="bg-indigo-100 p-3 rounded-full">
                         <i class="fas fa-users text-indigo-600 text-2xl"></i>
@@ -113,6 +113,65 @@
                 <a href="{{ route('users.index') }}" class="mt-4 inline-flex items-center text-sm text-red-600 hover:text-red-800">
                     Manage users <i class="fas fa-arrow-right ml-1"></i>
                 </a>
+            </div>
+        </div>
+        
+        <!-- Decision Stats Row - NEW -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            @php
+                $acceptedPapers = \App\Models\Paper::whereIn('decision', ['accept', 'accept_with_minor_revision', 'accept_with_major_revision'])->count();
+                $rejectedPapers = \App\Models\Paper::where('decision', 'reject')->count();
+                $needingDecision = \App\Models\Paper::where('status', 'under_review')
+                    ->whereHas('reviewAssignments', function($q) {
+                        $q->where('status', 'completed');
+                    }, '>=', 2)
+                    ->whereNull('decision')
+                    ->count();
+            @endphp
+            
+            <!-- Accepted Papers -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Accepted Papers</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2">{{ $acceptedPapers }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Including revisions</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Rejected Papers -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Rejected Papers</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2">{{ $rejectedPapers }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Not accepted</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <i class="fas fa-times-circle text-red-600 text-2xl"></i>
+                    </div>
+                </div>
+               
+            </div>
+            
+            <!-- Needing Decision -->
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-orange-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Needing Decision</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2">{{ $needingDecision }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Ready for chair decision</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-full">
+                        <i class="fas fa-gavel text-orange-600 text-2xl"></i>
+                    </div>
+                </div>
+                
             </div>
         </div>
         
@@ -344,6 +403,7 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
+                            <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -370,10 +430,10 @@
                                             <div class="text-xs text-gray-500">{{ $registration->email }}</div>
                                         </div>
                                     </div>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ Str::limit($registration->institution, 25) }}</div>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-wrap gap-1">
                                         @if($registration->is_presenting_paper)
@@ -387,17 +447,19 @@
                                         </span>
                                         @endif
                                     </div>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $registration->created_at->format('M d') }}
                                     <div class="text-xs text-gray-400">{{ $registration->created_at->diffForHumans() }}</div>
-                                 </tr>
+                                </td>
+                            </tr>
                             @empty
                             <tr>
                                 <td colspan="4" class="px-6 py-8 text-center text-gray-500">
                                     <i class="fas fa-users-slash text-3xl mb-3 text-gray-300"></i>
                                     <p>No registrations yet</p>
-                                 </tr>
+                                </td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -417,13 +479,13 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
-                             <tr>
+                            <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviews</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                             </tr>
+                            </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @php
@@ -441,11 +503,11 @@
                                             @endif
                                         @endif
                                     </div>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900">{{ Str::limit($paper->title, 40) }}</div>
                                     <div class="text-xs text-gray-500">{{ $paper->topic_area }}</div>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php
                                         $completedReviews = $paper->reviewAssignments->where('status', 'completed')->count();
@@ -461,7 +523,7 @@
                                         <div class="text-xs text-green-600 mt-1">Both done</div>
                                         @endif
                                     </div>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs rounded-full 
                                         @if($paper->status == 'submitted') bg-blue-100 text-blue-800
@@ -472,17 +534,19 @@
                                         @endif">
                                         {{ ucfirst(str_replace('_', ' ', $paper->status)) }}
                                     </span>
-                                 </tr>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $paper->created_at->format('M d') }}
                                     <div class="text-xs text-gray-400">{{ $paper->created_at->diffForHumans() }}</div>
-                                 </tr>
+                                </td>
+                            </tr>
                             @empty
                             <tr>
                                 <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                                     <i class="fas fa-file-alt text-3xl mb-3 text-gray-300"></i>
                                     <p>No papers submitted yet</p>
-                                 </tr>
+                                </td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
