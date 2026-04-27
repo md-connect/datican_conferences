@@ -23,7 +23,7 @@
                         $isAuthor = $paper->authors()->where('users.id', auth()->id())->exists();
                     @endphp
                     
-                    @if($canAccess)
+                    <!-- @if($canAccess)
                         @if($hasFile)
                         <a href="{{ route('papers.download', $paper) }}" 
                         class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 font-medium">
@@ -43,7 +43,7 @@
                             <i class="fas fa-exclamation-triangle mr-2"></i>File Not Available
                         </span>
                         @endif
-                    @endif
+                    @endif -->
                 </div>
             </div>
             
