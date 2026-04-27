@@ -183,6 +183,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/papers/{paper}/resend-decision', [ChairController::class, 'resendDecisionEmail'])
         ->name('chair.papers.resend-decision')
         ->middleware(['auth', 'chair']);
+
+        // Send revision request for a specific paper
+        Route::post('/papers/{paper}/send-revision-request', [ChairController::class, 'sendRevisionRequest'])
+            ->name('chair.papers.send-revision-request');
+
+        // Send revision requests to all papers (bulk)
+        Route::post('/papers/send-bulk-revision-requests', [ChairController::class, 'sendBulkRevisionRequests'])
+            ->name('chair.papers.bulk-revision-requests');
     });
     
     // ==================== ADMIN-ONLY ROUTES ====================

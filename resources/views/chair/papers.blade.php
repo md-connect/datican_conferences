@@ -17,12 +17,32 @@
             </a>
         </div>
         
-        <!-- Export Button -->
-        <div class="mb-6 flex justify-end">
-            <a href="{{ route('chair.export.papers') }}" 
-               class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                <i class="fas fa-download mr-2"></i> Export CSV
-            </a>
+        <!-- Export and Bulk Email Buttons -->
+        <div class="mb-6 flex justify-between items-center">
+            <div class="flex space-x-3">
+                <a href="{{ route('chair.export.papers') }}" 
+                   class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    <i class="fas fa-download mr-2"></i> Export CSV
+                </a>
+                
+                @php
+                    $papersNeedingRevision = \App\Models\Paper::where('conference_year', $year)
+                        ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+                        ->whereNull('revision_email_sent_at')
+                        ->count();
+                @endphp
+                
+                @if($papersNeedingRevision > 0)
+                <form action="{{ route('chair.papers.bulk-revision-requests') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" 
+                            onclick="return confirm('Send revision request emails to ALL authors with accepted papers ({{ $papersNeedingRevision }} papers)?')"
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-envelope mr-2"></i> Send Bulk Revision Emails ({{ $papersNeedingRevision }})
+                    </button>
+                </form>
+                @endif
+            </div>
         </div>
         
         <!-- Filters -->
@@ -98,11 +118,27 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submission Date</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviews</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correspondence Email</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Send Email</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($papers as $index => $paper)
+                        @php
+                            $needsRevisionEmail = in_array($paper->decision, ['accept_with_minor_revision', 'accept_with_major_revision']) && is_null($paper->revision_email_sent_at);
+                            $correspondingAuthor = $paper->authors->where('pivot.is_corresponding_author', true)->first();
+                            $correspondingEmail = $correspondingAuthor ? $correspondingAuthor->email : ($paper->authors->first()->email ?? 'N/A');
+                            $completedReviews = $paper->reviewAssignments->where('status', 'completed');
+                            $avgScore = $completedReviews->avg(function($review) {
+                                return ($review->criteria_relevance ?? 0) + 
+                                       ($review->criteria_originality ?? 0) + 
+                                       ($review->criteria_quality ?? 0) + 
+                                       ($review->criteria_impact ?? 0) + 
+                                       ($review->criteria_clarity ?? 0) + 
+                                       ($review->criteria_contribution ?? 0);
+                            });
+                        @endphp
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $papers->firstItem() + $index }}
@@ -172,10 +208,6 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
-                                @php
-                                    $completedReviews = $paper->reviewAssignments->where('status', 'completed');
-                                    $avgScore = $completedReviews->avg('total_score');
-                                @endphp
                                 <div class="text-sm text-center">
                                     <span class="font-medium">{{ $completedReviews->count() }}/{{ $paper->reviewAssignments->count() }}</span>
                                     @if($avgScore)
@@ -183,6 +215,15 @@
                                     @endif
                                 </div>
                             </td>
+                            <!-- Correspondence Email Column -->
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900">{{ $correspondingEmail }}</div>
+                                @if($correspondingAuthor)
+                                <div class="text-xs text-gray-500">{{ $correspondingAuthor->first_name }} {{ $correspondingAuthor->last_name }}</div>
+                                @endif
+                            </td>
+                            
+                            <!-- Actions Column -->
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="flex space-x-2">
                                     <a href="{{ route('papers.show', $paper) }}" 
@@ -206,10 +247,31 @@
                                     @endif
                                 </div>
                             </td>
+                            
+                            <!-- Send Email Button Column (After Actions) -->
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                @if($needsRevisionEmail)
+                                <form action="{{ route('chair.papers.send-revision-request', $paper) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" 
+                                            class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            onclick="return confirm('Send revision request email to {{ $correspondingEmail }} for paper {{ $paper->anonymous_id }}?')">
+                                        <i class="fas fa-envelope mr-1"></i> Send Email
+                                    </button>
+                                </form>
+                                @elseif(in_array($paper->decision, ['accept_with_minor_revision', 'accept_with_major_revision']) && !is_null($paper->revision_email_sent_at))
+                                <button type="button" 
+                                        class="px-3 py-1 text-xs bg-gray-400 text-white rounded cursor-not-allowed">
+                                    <i class="fas fa-check mr-1"></i> Email Sent
+                                </button>
+                                @else
+                                <span class="text-xs text-gray-400">-</span>
+                                @endif
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="10" class="px-6 py-8 text-center">
+                            <td colspan="12" class="px-6 py-8 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-file-alt text-4xl mb-4"></i>
                                     <p class="text-lg font-medium">No papers found</p>
@@ -246,7 +308,7 @@
                 
                 // Calculate stats using decision column (not status)
                 $totalPapers = (clone $baseQuery)->count();
-                $underReview = (clone $baseQuery)->where('decision', null)->count();
+                $underReview = (clone $baseQuery)->whereNull('decision')->where('status', 'under_review')->count();
                 $accepted = (clone $baseQuery)->whereIn('decision', ['accept', 'accept_with_minor_revision', 'accept_with_major_revision'])->count();
                 $minorRevision = (clone $baseQuery)->where('decision', 'accept_with_minor_revision')->count();
                 $majorRevision = (clone $baseQuery)->where('decision', 'accept_with_major_revision')->count();

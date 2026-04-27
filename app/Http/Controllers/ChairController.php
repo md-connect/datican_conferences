@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaperDecisionMail;
+use App\Mail\RevisionRequestMail;
+
 
 class ChairController extends Controller
 {
@@ -861,5 +863,147 @@ class ChairController extends Controller
             
             return redirect()->back()->with('error', 'Failed to resend email: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Send revision request email to corresponding author only
+     */
+    public function sendRevisionRequest(Request $request, Paper $paper)
+    {
+        // Only send for papers that need revision
+        if (!in_array($paper->decision, ['accept_with_minor_revision', 'accept_with_major_revision'])) {
+            return redirect()->back()->with('error', 'This paper does not require revision.');
+        }
+        
+        // Get corresponding author
+        $correspondingAuthor = $paper->authors()
+            ->wherePivot('is_corresponding', true)
+            ->first();
+        
+        if (!$correspondingAuthor) {
+            $correspondingAuthor = $paper->authors->sortBy('pivot.author_order')->first();
+        }
+        
+        if (!$correspondingAuthor) {
+            return redirect()->back()->with('error', 'No author found for this paper.');
+        }
+        
+        if (!filter_var($correspondingAuthor->email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->with('error', 'Invalid email address for corresponding author.');
+        }
+        
+        try {
+            Mail::to($correspondingAuthor->email)
+                ->cc('mondayoke93@yahoo.com')
+                ->send(new RevisionRequestMail($paper, $correspondingAuthor->first_name . ' ' . $correspondingAuthor->last_name));
+            
+            // Force update the revision_email_sent_at column
+            $paper->revision_email_sent_at = now();
+            $paper->save();
+            
+            // Double-check it was saved
+            if ($paper->fresh()->revision_email_sent_at) {
+                \Log::info('Revision email sent and marked', [
+                    'paper_id' => $paper->id,
+                    'revision_email_sent_at' => $paper->fresh()->revision_email_sent_at
+                ]);
+            } else {
+                \Log::error('Failed to update revision_email_sent_at', ['paper_id' => $paper->id]);
+            }
+            
+            return redirect()->back()->with('success', "Revision request email sent to corresponding author ({$correspondingAuthor->email}).");
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to send revision request email', [
+                'paper_id' => $paper->id,
+                'author_email' => $correspondingAuthor->email,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to send email: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send revision request to corresponding author of all papers with revision decisions
+     */
+    public function sendBulkRevisionRequests(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        
+        $papers = Paper::where('conference_year', $year)
+            ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+            ->whereNull('revision_email_sent_at')  // Only get papers where email NOT sent
+            ->get();
+        
+        if ($papers->isEmpty()) {
+            return redirect()->back()->with('info', 'No pending revision request emails to send.');
+        }
+        
+        $totalSent = 0;
+        $failed = 0;
+        $alreadySent = 0;
+        
+        foreach ($papers as $paper) {
+            // Get corresponding author
+            $correspondingAuthor = $paper->authors()
+                ->wherePivot('is_corresponding', true)
+                ->first();
+            
+            if (!$correspondingAuthor) {
+                $correspondingAuthor = $paper->authors->sortBy('pivot.author_order')->first();
+            }
+            
+            if (!$correspondingAuthor) {
+                \Log::warning('No author found for paper', ['paper_id' => $paper->id]);
+                $failed++;
+                continue;
+            }
+            
+            if (!filter_var($correspondingAuthor->email, FILTER_VALIDATE_EMAIL)) {
+                \Log::warning('Invalid email for corresponding author', [
+                    'paper_id' => $paper->id,
+                    'email' => $correspondingAuthor->email
+                ]);
+                $failed++;
+                continue;
+            }
+            
+            try {
+                Mail::to($correspondingAuthor->email)
+                    ->cc('mondayoke93@yahoo.com')
+                    ->send(new RevisionRequestMail($paper, $correspondingAuthor->first_name . ' ' . $correspondingAuthor->last_name));
+                
+                // Update the paper as sent
+                $paper->revision_email_sent_at = now();
+                $paper->save();
+                
+                $totalSent++;
+                
+                \Log::info('Bulk revision request sent to corresponding author', [
+                    'paper_id' => $paper->id,
+                    'paper_title' => $paper->title,
+                    'author_email' => $correspondingAuthor->email
+                ]);
+                
+            } catch (\Exception $e) {
+                $failed++;
+                \Log::error('Failed to send bulk revision request', [
+                    'paper_id' => $paper->id,
+                    'author_email' => $correspondingAuthor->email,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        $message = "Revision request emails sent to {$totalSent} corresponding author(s).";
+        if ($failed > 0) {
+            $message .= " Failed: {$failed}.";
+        }
+        if ($alreadySent > 0) {
+            $message .= " Already sent: {$alreadySent}.";
+        }
+        
+        return redirect()->back()->with('success', $message);
     }
 }
