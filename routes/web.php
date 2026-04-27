@@ -20,6 +20,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChairController; 
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\RevisedAbstractController;
 
 // Authentication Routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -81,6 +82,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/papers/{paper}/download', [PaperController::class, 'download'])->name('papers.download');
     Route::get('/papers/{paper}/submit-full', [PaperController::class, 'submitFullForm'])->name('papers.submit-full-form');
     Route::post('/papers/{paper}/submit-full', [PaperController::class, 'submitFull'])->name('papers.submit-full');
+    Route::get('/author/revised-abstract/select', [RevisedAbstractController::class, 'selectPaper'])
+        ->name('author.revised-abstract.select');
+    
+    Route::get('/author/revised-abstract/upload/{paper}', [RevisedAbstractController::class, 'showUploadForm'])
+        ->name('author.revised-abstract.upload');
+    
+    Route::post('/author/revised-abstract/upload/{paper}', [RevisedAbstractController::class, 'upload'])
+        ->name('author.revised-abstract.upload.post');
+    
+    Route::get('/author/revised-abstract/download/{paper}', [RevisedAbstractController::class, 'download'])
+        ->name('author.revised-abstract.download');
     
     // Reviews
     Route::middleware(['auth'])->group(function () {
