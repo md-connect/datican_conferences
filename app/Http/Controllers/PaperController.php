@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Rules\MaxWords;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 
 class PaperController extends Controller
@@ -61,6 +62,14 @@ class PaperController extends Controller
 
     public function create()
     {
+        // Check if abstract submission is closed (deadline: April 26, 2026)
+        $submissionDeadline = Carbon::parse('2026-04-26 23:59:59');
+        
+        if (now()->gt($submissionDeadline)) {
+            return redirect()->route('submission.closed')
+                ->with('error', 'The abstract submission deadline has passed. We are no longer accepting new submissions.');
+        }
+        
         // Check if the user has an existing draft
         $draft = Paper::where('created_by', Auth::id())
             ->where('status', 'draft')
@@ -81,6 +90,7 @@ class PaperController extends Controller
             
         return view('papers.create', compact('users', 'registrations'));
     }
+    
 
     public function store(StorePaperRequest $request)
     {

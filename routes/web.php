@@ -44,7 +44,9 @@ Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/call-for-papers', [PageController::class, 'callForPapers'])->name('call-for-papers');
 Route::get('/committees', [PageController::class, 'committees'])->name('committees');
 Route::get('/acknowledgement', [PageController::class, 'acknowledgement'])->name('acknowledgement');
-
+Route::get('/abstract-submission-closed', function () {
+    return view('papers.submission_closed');
+})->name('submission.closed');
 // Conference Registration Routes
 Route::prefix('conference')->group(function () {
     Route::get('2026-registration', [ConferenceRegistrationController::class, 'showRegistrationForm'])
