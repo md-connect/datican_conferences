@@ -207,58 +207,73 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-6 gap-6">
+            @php
+                // Get the base query for stats (without pagination limits)
+                $baseQuery = \App\Models\Paper::where('conference_year', $year);
+                
+                // Apply filters if present
+                if(request('status')) {
+                    $baseQuery->where('status', request('status'));
+                }
+                if(request('topic')) {
+                    $baseQuery->where('topic_area', request('topic'));
+                }
+                
+                // Calculate stats using decision column (not status)
+                $totalPapers = (clone $baseQuery)->count();
+                $underReview = (clone $baseQuery)->where('decision', null)->count();
+                $accepted = (clone $baseQuery)->whereIn('decision', ['accept', 'accept_with_minor_revision', 'accept_with_major_revision'])->count();
+                $minorRevision = (clone $baseQuery)->where('decision', 'accept_with_minor_revision')->count();
+                $majorRevision = (clone $baseQuery)->where('decision', 'accept_with_major_revision')->count();
+                $rejected = (clone $baseQuery)->where('decision', 'reject')->count();
+            @endphp
+            
             <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                        <i class="fas fa-file-alt text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-gray-900">{{ $papers->total() }}</p>
-                        <p class="text-sm text-gray-500">Total Papers</p>
-                    </div>
+                <div class="text-center">
+                    <i class="fas fa-file-alt text-3xl text-blue-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">{{ $totalPapers }}</p>
+                    <p class="text-sm text-gray-500">Total Papers</p>
                 </div>
             </div>
             
             <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-                        <i class="fas fa-check-circle text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-gray-900">
-                            {{ $papers->where('status', 'accepted')->count() }}
-                        </p>
-                        <p class="text-sm text-gray-500">Accepted</p>
-                    </div>
+                <div class="text-center">
+                    <i class="fas fa-spinner text-3xl text-yellow-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">{{ $underReview }}</p>
+                    <p class="text-sm text-gray-500">Under Review</p>
                 </div>
             </div>
             
             <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-                        <i class="fas fa-spinner text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-gray-900">
-                            {{ $papers->whereIn('status', ['submitted', 'under_review'])->count() }}
-                        </p>
-                        <p class="text-sm text-gray-500">In Review</p>
-                    </div>
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-3xl text-green-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">{{ $accepted }}</p>
+                    <p class="text-sm text-gray-500">Accepted</p>
                 </div>
             </div>
             
             <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">
-                        <i class="fas fa-file-alt text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-gray-900">
-                            {{ $papers->where('submission_type', 'abstract_only')->count() }}
-                        </p>
-                        <p class="text-sm text-gray-500">Abstract Only</p>
-                    </div>
+                <div class="text-center">
+                    <i class="fas fa-edit text-3xl text-yellow-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">{{ $minorRevision }}</p>
+                    <p class="text-sm text-gray-500">Minor Revision</p>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="text-center">
+                    <i class="fas fa-redo-alt text-3xl text-orange-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">{{ $majorRevision }}</p>
+                    <p class="text-sm text-gray-500">Major Revision</p>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="text-center">
+                    <i class="fas fa-times-circle text-3xl text-red-600 mb-3"></i>
+                    <p class="text-2xl font-bold text-gray-900">{{ $rejected }}</p>
+                    <p class="text-sm text-gray-500">Rejected</p>
                 </div>
             </div>
         </div>
