@@ -32,7 +32,7 @@ class RevisionRequestMail extends Mailable
     {
         return new Envelope(
             subject: 'Submission of Revised Abstract – DATICAN Conference',
-            cc: ['mondayoke93@yahoo.com'],  
+            cc: ['aribisala@uchicago.edu'],  
         );
     }
 
