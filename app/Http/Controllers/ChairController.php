@@ -127,6 +127,7 @@ class ChairController extends Controller
                 $paper->review_count = $paper->reviewAssignments->count();
             });
         
+            
         // Get papers needing reviewers
         $papersNeedingReviewers = Paper::where('conference_year', $year)
             ->whereIn('status', ['submitted', 'abstract_submitted', 'under_review'])
