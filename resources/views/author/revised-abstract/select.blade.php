@@ -8,7 +8,7 @@
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-6 py-4">
                 <h1 class="text-xl font-bold text-white">Select Paper for Revised Abstract Upload</h1>
-                <p class="text-blue-100 text-sm mt-1">Choose which paper you want to upload the revised abstract for</p>
+                <p class="text-gray-100 text-sm mt-1">Choose which paper you want to upload the revised abstract for</p>
             </div>
             
             <div class="p-6">
@@ -43,7 +43,7 @@
                         <i class="fas fa-check-circle text-5xl text-green-500 mb-4"></i>
                         <p class="text-gray-600">No papers require revised abstract upload at this time.</p>
                         <p class="text-sm text-gray-500 mt-2">All your accepted papers have been uploaded or are pending review.</p>
-                        <a href="{{ route('author.dashboard') }}" class="mt-4 inline-block text-blue-600 hover:text-blue-800">
+                        <a href="{{ route('author.dashboard') }}" class="mt-4 inline-block text-gray-600 hover:text-gray-800">
                             <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
                         </a>
                     </div>

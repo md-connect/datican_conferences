@@ -9,7 +9,7 @@
             <!-- Header -->
             <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-6 py-4">
                 <h1 class="text-xl font-bold text-white">Upload Revised Abstract</h1>
-                <p class="text-blue-100 text-sm mt-1">Please upload your revised abstract in MS Word format</p>
+                <p class="text-gray-100 text-sm mt-1">Please upload your revised abstract in MS Word format</p>
             </div>
             
             <!-- Paper Information -->
@@ -80,11 +80,11 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Select Revised Abstract Document <span class="text-red-500">*</span>
                         </label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition" id="dropzone">
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-gray-400 transition" id="dropzone">
                             <div class="space-y-1 text-center">
                                 <i class="fas fa-file-word text-4xl text-gray-400 mb-3"></i>
                                 <div class="flex text-sm text-gray-600">
-                                    <label for="revised_abstract" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                    <label for="revised_abstract" class="relative cursor-pointer bg-white rounded-md font-medium text-gray-600 hover:text-gray-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-gray-500">
                                         <span>Upload a file</span>
                                         <input id="revised_abstract" name="revised_abstract" type="file" class="sr-only" accept=".doc,.docx" required>
                                     </label>
@@ -110,14 +110,14 @@
                             <span id="progressPercent">0%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div id="progressBar" class="bg-gray-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                         </div>
                     </div>
                     
                     <!-- Tracking Information -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
                         <h3 class="font-semibold text-gray-800 mb-3 flex items-center">
-                            <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                            <i class="fas fa-chart-line text-gray-600 mr-2"></i>
                             Submission Tracking
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -161,7 +161,7 @@
             <h3 class="font-semibold text-gray-800 mb-3">Need Help?</h3>
             <p class="text-sm text-gray-600">
                 If you have any questions about the revised abstract submission process, please contact us at 
-                <a href="mailto:manager.datican@gmail.com" class="text-blue-600 hover:underline">manager.datican@gmail.com</a>
+                <a href="mailto:manager.datican@gmail.com" class="text-gray-600 hover:underline">manager.datican@gmail.com</a>
             </p>
         </div>
     </div>

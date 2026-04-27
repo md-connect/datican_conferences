@@ -201,6 +201,15 @@ class PaperController extends Controller
      */
     public function edit(Paper $paper)
     {
+        // Check if abstract submission is closed (deadline: April 26, 2026)
+        $submissionDeadline = \Carbon\Carbon::parse('2026-04-26 23:59:59');
+        
+        if (now()->gt($submissionDeadline)) {
+            // Redirect to submission closed page
+            return redirect()->route('submission.closed')
+                ->with('error', 'The abstract submission deadline has passed. You can no longer edit or submit new papers.');
+        }
+        
         // Check if paper can be edited
         if (!$paper->canBeEditedBy(Auth::user())) {
             \Log::warning('Edit attempt blocked by canBeEditedBy', [
@@ -224,6 +233,19 @@ class PaperController extends Controller
 
     public function update(StorePaperRequest $request, Paper $paper)
     {
+        // Check if abstract submission is closed (deadline: March 31, 2026)
+        $submissionDeadline = \Carbon\Carbon::parse('2026-03-31 23:59:59');
+        
+        if (now()->gt($submissionDeadline)) {
+            // Allow revision submission even after abstract deadline
+            $isRevision = ($request->action === 'submit_revision' && $paper->status === 'needs_revision');
+            
+            if (!$isRevision) {
+                return redirect()->route('submission.closed')
+                    ->with('error', 'The abstract submission deadline has passed. You can no longer edit or submit new papers.');
+            }
+        }
+        
         if (!$paper->canBeEditedBy(Auth::user())) {
             abort(403, 'This paper cannot be edited at this stage.');
         }
@@ -279,9 +301,15 @@ class PaperController extends Controller
                 ? 'abstract_submitted'
                 : 'submitted';
             $data['submitted_at'] = now();
+            
+            \Log::info('Paper submitted from draft', [
+                'paper_id' => $paper->id,
+                'paper_title' => $paper->title,
+                'author_id' => Auth::id()
+            ]);
         }
         
-        // Handle revision submission
+        // Handle revision submission (allow even after abstract deadline)
         if ($request->action === 'submit_revision' && $paper->status === 'needs_revision') {
             $data['status'] = 'under_review';
             $data['revision_submitted_at'] = now();
@@ -290,6 +318,12 @@ class PaperController extends Controller
             // Reset revision fields
             $data['needs_revision'] = false;
             $data['revision_requested_at'] = null;
+            
+            \Log::info('Revision submitted', [
+                'paper_id' => $paper->id,
+                'paper_title' => $paper->title,
+                'author_id' => Auth::id()
+            ]);
         }
 
         $paper->update($data);

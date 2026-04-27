@@ -157,7 +157,7 @@
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 text-xs rounded-full 
                                     @if($paper->submission_type == 'abstract_only') bg-orange-100 text-orange-800
-                                    @else bg-blue-100 text-blue-800 @endif">
+                                    @else bg-gray-100 text-gray-800 @endif">
                                     {{ $paper->submission_type == 'abstract_only' ? 'Abstract Only' : 'Full Paper' }}
                                 </span>
                             </td>

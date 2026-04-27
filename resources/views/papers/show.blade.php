@@ -9,7 +9,7 @@
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 mb-2">
+                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 mb-2">
                         {{ $paper->anonymous_id }}
                     </span>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $paper->title }}</h1>
@@ -104,7 +104,7 @@
                         <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm">
                             {{ $author->first_name }} {{ $author->last_name }}
                             @if($author->pivot->is_corresponding)
-                            <span class="text-blue-600 ml-1" title="Corresponding Author">*</span>
+                            <span class="text-gray-600 ml-1" title="Corresponding Author">*</span>
                             @endif
                         </span>
                         @endforeach
@@ -164,11 +164,11 @@
                     <!-- Individual Reviews - Two Columns -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         @foreach($completedReviews as $index => $review)
-                        <div class="border rounded-lg p-4 {{ $index == 0 ? 'border-blue-200 bg-blue-50' : 'border-purple-200 bg-purple-50' }}">
+                        <div class="border rounded-lg p-4 {{ $index == 0 ? 'border-gray-200 bg-gray-50' : 'border-purple-200 bg-purple-50' }}">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <span class="inline-block px-3 py-1 text-sm font-semibold rounded-full 
-                                        {{ $index == 0 ? 'bg-blue-200 text-blue-800' : 'bg-purple-200 text-purple-800' }}">
+                                        {{ $index == 0 ? 'bg-gray-200 text-gray-800' : 'bg-purple-200 text-purple-800' }}">
                                         Reviewer {{ $index + 1 }}
                                     </span>
                                     <!-- <p class="text-sm text-gray-600 mt-2">{{ $review->reviewer->full_name }}</p> -->
@@ -288,7 +288,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="text-center">
                                 <p class="text-sm text-gray-600">Number of Reviews</p>
-                                <p class="text-2xl font-bold text-blue-600">{{ $reviewCount }}/{{ $totalAssignments }}</p>
+                                <p class="text-2xl font-bold text-gray-600">{{ $reviewCount }}/{{ $totalAssignments }}</p>
                             </div>
                             <div class="text-center">
                                 <p class="text-sm text-gray-600">Average Total Score</p>
