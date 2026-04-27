@@ -52,7 +52,7 @@
                         <i class="fas fa-file-alt text-green-600 text-2xl"></i>
                     </div>
                 </div>
-                <a href="{{ route('papers.index') }}" class="mt-4 inline-flex items-center text-sm text-green-600 hover:text-green-800">
+                <a href="{{ route('chair.papers') }}" class="mt-4 inline-flex items-center text-sm text-green-600 hover:text-green-800">
                     View all <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
