@@ -27,7 +27,7 @@
                     @endif
                     
                     <a href="{{ route('papers.create') }}" 
-                       class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium transition">
+                       class="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium transition">
                         <i class="fas fa-plus mr-2"></i>Submit New Paper
                     </a>
                 </div>

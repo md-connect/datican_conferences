@@ -71,7 +71,7 @@
                 
                 @if($papersNeedingRevision > 0)
                 <a href="{{ route('author.revised-abstract.select') }}" 
-                   class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                   class="inline-flex items-center px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700">
                     <i class="fas fa-upload mr-2"></i>Upload Revised Abstract ({{ $papersNeedingRevision }})
                 </a>
                 @else
@@ -138,7 +138,7 @@
                         </div>
                         <div class="flex space-x-2">
                             <a href="{{ route('papers.show', $paper) }}" 
-                               class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                               class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
                                 View
                             </a>
                             @if(in_array($paper->decision, ['accept_with_minor_revision', 'accept_with_major_revision']) && !$paper->revised_abstract_file_path)

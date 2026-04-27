@@ -6,7 +6,7 @@
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-6 py-4">
                 <h1 class="text-xl font-bold text-white">Select Paper for Revised Abstract Upload</h1>
                 <p class="text-blue-100 text-sm mt-1">Choose which paper you want to upload the revised abstract for</p>
             </div>
@@ -31,8 +31,8 @@
                                     </div>
                                 </div>
                                 <a href="{{ route('author.revised-abstract.upload', $paper) }}" 
-                                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                    <i class="fas fa-upload mr-2"></i> Select
+                                   class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition">
+                                    <i class="fas fa-upload mr-2"></i> Upload
                                 </a>
                             </div>
                         </div>

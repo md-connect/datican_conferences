@@ -7,7 +7,7 @@
     <div class="max-w-4xl mx-auto">
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-6 py-4">
                 <h1 class="text-xl font-bold text-white">Upload Revised Abstract</h1>
                 <p class="text-blue-100 text-sm mt-1">Please upload your revised abstract in MS Word format</p>
             </div>
@@ -148,7 +148,7 @@
                         </a>
                         <button type="submit" 
                                 id="submitBtn"
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="fas fa-upload mr-2"></i> Upload Revised Abstract
                         </button>
                     </div>
