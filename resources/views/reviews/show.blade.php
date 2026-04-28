@@ -61,12 +61,12 @@
                     </div>
                 </div>
             </div>
+            <div>
+                <p class="text-gray-500">Paper</p>
+                <p class="font-medium">{{ $review->paper->title }}</p>
+            </div>
             
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                    <p class="text-gray-500">Paper</p>
-                    <p class="font-medium">{{ Str::limit($review->paper->title, 40) }}</p>
-                </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                     <p class="text-gray-500">Submitted</p>
                     <p class="font-medium">{{ $review->submitted_at ? $review->submitted_at->format('F d, Y H:i') : 'Not submitted' }}</p>
