@@ -39,7 +39,7 @@ class RevisedAbstractController extends Controller
 
         // Check if already uploaded
         if ($paper->revised_abstract_file_path) {
-            return redirect()->route('author.dashboard')
+            return redirect()->route('dashboard')
                 ->with('error', 'You have already uploaded the revised abstract for this paper.');
         }
 
