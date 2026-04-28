@@ -5,15 +5,30 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
+        @php
+            $user = auth()->user();
+            $paper = $review->paper;
+            $isReviewer = ($review->reviewer_id === $user->id);
+            $isAuthor = $paper->authors()->where('users.id', $user->id)->exists();
+            $isChairOrAdmin = ($user->is_admin || $user->is_chair);
+            $canSeeConfidential = ($isReviewer || $isChairOrAdmin);
+            $canSeeReviewerIdentity = ($isReviewer || $isChairOrAdmin);
+            $canEditReview = ($isReviewer && $review->status !== 'completed');
+        @endphp
+        
         <!-- Review Header -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 mb-2">
+                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-brand-100 text-brand-800 mb-2">
                         {{ $review->paper->anonymous_id }}
                     </span>
                     <h1 class="text-2xl font-bold text-gray-900">Review Details</h1>
-                    <p class="text-gray-600">Submitted by {{ $review->reviewer->full_name ?? 'Unknown Reviewer' }}</p>
+                    @if($canSeeReviewerIdentity)
+                        <p class="text-gray-600">Submitted by {{ $review->reviewer->full_name ?? 'Unknown Reviewer' }}</p>
+                    @else
+                        <p class="text-gray-600">Reviewer feedback for your paper</p>
+                    @endif
                 </div>
                 <div class="text-right">
                     @php
@@ -56,10 +71,12 @@
                     <p class="text-gray-500">Submitted</p>
                     <p class="font-medium">{{ $review->submitted_at ? $review->submitted_at->format('F d, Y H:i') : 'Not submitted' }}</p>
                 </div>
+                @if($canSeeConfidential)
                 <div>
                     <p class="text-gray-500">Reviewer Confidence</p>
                     <p class="font-medium">{{ $review->confidence ? ucfirst($review->confidence) : 'Not specified' }}</p>
                 </div>
+                @endif
                 <div>
                     <p class="text-gray-500">Status</p>
                     @php
@@ -78,7 +95,7 @@
                 </div>
             </div>
             
-            @if($review->deadline)
+            @if($review->deadline && $canSeeConfidential)
             <div class="mt-4 pt-4 border-t">
                 <div class="flex items-center">
                     <p class="text-gray-500 mr-4">Deadline:</p>
@@ -118,7 +135,7 @@
                             style="width: {{ (($review->criteria_relevance ?? 0) / 20) * 100 }}%">
                         </div>
                     </div>
-                    @if($review->criteria_relevance)
+                    @if($review->criteria_relevance && $canSeeConfidential)
                     <p class="text-xs text-gray-500 mt-1">
                         @if($review->criteria_relevance >= 17) Uses medical images and data science
                         @elseif($review->criteria_relevance >= 11) Non-images but medical and data science
@@ -149,7 +166,7 @@
                             style="width: {{ (($review->criteria_originality ?? 0) / 20) * 100 }}%">
                         </div>
                     </div>
-                    @if($review->criteria_originality)
+                    @if($review->criteria_originality && $canSeeConfidential)
                     <p class="text-xs text-gray-500 mt-1">
                         @if($review->criteria_originality >= 16) Highly original
                         @elseif($review->criteria_originality >= 11) Some originality
@@ -180,7 +197,7 @@
                             style="width: {{ (($review->criteria_quality ?? 0) / 15) * 100 }}%">
                         </div>
                     </div>
-                    @if($review->criteria_quality)
+                    @if($review->criteria_quality && $canSeeConfidential)
                     <p class="text-xs text-gray-500 mt-1">
                         @if($review->criteria_quality >= 12) Excellent rigor and depth
                         @elseif($review->criteria_quality >= 8) Good quality
@@ -211,7 +228,7 @@
                             style="width: {{ (($review->criteria_impact ?? 0) / 15) * 100 }}%">
                         </div>
                     </div>
-                    @if($review->criteria_impact)
+                    @if($review->criteria_impact && $canSeeConfidential)
                     <p class="text-xs text-gray-500 mt-1">
                         @if($review->criteria_impact >= 12) Highly impactful with great adoption potential
                         @elseif($review->criteria_impact >= 8) Moderately useful
@@ -242,7 +259,7 @@
                             style="width: {{ (($review->criteria_clarity ?? 0) / 15) * 100 }}%">
                         </div>
                     </div>
-                    @if($review->criteria_clarity)
+                    @if($review->criteria_clarity && $canSeeConfidential)
                     <p class="text-xs text-gray-500 mt-1">
                         @if($review->criteria_clarity >= 12) Very clear and well-structured
                         @elseif($review->criteria_clarity >= 8) Generally clear
@@ -273,7 +290,7 @@
                             style="width: {{ (($review->criteria_contribution ?? 0) / 15) * 100 }}%">
                         </div>
                     </div>
-                    @if($review->criteria_contribution)
+                    @if($review->criteria_contribution && $canSeeConfidential)
                     <p class="text-xs text-gray-500 mt-1">
                         @if($review->criteria_contribution >= 12) Excellent contribution
                         @elseif($review->criteria_contribution >= 8) Moderate contribution
@@ -347,7 +364,7 @@
             </div>
             @endif
             
-            <!-- Suggestions -->
+            <!-- Suggestions for Improvement -->
             @if($review->suggestions)
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Suggestions for Improvement</h3>
@@ -355,7 +372,7 @@
             </div>
             @endif
             
-            <!-- Revision Suggestions -->
+            <!-- Revision Suggestions (visible to authors, reviewers, chairs) -->
             @if($review->revision_suggestions)
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Revision Suggestions</h3>
@@ -365,7 +382,7 @@
             </div>
             @endif
             
-            <!-- Comments for Authors -->
+            <!-- Comments for Authors (visible to everyone) -->
             @if($review->comments_author)
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Comments for Authors</h3>
@@ -375,8 +392,8 @@
             </div>
             @endif
             
-            <!-- Comments for Chairs (if visible) -->
-            @if(($review->reviewer_id === auth()->id() || auth()->user()->is_admin || auth()->user()->is_chair) && $review->comments_chair)
+            <!-- Confidential Comments for Chairs (only visible to reviewers and chairs) -->
+            @if($canSeeConfidential && $review->comments_chair)
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Confidential Comments for Chairs</h3>
                 <div class="bg-red-50 rounded-lg p-6 border border-red-200">
@@ -389,10 +406,17 @@
         <!-- Actions -->
         <div class="mt-8 pt-8 border-t">
             <div class="flex flex-wrap justify-between gap-4">
-                <a href="{{ route('reviews.my') }}" 
-                   class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                    <i class="fas fa-arrow-left mr-2"></i> Back to My Reviews
-                </a>
+                @if($isReviewer)
+                    <a href="{{ route('reviews.my') }}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to My Reviews
+                    </a>
+                @else
+                    <a href="{{ route('papers.show', $review->paper) }}" 
+                       class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Paper
+                    </a>
+                @endif
                 
                 <div class="flex flex-wrap gap-4">
                     <a href="{{ route('papers.show', $review->paper) }}" 
@@ -401,14 +425,14 @@
                         <i class="fas fa-external-link-alt mr-2"></i> View Paper
                     </a>
                     
-                    @if(auth()->id() === $review->reviewer_id && $review->status !== 'completed')
+                    @if($canEditReview)
                     <a href="{{ route('reviews.edit', $review) }}" 
-                       class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                       class="px-6 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700">
                         <i class="fas fa-edit mr-2"></i> Edit Review
                     </a>
                     @endif
                     
-                    @if(auth()->user()->is_admin || auth()->user()->is_chair)
+                    @if($isChairOrAdmin)
                     <a href="{{ route('assignments.index') }}?paper={{ $review->paper_id }}" 
                        class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
                         <i class="fas fa-tasks mr-2"></i> Assignment Management
@@ -420,3 +444,12 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .bg-brand-100 { background-color: #EFF6FF; }
+    .text-brand-800 { color: #1E40AF; }
+    .bg-brand-600 { background-color: #2563EB; }
+    .hover\:bg-brand-700:hover { background-color: #1D4ED8; }
+</style>
+@endpush

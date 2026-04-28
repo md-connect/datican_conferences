@@ -9,7 +9,7 @@
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 mb-2">
+                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-blue-800 mb-2">
                         {{ $paper->anonymous_id }}
                     </span>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $paper->title }}</h1>

@@ -266,8 +266,16 @@ class ReviewController extends Controller
      */
     public function show(ReviewAssignment $review)
     {
-        // Check authorization
-        if ($review->reviewer_id !== Auth::id() && !Auth::user()->is_admin && !Auth::user()->is_chair) {
+        $user = Auth::user();
+        $paper = $review->paper;
+        
+        // Check authorization - Allow authors of the paper to view reviews
+        $isReviewer = ($review->reviewer_id === $user->id);
+        $isAuthor = $paper->authors()->where('users.id', $user->id)->exists();
+        $isChairOrAdmin = ($user->is_admin || $user->is_chair);
+        
+        // Allow access if: reviewer, author of the paper, or chair/admin
+        if (!$isReviewer && !$isAuthor && !$isChairOrAdmin) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -301,7 +309,23 @@ class ReviewController extends Controller
             ->orderBy('created_at')
             ->get();
         
-        return view('reviews.show', compact('review', 'hasRevisions', 'originalReview', 'allReviews'));
+        // Pass permissions to view for conditional rendering
+        $canSeeConfidential = ($isReviewer || $isChairOrAdmin);
+        $canSeeReviewerIdentity = ($isReviewer || $isChairOrAdmin);
+        $canEditReview = ($isReviewer && $review->status !== 'completed');
+        
+        return view('reviews.show', compact(
+            'review', 
+            'hasRevisions', 
+            'originalReview', 
+            'allReviews',
+            'isAuthor',
+            'isReviewer',
+            'isChairOrAdmin',
+            'canSeeConfidential',
+            'canSeeReviewerIdentity',
+            'canEditReview'
+        ));
     }
 
     /**
