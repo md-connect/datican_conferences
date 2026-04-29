@@ -210,7 +210,7 @@
         
         <!-- Single card container -->
         <div class="bg-white rounded-xl p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <!-- Guest 1 -->
                 <div class="text-center">
                     <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
@@ -224,23 +224,20 @@
                     <p class="text-gray-700 text-sm mt-2">Assistant Professor of Medicine<br>
                        University of Chicago, USA</p>
                 </div>
-                
-                <!-- Guest 2 -->
+
+                <!-- Guest 1 -->
                 <div class="text-center">
                     <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
-                        <img src="{{ asset('images/speakers/olopade.jpg') }}" alt="Prof. Funmi Olopade" class="w-full h-full object-cover">
+                        <img src="{{ asset('images/speakers/simon-cox.jpeg') }}" alt="Prof. Simon Cox" class="w-full h-full object-cover">
                     </div>
-                    <p class="text-sm font-bold text-gray-800 mb-1">Chairman, Steering Committee</p>
+                    <p class="text-sm font-bold text-gray-800 mb-1">Plenary Speaker</p>
                     <h3 class="text-lg font-bold mb-1 text-primary relative">
-                        Prof. Olufunmilayo I. Olopade MD, FACP
+                        Prof. Simon Cox
                         <div class="w-12 h-0.5 bg-primary mx-auto mt-1"></div>
                     </h3>
-                    <p class="text-gray-700 text-sm mt-2">Professor of Medicine, Professor of Human Genetics
-                        <br>
-                        Director, Center for Clinical Cancer Genetics and Global Health
-                        <br>University of Chicago, USA</p>
+                    <p class="text-gray-700 text-sm mt-2">Professor of Brain and Cognitive Ageing<br>
+                       University of Edinburgh, UK</p>
                 </div>
-                
                 <!-- Guest 3 -->
                 <div class="text-center">
                     <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
@@ -255,7 +252,6 @@
                       Department of Computer Science<br>  
                       Lagos State University, Ojo, Lagos, Nigeria</p>
                 </div>
-
                 <!-- Guest 4 -->
                 <div class="text-center">
                     <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
@@ -269,6 +265,21 @@
                     <p class="text-gray-700 text-sm mt-2">Professor of Computer Science <br> 
                       Department of Computer Science<br>  
                       Redeemer's University, Ede, Osun State, Nigeria</p>
+                </div>
+                <!-- Guest 2 -->
+                <div class="text-center">
+                    <div class="w-48 h-48 mx-auto mb-4 overflow-hidden">
+                        <img src="{{ asset('images/speakers/olopade.jpg') }}" alt="Prof. Funmi Olopade" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm font-bold text-gray-800 mb-1">Chairman, Steering Committee</p>
+                    <h3 class="text-lg font-bold mb-1 text-primary relative">
+                        Prof. Olufunmilayo I. Olopade MD, FACP
+                        <div class="w-12 h-0.5 bg-primary mx-auto mt-1"></div>
+                    </h3>
+                    <p class="text-gray-700 text-sm mt-2">Professor of Medicine, Professor of Human Genetics
+                        <br>
+                        Director, Center for Clinical Cancer Genetics and Global Health
+                        <br>University of Chicago, USA</p>
                 </div>
             </div>
         </div>
