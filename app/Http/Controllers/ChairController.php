@@ -1088,4 +1088,51 @@ class ChairController extends Controller
         
         return response()->download($filePath, $paper->anonymous_id . '_revised_abstract.docx');
     }
+    /**
+     * Export revised abstracts to CSV
+     */
+    public function exportRevisedAbstracts(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $status = $request->input('status');
+        
+        $query = Paper::where('conference_year', $year)
+            ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+            ->with('authors');
+        
+        if ($status === 'uploaded') {
+            $query->whereNotNull('revised_abstract_file_path');
+        } elseif ($status === 'pending') {
+            $query->whereNull('revised_abstract_file_path');
+        }
+        
+        $papers = $query->orderBy('revised_abstract_uploaded_at', 'desc')->get();
+        
+        // Prepare data for CSV
+        $data = collect();
+        $sn = 1;
+        
+        foreach ($papers as $paper) {
+            // Get all authors names
+            $authorNames = $paper->authors->map(function($author) {
+                return trim($author->first_name . ' ' . $author->last_name);
+            })->implode('; ');
+            
+            $data->push([
+                'SN' => $sn++,
+                'Paper ID' => $paper->anonymous_id,
+                'Paper Title' => $paper->title,
+                'Author(s)' => $authorNames,
+                'Corresponding Author Email' => $paper->authors->where('pivot.is_corresponding', true)->first()->email ?? $paper->authors->first()->email ?? 'N/A',
+                'Decision' => $paper->decision == 'accept_with_minor_revision' ? 'Minor Revision' : 'Major Revision',
+                'Revised Abstract Status' => $paper->revised_abstract_file_path ? 'Uploaded' : 'Pending',
+                'Uploaded Date' => $paper->revised_abstract_uploaded_at ? \Carbon\Carbon::parse($paper->revised_abstract_uploaded_at)->format('Y-m-d H:i:s') : 'Not uploaded',
+                'File Name' => $paper->revised_abstract_file_name ?? 'N/A',
+            ]);
+        }
+        
+        $filename = 'revised_abstracts_' . $year . '_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        return $this->toCsv($data, $filename);
+    }
 }

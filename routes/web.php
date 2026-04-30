@@ -208,6 +208,8 @@ Route::middleware(['auth'])->group(function () {
     
         Route::get('/chair/revised-abstracts/download/{paper}', [ChairController::class, 'downloadRevisedAbstract'])
             ->name('chair.revised-abstracts.download');
+        Route::get('/chair/revised-abstracts/export', [ChairController::class, 'exportRevisedAbstracts'])
+            ->name('chair.revised-abstracts.export');
     });
     
     // ==================== ADMIN-ONLY ROUTES ====================

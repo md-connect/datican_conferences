@@ -11,10 +11,32 @@
                 <h1 class="text-3xl font-bold text-gray-900">Revised Abstracts</h1>
                 <p class="text-gray-600 mt-2">Manage revised abstract submissions from authors</p>
             </div>
-            <a href="{{ route('chair.dashboard') }}" 
-               class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
-            </a>
+            <div class="flex gap-3">
+                <div class="relative group">
+                    <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition inline-flex items-center">
+                        <i class="fas fa-download mr-2"></i> Export
+                        <i class="fas fa-chevron-down ml-2 text-sm"></i>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden group-hover:block z-10">
+                        <a href="{{ route('chair.revised-abstracts.export', array_merge(request()->all(), ['status' => 'all'])) }}" 
+                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-file-csv mr-2"></i> Export All
+                        </a>
+                        <a href="{{ route('chair.revised-abstracts.export', array_merge(request()->all(), ['status' => 'uploaded'])) }}" 
+                        class="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100">
+                            <i class="fas fa-check-circle mr-2"></i> Export Uploaded Only
+                        </a>
+                        <a href="{{ route('chair.revised-abstracts.export', array_merge(request()->all(), ['status' => 'pending'])) }}" 
+                        class="block px-4 py-2 text-sm text-yellow-600 hover:bg-gray-100">
+                            <i class="fas fa-clock mr-2"></i> Export Pending Only
+                        </a>
+                    </div>
+                </div>
+                <a href="{{ route('chair.dashboard') }}" 
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                </a>
+            </div>
         </div>
         
         <!-- Stats -->
