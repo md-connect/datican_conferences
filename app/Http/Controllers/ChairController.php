@@ -53,7 +53,17 @@ class ChairController extends Controller
             return $paper->completed_assignments == 0;
         })->count();
         
-        // ========== NEW DECISION STATS ==========
+        // ========== REVISED ABSTRACTS STATS ==========
+        $totalRevisedAbstractsSubmitted = Paper::where('conference_year', $year)
+            ->whereNotNull('revised_abstract_file_path')
+            ->count();
+        
+        $revisedAbstractsPending = Paper::where('conference_year', $year)
+            ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+            ->whereNull('revised_abstract_file_path')
+            ->count();
+        
+        // ========== DECISION STATS ==========
         $acceptedPapers = Paper::where('conference_year', $year)
             ->where('status', 'accepted')
             ->count();
@@ -88,7 +98,7 @@ class ChairController extends Controller
             'papers_with_both_reviews' => $papersWithBothReviews,
             'papers_with_one_review' => $papersWithOneReview,
             'papers_with_no_reviews' => $papersWithNoReviews,
-            // ========== DECISION STATS - FIXED ==========
+            // ========== DECISION STATS ==========
             'accepted_papers' => Paper::where('conference_year', $year)
                 ->whereIn('decision', ['accept', 'accept_with_minor_revision', 'accept_with_major_revision'])
                 ->count(),
@@ -102,6 +112,9 @@ class ChairController extends Controller
                 }, '>=', 2)
                 ->whereNull('decision')
                 ->count(),
+            // ========== REVISED ABSTRACTS STATS ==========
+            'total_revised_abstracts' => $totalRevisedAbstractsSubmitted,
+            'revised_abstracts_pending' => $revisedAbstractsPending,
         ];
         
         // Get papers needing decisions (papers with at least 2 completed reviews)
@@ -1005,5 +1018,74 @@ class ChairController extends Controller
         }
         
         return redirect()->back()->with('success', $message);
+    }
+    /**
+     * Display revised abstracts list for chair
+     */
+    public function revisedAbstracts(Request $request)
+    {
+        $year = $request->input('year', date('Y'));
+        $status = $request->input('status');
+        $search = $request->input('search');
+        
+        $query = Paper::where('conference_year', $year)
+            ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+            ->with('authors');
+        
+        if ($status === 'uploaded') {
+            $query->whereNotNull('revised_abstract_file_path');
+        } elseif ($status === 'pending') {
+            $query->whereNull('revised_abstract_file_path');
+        }
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('anonymous_id', 'like', "%{$search}%")
+                ->orWhere('title', 'like', "%{$search}%")
+                ->orWhere('author_list', 'like', "%{$search}%");
+            });
+        }
+        
+        $papers = $query->orderBy('revised_abstract_uploaded_at', 'desc')
+            ->paginate(20);
+        
+        $stats = [
+            'total' => Paper::where('conference_year', $year)
+                ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+                ->count(),
+            'uploaded' => Paper::where('conference_year', $year)
+                ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+                ->whereNotNull('revised_abstract_file_path')
+                ->count(),
+            'pending' => Paper::where('conference_year', $year)
+                ->whereIn('decision', ['accept_with_minor_revision', 'accept_with_major_revision'])
+                ->whereNull('revised_abstract_file_path')
+                ->count(),
+        ];
+        
+        return view('chair.revised-abstracts', compact('papers', 'stats', 'year', 'status', 'search'));
+    }
+
+    /**
+     * Download revised abstract
+     */
+    public function downloadRevisedAbstract(Paper $paper)
+    {
+        // Check authorization
+        if (!auth()->user()->is_admin && !auth()->user()->is_chair) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        if (!$paper->revised_abstract_file_path) {
+            return redirect()->back()->with('error', 'No revised abstract found for this paper.');
+        }
+        
+        $filePath = storage_path('app/public/' . $paper->revised_abstract_file_path);
+        
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
+        
+        return response()->download($filePath, $paper->anonymous_id . '_revised_abstract.docx');
     }
 }

@@ -80,7 +80,7 @@
             </div>
         </div>
         <!-- Decision Stats Row -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Accepted Papers -->
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
@@ -92,7 +92,6 @@
                         <p class="text-sm text-gray-500">Accepted Papers</p>
                     </div>
                 </div>
-            
             </div>
             
             <!-- Rejected Papers -->
@@ -106,7 +105,6 @@
                         <p class="text-sm text-gray-500">Rejected Papers</p>
                     </div>
                 </div>
-                
             </div>
             
             <!-- Needing Decision -->
@@ -120,7 +118,27 @@
                         <p class="text-sm text-gray-500">Needing Decision</p>
                     </div>
                 </div>
-                
+            </div>
+            
+            <!-- Total Revised Abstracts Submitted -->
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                        <i class="fas fa-file-word text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">{{ $stats['total_revised_abstracts'] ?? 0 }}</p>
+                        <p class="text-sm text-gray-500">Revised Abstracts</p>
+                        @if(($stats['revised_abstracts_pending'] ?? 0) > 0)
+                        <p class="text-xs text-red-500 mt-1">{{ $stats['revised_abstracts_pending'] }} pending</p>
+                        @endif
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ route('chair.revised-abstracts') }}" class="text-xs text-purple-600 hover:text-purple-800">
+                        View all <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
             </div>
         </div>
         

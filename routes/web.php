@@ -203,6 +203,11 @@ Route::middleware(['auth'])->group(function () {
         // Send revision requests to all papers (bulk)
         Route::post('/papers/send-bulk-revision-requests', [ChairController::class, 'sendBulkRevisionRequests'])
             ->name('chair.papers.bulk-revision-requests');
+        Route::get('/chair/revised-abstracts', [ChairController::class, 'revisedAbstracts'])
+            ->name('chair.revised-abstracts');
+    
+        Route::get('/chair/revised-abstracts/download/{paper}', [ChairController::class, 'downloadRevisedAbstract'])
+            ->name('chair.revised-abstracts.download');
     });
     
     // ==================== ADMIN-ONLY ROUTES ====================
