@@ -63,7 +63,7 @@ class PaperController extends Controller
     public function create()
     {
         // Check if abstract submission is closed (deadline: April 26, 2026)
-        $submissionDeadline = Carbon::parse('2026-04-30 23:59:59');
+        $submissionDeadline = Carbon::parse('2026-04-26 23:59:59');
         
         if (now()->gt($submissionDeadline)) {
             return redirect()->route('submission.closed')
